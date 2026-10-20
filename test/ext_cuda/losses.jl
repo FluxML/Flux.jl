@@ -40,4 +40,19 @@ y = [1  0  0  0  1
   @test g16 ≈ cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1])
 end
 
+@testset "GPU: $loss with class labels" for loss in (crossentropy, logitcrossentropy)
+  x = softmax(randn(Float32, 5, 6))
+  y = rand(1:5, 6)
+  @test loss(gpu(x), gpu(y)) ≈ loss(x, y)
+  @test cpu(loss(gpu(x), gpu(y); agg = identity)) ≈ loss(x, y; agg = identity)
+  @test loss(gpu(x), gpu(onehotbatch(y, 1:5))) ≈ loss(x, y)
+  @test_throws ArgumentError loss(gpu(x), gpu([0; y[2:end]]))
+  test_gradients(loss, x, y, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+
+  x3 = softmax(randn(Float32, 3, 5, 4); dims = 2)
+  y3 = rand(1:5, 3, 4)
+  @test loss(gpu(x3), gpu(y3); dims = 2) ≈ loss(x3, y3; dims = 2)
+  test_gradients((x, y) -> loss(x, y; dims = 2), x3, y3, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+end
+
 end #testset

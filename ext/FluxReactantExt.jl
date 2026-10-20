@@ -207,6 +207,16 @@ Flux._loadscalar(dst::Reactant.ConcretePJRTNumber{T}, src::Number) where {T} =
     Reactant.ConcretePJRTNumber{T}(src; client = Reactant.XLA.client(dst),
                                    device = Reactant.XLA.device(dst), sharding = dst.sharding)
 
+# A traced integer array has eltype `TracedRNumber{<:Integer}`, so it needs its own method to be
+# recognised as class labels. Its values are unknown at trace time and can't be checked: an
+# out-of-range label silently picks a neighbouring entry.
+Flux.Losses._islabels(ŷ::AbstractArray, y::Reactant.AnyTracedRArray{<:Integer}, dims::Integer) =
+    ndims(y) == ndims(ŷ) - 1
+Flux.Losses._check_label_values(::Reactant.AnyTracedRArray, C) = nothing
+# Reactant's `NNlib.gather` rejects the lazy `vec` of a traced array; indexing traces to the same
+# `stablehlo.gather`.
+Flux.Losses._gather(x::Reactant.AnyTracedRArray, idx::AbstractArray) = x[idx]
+
 _require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(
         "`trainstep!`/`train!` on a Reactant model requires device-resident data; move each batch to \
