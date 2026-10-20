@@ -206,4 +206,4 @@ Flux.loadmodel!(opt_state, ckpt["opt_state"])
 
     The setting is read when the step is compiled, i.e. on the first `trainstep!` call for a given model, optimiser, loss and batch shape, so wrap that call (or the whole training loop). A step that is already compiled keeps its precision: calling it inside `with_config` later has no effect, and a step compiled with `HIGHEST` keeps it outside.
 
-See also the [`resnet_tinyimagenet` example](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) for a complete Reactant training script, including compiling a separate evaluation executable per batch shape.
+See also the [`resnet_tinyimagenet` example](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) for a complete Reactant training script, including compiling a separate evaluation executable per batch shape, and the [`gpt2_fineweb` example](https://github.com/FluxML/Flux.jl/tree/master/examples/gpt2_fineweb), which pretrains GPT-2 with gradient accumulation, bfloat16 matrix multiplications and checkpointing.
