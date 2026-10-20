@@ -4,9 +4,9 @@
 
 using HuggingFaceDatasets, HuggingFaceTokenizers, PythonCall
 
-# Token ids are 1-based in Julia, but 0-based in the tokenizer and in the cached datasets (as in
-# the PyTorch port). The conversions are all in this file: `tokenize`, `detokenize`,
-# `tokenize_batch` and `getbatch`.
+# Token ids are 1-based in Julia, but 0-based in the tokenizer and in the cached datasets, which
+# are shared with the PyTorch port. The conversions are all in this file: `tokenize`,
+# `detokenize`, `tokenize_batch` and `getbatch`.
 const EOT = 50257   # <|endoftext|>, prepended to every document
 
 # The Hub dataset and, for each split, the Hub split and the documents taken from it. FineWeb-Edu

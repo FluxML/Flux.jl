@@ -1,8 +1,9 @@
 """PyTorch port of the Flux GPT-2 example in the parent directory (../train.jl).
 
 Adapted from Andrej Karpathy's build-nanogpt (https://github.com/karpathy/build-nanogpt, MIT
-license). It tokenizes the data into the same rows as ../data.jl, and uses the same presets,
-hyperparameters, and logging as the Flux script, so the two can be compared on the same data.
+license). It tokenizes the data as ../data.jl does, into the same cached dataset (whichever script
+runs first writes it), and uses the same presets, hyperparameters, and logging as the Flux
+script, so the two can be compared on the same data.
 Differences from build-nanogpt, to match Flux: gradients are clipped per parameter (Flux's
 `ClipNorm`), not by their global norm, and `--attn math` selects materialized attention (what
 Flux runs under Reactant) instead of flash attention.
@@ -117,7 +118,7 @@ DATASETS = {
 
 
 def token_blocks(dataset, split, block_size, data_dir, tok):
-    """Rows of block_size + 1 token ids, as made by token_blocks in ../data.jl, cached in data_dir."""
+    """Rows of block_size + 1 token ids: the same rows, split and cache as token_blocks in ../data.jl."""
     hfsplit, select = DATASETS[dataset][split]
     stream = select(load_dataset(*DATASETS[dataset]["path"], split=hfsplit, streaming=True).select_columns("text"))
     n = block_size + 1
@@ -127,7 +128,7 @@ def token_blocks(dataset, split, block_size, data_dir, tok):
         return {"ids": ids[:len(ids) // n * n].reshape(-1, n)}
 
     blocks = stream.map(pack, batched=True, batch_size=10_000, remove_columns=["text"])
-    ds = Dataset.from_generator(lambda: iter(blocks), fingerprint=f"{dataset}-{split}-gpt2-{n}",
+    ds = Dataset.from_generator(lambda: iter(blocks), split=hfsplit, fingerprint=f"{dataset}-{split}-gpt2-{n}",
                                 cache_dir=os.path.join(data_dir, dataset))
     return ds.with_format("torch")
 
