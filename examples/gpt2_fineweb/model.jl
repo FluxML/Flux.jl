@@ -1,7 +1,7 @@
 # GPT-2: a stack of pre-LayerNorm transformer blocks, learned position embeddings, and an output
 # head tied to the token embedding.
 
-using Flux, Random, Statistics
+using Flux, Random
 using MLUtils: sample_logits
 
 # The two variants trained in this example. `vocab_size` pads GPT-2's 50257 tokens to a multiple of
@@ -59,15 +59,9 @@ function (m::GPT)(x::AbstractMatrix)
     return transpose(m.wte.weight) * reshape(h, size(h, 1), :)
 end
 
-# Cross-entropy of the next-token prediction, averaged over all positions, computed in Float32
-# also for a bfloat16 model. Picking the target logits by linear indexing avoids a one-hot matrix,
-# which Reactant would materialize at vocab_size × T·B.
-function lm_loss(model, x, y)
-    logits = Float32.(model(x))
-    V, N = size(logits)
-    target_logits = logits[vec(y) .+ V .* (0:N-1)]
-    return mean(logsumexp(logits; dims=1)) - mean(target_logits)
-end
+# Cross-entropy of the next-token prediction, averaged over all positions (in Float32 also for a
+# bfloat16 model).
+lm_loss(model, x, y) = Flux.logitcrossentropy(model(x), vec(y))
 
 # Sample `n` continuations of `prompt` with top-k sampling. Runs eagerly, so pass a CPU copy of
 # the model. There is no KV cache: each new token re-runs the whole context, which is cheap for the

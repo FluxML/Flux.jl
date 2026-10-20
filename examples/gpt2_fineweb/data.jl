@@ -2,7 +2,7 @@
 # token ids into rows of `block_size + 1` tokens. The rows are written once to a dataset cached in
 # `data_dir`, which `datasets` memory-maps; later runs load it from there.
 
-using HuggingFaceDatasets, HuggingFaceTokenizers, PythonCall
+using HuggingFaceDatasets, HuggingFaceTokenizers
 
 # Token ids are 1-based in Julia, but 0-based in the tokenizer and in the cached datasets, which
 # are shared with the PyTorch port. The conversions are all in this file: `tokenize`,
@@ -24,18 +24,10 @@ gpt2_tokenizer() = from_pretrained(Tokenizer, "openai-community/gpt2")
 tokenize(tok, text::AbstractString) = encode(tok, text).ids .+ 1
 detokenize(tok, ids::AbstractVector{<:Integer}) = decode(tok, ids .- 1)
 
-# The 0-based ids of a batch of documents, each prefixed with <|endoftext|>, as one numpy array.
-# `encode_batch_fast` runs in parallel in Rust, and scales well only with large batches. The ids
-# are collected in Python, so that no Julia wrapper keeps a per-document `Encoding` alive.
-const ENCODE_BATCH = pyeval("""lambda tok, texts, eot, np: np.concatenate(
-    [np.asarray([eot] + e.ids, dtype=np.uint16) for e in tok.encode_batch_fast(texts)])""", @__MODULE__)
-
-function tokenize_batch(tok, texts)
-    arr = ENCODE_BATCH(tok.py_tokenizer, texts, EOT - 1, pyimport("numpy"))
-    ids = pyconvert(Vector{UInt16}, arr)
-    PythonCall.pydel!(arr)
-    return ids
-end
+# The 0-based ids of a batch of documents, each prefixed with <|endoftext|>, concatenated.
+# `encode_batch_ids` tokenizes in parallel in Rust, and scales well only with large batches.
+tokenize_batch(tok, texts) =
+    reduce(vcat, [[UInt16(EOT - 1); ids] for ids in encode_batch_ids(tok, texts; T=UInt16)])
 
 # The `split` (`:train` or `:val`) of `dataset` ("fineweb" or "tinystories"), as rows of
 # `block_size + 1` token ids. The documents are streamed, tokenized, and concatenated and cut into

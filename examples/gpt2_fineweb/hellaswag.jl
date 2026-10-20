@@ -41,9 +41,7 @@ end
 
 # The summed next-token loss of each row over its masked positions.
 function ending_losses(model, x, y, mask)
-    logits = Float32.(model(x))
-    V, N = size(logits)
-    nll = vec(logsumexp(logits; dims=1)) .- logits[vec(y) .+ V .* (0:N-1)]
+    nll = Flux.logitcrossentropy(model(x), vec(y); agg=identity)
     return vec(sum(reshape(nll, size(x)) .* mask; dims=1))
 end
 
