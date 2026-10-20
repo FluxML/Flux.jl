@@ -194,7 +194,6 @@ dimension `dims`, e.g. a vector of length `size(ŷ, 2)` for a matrix `ŷ` and 
 The loss is then `agg(-log.(ŷ[y] .+ ϵ))`, where `ŷ[y]` are the entries of `ŷ` picked along `dims`
 by the labels, which `agg = identity` returns with the size of `y`.
 This gives the same loss as the one-hot encoding of `y`, without building it.
-Labels out of range throw an error, except on Reactant, where they are not checked.
 
 Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
@@ -259,8 +258,6 @@ As for [`crossentropy`](@ref), `y` can also hold integer class labels in `1:size
 with the size of `ŷ` without dimension `dims`. The loss is then
 `agg(logsumexp(ŷ; dims) .- ŷ[y])`, with `ŷ[y]` the entries of `ŷ` picked along `dims` by the labels,
 and has the size of `y` for `agg = identity`.
-This avoids building a one-hot array of the size of `ŷ`, which matters for many classes,
-e.g. for language models. A `y::OneHotArray` uses its labels in the same way.
 
 See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
