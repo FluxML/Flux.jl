@@ -82,6 +82,82 @@ end
   @test logitcrossentropy(logylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*logsoftmax(logylp))
 end
 
+# Dense one-hot encoding of the class labels `y` along `dims`, for comparison.
+function onehot_along(y, C, dims)
+  yhot = zeros(Bool, size(y)[1:dims-1]..., C, size(y)[dims:end]...)
+  for I in CartesianIndices(y)
+    t = Tuple(I)
+    yhot[t[1:dims-1]..., y[I], t[dims:end]...] = true
+  end
+  return yhot
+end
+
+@testset "crossentropy with class labels" begin
+  C = 4
+  @testset "size $sz, dims = $dims" for (sz, dims) in (((C, 5), 1), ((C, 2, 3), 1), ((3, C, 5), 2), ((3, 5, C), 3))
+    ŷ = randn(sz...)
+    p = softmax(ŷ; dims)
+    y = rand(1:C, sz[setdiff(1:length(sz), dims)])
+    yhot = onehot_along(y, C, dims)
+    for (loss, x) in ((logitcrossentropy, ŷ), (crossentropy, p))
+      @test loss(x, y; dims) ≈ loss(x, yhot; dims)
+      l = loss(x, y; dims, agg = identity)
+      @test size(l) == size(y)
+      @test l ≈ dropdims(loss(x, yhot; dims, agg = identity); dims)
+      if sz in ((C, 5), (3, C, 5))
+        @test gradient(x -> loss(x, y; dims), x)[1] ≈ gradient(x -> loss(x, yhot; dims), x)[1]
+      end
+    end
+  end
+
+  @testset "label types" begin
+    ŷ = randn(C, 5)
+    y = rand(1:C, 5)
+    yhot = onehot_along(y, C, 1)
+    @test logitcrossentropy(ŷ, Int32.(y)) ≈ logitcrossentropy(ŷ, yhot)
+    @test logitcrossentropy(ŷ, y; agg = sum) ≈ logitcrossentropy(ŷ, yhot; agg = sum)
+    # an integer `y` of the size of `ŷ` is still a dense target, not labels
+    @test logitcrossentropy(ŷ, Int.(yhot)) ≈ logitcrossentropy(ŷ, yhot)
+  end
+
+  @testset "single sample" begin
+    ŷ = randn(C)
+    @test logitcrossentropy(ŷ, fill(2)) ≈ logitcrossentropy(ŷ, onehot(2, 1:C))
+    @test crossentropy(softmax(ŷ), fill(2)) ≈ crossentropy(softmax(ŷ), onehot(2, 1:C))
+  end
+
+  @testset "OneHotArray" begin
+    for sz in ((C, 5), (C, 5, 2))
+      ŷ = randn(sz...)
+      p = softmax(ŷ)
+      y = onehotbatch(rand(1:C, sz[2:end]), 1:C)
+      for (loss, x) in ((logitcrossentropy, ŷ), (crossentropy, p))
+        @test loss(x, y) ≈ loss(x, Array(y))
+        # keeps the size of the dense loss, with a leading singleton dimension
+        @test loss(x, y; agg = identity) ≈ loss(x, Array(y); agg = identity)
+        @test size(loss(x, y; agg = identity)) == (1, sz[2:end]...)
+        if length(sz) == 2
+          @test gradient(x -> loss(x, y), x)[1] ≈ gradient(x -> loss(x, Array(y)), x)[1]
+        end
+      end
+    end
+    @test_throws DimensionMismatch logitcrossentropy(randn(C + 1, 5), onehotbatch(rand(1:C, 5), 1:C))
+  end
+
+  @testset "errors" begin
+    ŷ = randn(C, 5)
+    y = rand(1:C, 5)
+    for loss in (logitcrossentropy, crossentropy)
+      @test_throws ArgumentError loss(ŷ, [0; y[2:end]])
+      @test_throws ArgumentError loss(ŷ, [y[1:end-1]; C + 1])
+      @test_throws DimensionMismatch loss(ŷ, y[1:end-1])
+      @test_throws DimensionMismatch loss(ŷ, y; dims = 2)
+      @test_throws ArgumentError loss(ŷ, y; dims = 3)
+      @test_throws DimensionMismatch loss(ŷ, reshape(y, 1, :))
+    end
+  end
+end
+
 logŷ, y = randn(3), rand(3)
 yls = y.*(1-2sf).+sf
 
@@ -159,6 +235,40 @@ end
       @test fwd isa T
       @test eltype(back(one(T))[1]) == T
     end
+  end
+end
+
+@testset "Float16 and BFloat16 inputs are computed in Float32" begin
+  ŷ32 = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+  y32 = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+  @testset "$T, $f" for (T, lowprec) in ((Float16, f16), (BFloat16, bf16)), f in ALL_LOSSES
+    ŷ, y = lowprec(ŷ32), lowprec(y32)
+    l, (dŷ, dy) = withgradient(f, ŷ, y)
+    l32, (dŷ32, dy32) = withgradient(f, Float32.(ŷ), Float32.(y))
+    @test l isa Float32
+    @test l ≈ l32
+    @test eltype(dŷ) == eltype(dy) == T
+    @test dŷ ≈ lowprec(dŷ32)
+    @test dy ≈ lowprec(dy32)
+  end
+
+  @testset "sums don't stall" begin
+    x = randn(Float32, 100, 4096)
+    labels = rand(1:100, 4096)
+    for lowprec in (f16, bf16)
+      x16 = lowprec(x)
+      @test logitcrossentropy(x16, labels) ≈ logitcrossentropy(Float32.(x16), labels)
+      @test logitcrossentropy(x16, onehotbatch(labels, 1:100)) ≈ logitcrossentropy(Float32.(x16), labels)
+      @test crossentropy(softmax(x16), labels) ≈ crossentropy(Float32.(softmax(x16)), labels)
+    end
+    @test mse(fill(Float16(300), 10), zeros(Float16, 10)) == 90000
+  end
+
+  @testset "$T model keeps $T gradients" for (T, lowprec) in ((Float16, f16), (BFloat16, bf16))
+    m = lowprec(Dense(3 => 4))
+    x = lowprec(rand(Float32, 3, 5))
+    g = gradient(m -> logitcrossentropy(m(x), rand(1:4, 5)), m)[1]
+    @test eltype(g.weight) == eltype(g.bias) == T
   end
 end
 
