@@ -13,6 +13,14 @@
   @test xlogy(2, 3) ≈ 2.0 * log(3.0)
   @inferred xlogy(2, 3)
   @inferred xlogy(0, 1)
+
+  # https://github.com/FluxML/Flux.jl/issues/2762
+  @test Zygote.gradient(xlogx, 2.0)[1] ≈ log(2.0) + 1
+  x = [0.5, 2.0]
+  @test Zygote.gradient(x -> sum(xlogx, x), x)[1] ≈ log.(x) .+ 1
+  @test Zygote.gradient(x -> sum(map(xlogx, x)), x)[1] ≈ log.(x) .+ 1
+  @test Zygote.gradient(x -> sum(xlogx.(x)), x)[1] ≈ log.(x) .+ 1
+  @test Zygote.gradient(xlogy, 2.0, 3.0) == (log(3.0), 2.0 / 3.0)
 end
 
 # First, regression-style y's
