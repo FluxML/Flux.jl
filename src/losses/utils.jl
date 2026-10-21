@@ -25,7 +25,7 @@ end
 end
 
 ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # should help Diffractor's broadcasting
-ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
+ChainRulesCore.@scalar_rule xlogx(x) (log(x) + true)
 
 const LowPrecision = Union{Float16, BFloat16}
 
