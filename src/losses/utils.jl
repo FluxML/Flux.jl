@@ -41,8 +41,10 @@ function ChainRulesCore.rrule(::typeof(_upcast), x::Union{LowPrecision, Abstract
   return _upcast(x), _upcast_back
 end
 
-_downcast(::Type{T}, Δ::Union{Real, AbstractArray{<:Real}}) where {T} = T.(Δ)
-_downcast(::Type{BFloat16}, Δ::Union{Real, AbstractArray{<:Real}}) = _to_bf16(Δ)
+_downcast(::Type{T}, Δ::Real) where {T} = T(Δ)
+_downcast(::Type{BFloat16}, Δ::Real) = _to_bf16(Δ)
+_downcast(::Type{T}, Δ::AbstractArray{<:Real}) where {T} = T.(Δ)
+_downcast(::Type{BFloat16}, Δ::AbstractArray{<:Real}) = _to_bf16(Δ)
 _downcast(::Type, Δ) = Δ
 
 # The eltype that `_upcast` converts to, for the defaults of keywords such as `eps`.
@@ -109,3 +111,45 @@ _check_label_values(y, C) = all(l -> 1 <= l <= C, y) || throw(ArgumentError(
 
 ChainRulesCore.@non_differentiable _islabels(::Any...)
 ChainRulesCore.@non_differentiable _label_indices(::Any...)
+
+# `logitcrossentropy(ŷ, y; dims, agg = identity)` for class labels `y`, with the size of
+# `_gather_labels(ŷ, y, dims)`.
+_logitce_labels(ŷ::AbstractArray, y::AbstractArray, dims::Integer) = _logitce(ŷ, y, dims)
+
+function _logitce_labels(ŷ::AbstractArray, y::OneHotArray, dims::Integer)
+  labels = _indices(y)
+  return reshape(_logitce(ŷ, labels, dims), 1, size(labels)...)
+end
+
+# `logsumexp(ŷ; dims) .- ŷ[y]` for integer labels `y`, accumulated in Float32 for low-precision `ŷ`.
+# Its rule writes the cotangent `(softmax(ŷ; dims) .- onehot(y)) .* Δ` in one broadcast, in the
+# eltype of `ŷ`.
+function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels first
+  return reshape(_logsumexp(ŷ, dims), size(y)) .- ŷy
+end
+
+# `logsumexp(x; dims)` in at least Float32. On GPUs, the maximum and the sum of exponentials each
+# read `x` once, without a Float32 copy of `x`; Base can't reduce a lazy broadcast along `dims`.
+_logsumexp(x::AbstractArray, dims::Integer) = logsumexp(_upcast(x); dims)
+
+function _logsumexp(x::AnyGPUArray, dims::Integer)
+  m = maximum(_upcast, x; dims)
+  s = sum(Broadcast.instantiate(Broadcast.broadcasted((x, m) -> exp(_upcast(x) - m), x, m)); dims)
+  return m .+ log.(s)
+end
+
+function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  ŷy = _upcast(_gather_labels(ŷ, y, dims))
+  lse = _logsumexp(ŷ, dims)
+  ℓ = reshape(lse, size(y)) .- ŷy
+  function _logitce_back(Δ)
+    sz = size(lse)
+    class = reshape(axes(ŷ, dims), ntuple(d -> d == dims ? size(ŷ, d) : 1, Val(ndims(ŷ))))
+    dŷ = _logitce_grad.(ŷ, lse, class .== reshape(y, sz), reshape(unthunk(Δ), sz))
+    return NoTangent(), dŷ, NoTangent(), NoTangent()
+  end
+  return ℓ, _logitce_back
+end
+
+_logitce_grad(x::T, lse, isy, Δ) where {T} = _downcast(float(T), (exp(_upcast(x) - lse) - isy) * Δ)

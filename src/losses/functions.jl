@@ -291,11 +291,8 @@ julia> Flux.logitcrossentropy(y_model, [1, 2, 3, 1, 2, 1, 1])  # integer class l
 ```
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
+  _islabels(ŷ, y, dims) && return agg(_logitce_labels(ŷ, y, dims))
   ŷ, y = _upcast(ŷ), _upcast(y)
-  if _islabels(ŷ, y, dims)
-    ŷy = _gather_labels(ŷ, y, dims)
-    return agg(reshape(logsumexp(ŷ; dims), size(ŷy)) .- ŷy)
-  end
   _check_sizes(ŷ, y)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end

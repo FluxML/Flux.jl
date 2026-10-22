@@ -112,9 +112,9 @@ end
       l = loss(x, y; dims, agg = identity)
       @test size(l) == size(y)
       @test l ≈ dropdims(loss(x, yhot; dims, agg = identity); dims)
-      if sz in ((C, 5), (3, C, 5))
-        @test gradient(x -> loss(x, y; dims), x)[1] ≈ gradient(x -> loss(x, yhot; dims), x)[1]
-      end
+      @test gradient(x -> loss(x, y; dims), x)[1] ≈ gradient(x -> loss(x, yhot; dims), x)[1]
+      agg = l -> sum(abs2, l)
+      @test gradient(x -> loss(x, y; dims, agg), x)[1] ≈ gradient(x -> loss(x, yhot; dims, agg), x)[1]
     end
   end
 
@@ -268,6 +268,9 @@ end
       @test logitcrossentropy(x16, labels) ≈ logitcrossentropy(Float32.(x16), labels)
       @test logitcrossentropy(x16, onehotbatch(labels, 1:100)) ≈ logitcrossentropy(Float32.(x16), labels)
       @test crossentropy(softmax(x16), labels) ≈ crossentropy(Float32.(softmax(x16)), labels)
+      g = gradient(x -> logitcrossentropy(x, labels), x16)[1]
+      @test g isa Matrix{eltype(x16)}
+      @test g ≈ lowprec(gradient(x -> logitcrossentropy(x, labels), Float32.(x16))[1])
     end
     @test mse(fill(Float16(300), 10), zeros(Float16, 10)) == 90000
   end
