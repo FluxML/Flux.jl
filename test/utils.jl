@@ -303,6 +303,9 @@ end
   # BFloat16
   @test eltype(bf16(m)[1].weight) == BFloat16
   @test eltype(bf16(m)(x32)) == BFloat16  # _match_eltype converts the input
+  xb = bf16(x32)
+  @test Flux._match_eltype(bf16(m)[1], xb) === xb  # doesn't copy when eltype is OK
+  @test bf16(m[2])(onehotbatch([1, 3], 1:5)) ≈ bf16(m[2])(bf16(Float32.(onehotbatch([1, 3], 1:5))))
   @test eltype(f32(bf16(m))[1].weight) == Float32
   @test bf16(x64) isa Vector{BFloat16}
   @test bf16(x32) isa Vector{BFloat16}
