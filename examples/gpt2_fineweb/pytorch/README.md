@@ -1,11 +1,12 @@
 # PyTorch port — GPT-2 pretraining
 
-A PyTorch version of the Flux example in the parent directory ([`../train.jl`](../train.jl)),
-adapted from Karpathy's [build-nanogpt](https://github.com/karpathy/build-nanogpt) (MIT license)
-to match it: it tokenizes the data as [`../data.jl`](../data.jl) does, into the same cached
-dataset in `../data/` (whichever script runs first writes it, the other loads it), and has the
-same presets, model, initialization, optimizer, schedule, evaluation and log format, so the two
-can be compared on the same GPU and the same tokens.
+A PyTorch version of the Flux [GPT-2 example](../README.md)
+([`../flux-reactant/train.jl`](../flux-reactant/train.jl)), adapted from Karpathy's
+[build-nanogpt](https://github.com/karpathy/build-nanogpt) (MIT license) to match it: it tokenizes
+the data as [`../flux-reactant/data.jl`](../flux-reactant/data.jl) does, into the same cached
+dataset in `../data/` (whichever script runs first writes it, the others load it), and has the
+same presets, model, initialization, optimizer, schedule, evaluation and log format, so they can
+be compared on the same GPU and the same tokens.
 
 Two choices follow Flux rather than build-nanogpt: gradients are clipped per parameter (Flux's
 `ClipNorm`) instead of by their global norm, and `--attn math` selects materialized attention —

@@ -1,9 +1,9 @@
-"""PyTorch port of the Flux GPT-2 example in the parent directory (../train.jl).
+"""PyTorch port of the Flux GPT-2 example (../flux-reactant/train.jl).
 
 Adapted from Andrej Karpathy's build-nanogpt (https://github.com/karpathy/build-nanogpt, MIT
-license). It tokenizes the data as ../data.jl does, into the same cached dataset (whichever script
-runs first writes it), and uses the same presets, hyperparameters, and logging as the Flux
-script, so the two can be compared on the same data.
+license). It tokenizes the data as ../flux-reactant/data.jl does, into the same cached dataset
+(whichever script runs first writes it), and uses the same presets, hyperparameters, and logging
+as the Flux scripts, so they can be compared on the same data.
 Differences from build-nanogpt, to match Flux: gradients are clipped per parameter (Flux's
 `ClipNorm`), not by their global norm, and `--attn math` selects materialized attention (what
 Flux runs under Reactant) instead of flash attention.
@@ -118,7 +118,8 @@ DATASETS = {
 
 
 def token_blocks(dataset, split, block_size, data_dir, tok):
-    """Rows of block_size + 1 token ids: the same rows, split and cache as token_blocks in ../data.jl."""
+    """Rows of block_size + 1 token ids: the same rows, split and cache as token_blocks in
+    ../flux-reactant/data.jl."""
     hfsplit, select = DATASETS[dataset][split]
     stream = select(load_dataset(*DATASETS[dataset]["path"], split=hfsplit, streaming=True).select_columns("text"))
     n = block_size + 1
@@ -184,7 +185,7 @@ def hellaswag_eval(model, examples, autocast, device="cuda"):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Pretrain GPT-2 with PyTorch (port of ../train.jl).")
+    ap = argparse.ArgumentParser(description="Pretrain GPT-2 with PyTorch (port of ../flux-reactant/train.jl).")
     here = os.path.dirname(os.path.abspath(__file__))
     ap.add_argument("--preset", default="tinystories", choices=PRESETS)
     ap.add_argument("--data-dir", default=os.path.join(here, "..", "data"))
