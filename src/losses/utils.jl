@@ -116,12 +116,12 @@ ChainRulesCore.@non_differentiable _label_indices(::Any...)
 # `(softmax(ŷ; dims) .- onehot(y)) .* Δ` in one broadcast, in the eltype of `ŷ`.
 function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels before reducing ŷ
-  return reshape(_logsumexp(ŷ, dims), size(ŷy)) .- ŷy
+  return reshape(logsumexp(_upcast(ŷ); dims), size(ŷy)) .- ŷy
 end
 
 function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   ŷy = _upcast(_gather_labels(ŷ, y, dims))
-  lse = _logsumexp(ŷ, dims)
+  lse = logsumexp(_upcast(ŷ); dims)
   function _logitce_back(Δ)
     class = reshape(axes(ŷ, dims), ntuple(d -> d == dims ? size(ŷ, d) : 1, Val(ndims(ŷ))))
     labels, Δ = reshape(_labels(y), size(lse)), reshape(unthunk(Δ), size(lse))
@@ -134,14 +134,3 @@ _logitce_grad(x::T, lse, isy, Δ) where {T} = _downcast(float(T), (exp(_upcast(x
 
 _labels(y::AbstractArray) = y
 _labels(y::OneHotArray) = _indices(y)
-
-# `logsumexp(x; dims)` in at least Float32. On GPUs, the maximum and the sum of exponentials each
-# read `x` once, without a Float32 copy. On the CPU, Base reduces a lazy broadcast along `dims`
-# several times slower than this copy, or not at all on Julia 1.10.
-_logsumexp(x::AbstractArray, dims::Integer) = logsumexp(_upcast(x); dims)
-
-function _logsumexp(x::AnyGPUArray, dims::Integer)
-  m = maximum(_upcast, x; dims)
-  s = sum(Broadcast.instantiate(Broadcast.broadcasted((x, m) -> exp(_upcast(x) - m), x, m)); dims)
-  return m .+ log.(s)
-end
