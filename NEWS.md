@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- The Mooncake rule for `Flux.Losses.mse` moves here from Mooncake's own Flux extension. It is loaded once Mooncake no longer ships that extension, so nothing changes with current Mooncake releases ([chalk-lab/Mooncake.jl#1371](https://github.com/chalk-lab/Mooncake.jl/issues/1371)).
 - Layers with `BFloat16` weights no longer copy `BFloat16` input, and accept one-hot input, which threw a method ambiguity error ([#2766](https://github.com/FluxML/Flux.jl/issues/2766)).
 - Fix the gradient of `Flux.Losses.xlogx`, whose rule threw an `UndefVarError` with Zygote outside of broadcasting, e.g. in `sum(xlogx, x)`, and with any AD that uses ChainRules scalar rules ([#2762](https://github.com/FluxML/Flux.jl/issues/2762)).
 - `crossentropy` and `logitcrossentropy` accept integer class labels as `y`, as PyTorch's `cross_entropy` does: an array with the size of `ŷ` without dimension `dims`, holding labels in `1:size(ŷ, dims)`, e.g. a vector of length `size(ŷ, 2)` for a matrix `ŷ`. The loss picks the entries of `ŷ` of the true classes instead of building a one-hot array of the size of `ŷ`, which saves memory and time for many classes, as in language models. With `agg = identity`, the losses have the size of `y`. A `y::OneHotArray` now takes the same path, with the same results as before ([#2756](https://github.com/FluxML/Flux.jl/issues/2756)).

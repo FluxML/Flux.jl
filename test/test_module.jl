@@ -21,6 +21,21 @@ using Statistics
 using Test
 using Zygote: Zygote
 
+# While Mooncake ships its own copy of the rules for Flux functions, Flux's extension does not
+# load its own (see `ext/FluxMooncakeExt`). Swap them in, so that the copy under test is Flux's.
+# Mooncake's are deleted first: a rule missing from ours must not fall back to it.
+let ours = Base.get_extension(Flux, :FluxMooncakeExt),
+    theirs = Base.get_extension(Mooncake, :MooncakeFluxExt)
+
+    # A worker loads this file once per test file it runs, and must swap only once.
+    if theirs !== nothing && !isempty(methods(Mooncake.rrule!!, theirs))
+        for f in (Mooncake.rrule!!, Mooncake._is_primitive)
+            foreach(Base.delete_method, methods(f, theirs))
+        end
+        Base.include(ours, joinpath(pkgdir(Flux), "ext", "FluxMooncakeExt", "rules.jl"))
+    end
+end
+
 
 for pkg in [:CUDA, :AMDGPU, :Metal, :Enzyme, :Reactant, :MPI, :NCCL]
     if Base.find_package(string(pkg)) !== nothing
