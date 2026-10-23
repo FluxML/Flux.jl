@@ -167,6 +167,10 @@ The input is expected to have first dimensions' size equal to `size`.
 If `affine=true`, it also applies a learnable shift and rescaling
 using the [`Scale`](@ref) layer.
 
+The forward pass is computed by [`NNlib.layernorm`](@ref), which uses cuDNN
+for `Float32` and `Float64` CUDA arrays. Half-precision (`Float16`/`BFloat16`)
+input is normalised in `Float32`, and the output keeps the input's element type.
+
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), and [`GroupNorm`](@ref).
 
 # Examples
@@ -206,7 +210,12 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  a.diag(NNlib.normalise(x; dims=1:length(a.size), eps=a.ϵ))
+  dims = 1:length(a.size)
+  if a.diag isa Scale && a.diag.bias isa AbstractArray
+    y = NNlib.layernorm(a.diag.scale, a.diag.bias, x; dims, eps=a.ϵ)
+    return a.diag.σ === identity ? y : NNlib.fast_act(a.diag.σ, y).(y)
+  end
+  return a.diag(NNlib.layernorm(nothing, nothing, x; dims, eps=a.ϵ))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -510,13 +519,12 @@ See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`Laye
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
 
-# Under `f16`/`bf16`, keep the statistics and affine parameters of `BatchNorm`,
-# `InstanceNorm` and `GroupNorm` in `Float32` (mixed precision). `NNlib.batchnorm`,
-# `NNlib.instancenorm` and `NNlib.groupnorm` require `Float32` scale/bias/statistics
+# Under `f16`/`bf16`, keep the statistics and affine parameters of the normalization
+# layers in `Float32` (mixed precision). `NNlib.batchnorm`, `NNlib.instancenorm`,
+# `NNlib.groupnorm` and `NNlib.layernorm` require `Float32` scale/bias/statistics
 # for half-precision feature maps (as does cuDNN), and half-precision running
-# statistics are numerically poor. `LayerNorm` is excluded: it wraps `NNlib.normalise`,
-# which takes no scale/bias, so it has no such requirement. See `_paramtype`.
-_keep_f32_under_halfprec(::Union{BatchNorm, InstanceNorm, GroupNorm}) = true
+# statistics are numerically poor. See `_paramtype`.
+_keep_f32_under_halfprec(::Union{BatchNorm, InstanceNorm, GroupNorm, LayerNorm}) = true
 
 struct WeightNorm{L, G, D}
     layer::L
