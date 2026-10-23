@@ -211,10 +211,11 @@ Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
 
-The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
-*mixed precision*: their statistics and affine parameters are kept in `Float32` while
-the data flowing through stays in `Float16`. This matches the functional operators in
-NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
+The normalization layers `BatchNorm`, `InstanceNorm`, `GroupNorm` and `LayerNorm` are
+converted in *mixed precision*: their statistics and affine parameters are kept in
+`Float32` while the data flowing through stays in `Float16`. This matches the functional
+operators in NNlib (and cuDNN), which require `Float32` parameters for half-precision
+feature maps.
 
 See also [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
 
@@ -249,10 +250,11 @@ is less prone to overflow/underflow, and is well supported on modern GPUs.
 Support for `BFloat16` is limited on many CPUs, where Julia may convert to `Float32`
 for each operation.
 
-The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
-*mixed precision*: their statistics and affine parameters are kept in `Float32` while
-the data flowing through stays in `BFloat16`. This matches the functional operators in
-NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
+The normalization layers `BatchNorm`, `InstanceNorm`, `GroupNorm` and `LayerNorm` are
+converted in *mixed precision*: their statistics and affine parameters are kept in
+`Float32` while the data flowing through stays in `BFloat16`. This matches the functional
+operators in NNlib (and cuDNN), which require `Float32` parameters for half-precision
+feature maps.
 
 See also [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
 
