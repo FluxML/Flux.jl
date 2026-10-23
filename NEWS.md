@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `focal_loss` and `tversky_loss` no longer accept the keywords `γ`, `ϵ` and `β`, which were silently ignored since the deprecation of the Greek keyword names was removed. Pass `gamma`, `eps` and `beta` instead ([#2778](https://github.com/FluxML/Flux.jl/issues/2778)).
 - `LayerNorm` computes its forward pass with `NNlib.layernorm`, instead of `NNlib.normalise` followed by the `Scale` layer. It is faster, uses cuDNN for `Float32` and `Float64` CUDA arrays, and normalises `Float16`/`BFloat16` input in `Float32`. Like the other normalization layers, `LayerNorm` is now converted by `f16` and `bf16` in mixed precision, keeping its scale and bias in `Float32`, and its output has the element type of the input. Note the behavior change: `LayerNorm` parameters are no longer downcast to `Float16`/`BFloat16` ([#2771](https://github.com/FluxML/Flux.jl/issues/2771)).
 - Layers with `BFloat16` weights no longer copy `BFloat16` input, and accept one-hot input, which threw a method ambiguity error ([#2766](https://github.com/FluxML/Flux.jl/issues/2766)).
 - Fix the gradient of `Flux.Losses.xlogx`, whose rule threw an `UndefVarError` with Zygote outside of broadcasting, e.g. in `sum(xlogx, x)`, and with any AD that uses ChainRules scalar rules ([#2762](https://github.com/FluxML/Flux.jl/issues/2762)).

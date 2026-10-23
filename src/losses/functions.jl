@@ -560,7 +560,7 @@ Calculated as:
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
 """
-function tversky_loss(ŷ, y; beta::Real = 0.7, β = nothing)
+function tversky_loss(ŷ, y; beta::Real = 0.7)
   ŷ, y = _upcast(ŷ), _upcast(y)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
@@ -644,7 +644,7 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ=nothing, γ=nothing)
+function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
   _check_sizes(ŷ, y)

@@ -232,6 +232,8 @@ end
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  # the old Greek keyword `β` is not accepted, rather than silently ignored
+  @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
 end
 
 @testset "no spurious promotions" begin
@@ -309,6 +311,9 @@ end
     @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; gamma=0) ≈ Flux.crossentropy(ŷ, y)
+    # the old Greek keywords `γ`, `ϵ` are not accepted, rather than silently ignored
+    @test_throws MethodError Flux.focal_loss(ŷ, y; γ=0)
+    @test_throws MethodError Flux.focal_loss(ŷ, y; ϵ=0.1)
 end
   
 @testset "siamese_contrastive_loss" begin
