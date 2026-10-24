@@ -302,13 +302,13 @@ end
 # in the eltype of `ŷ`: a broadcast over `ŷ`, then an update of the entries of the labels.
 function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels before reducing ŷ
-  return reshape(_logsumexp(ŷ, dims), size(ŷy)) .- ŷy
+  return reshape(logsumexp(ŷ; dims), size(ŷy)) .- ŷy
 end
 
 function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   idx = _label_indices(ŷ, y, dims)
   ŷy = _upcast(_gather(ŷ, idx))
-  lse = _logsumexp(ŷ, dims)
+  lse = logsumexp(ŷ; dims)
   function _logitce_back(Δ)
     T, lseΔ = float(eltype(ŷ)), tuple.(lse, reshape(unthunk(Δ), size(lse)))
     # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
@@ -322,10 +322,6 @@ end
 
 # Inlined, so that NNlib's `_exp`, unlike Base's `exp`, vectorizes on the CPU.
 @inline _logitce_grad(::Type{T}, x, (lse, Δ), isy) where {T} = _downcast(T, (NNlib._exp(_upcast(x) - lse) - isy) * Δ)
-
-# For low-precision `ŷ`, `logsumexp` accumulates in Float32 and returns Float32, without copying `ŷ`.
-# Overloaded for traced arrays in FluxReactantExt.
-_logsumexp(ŷ::AbstractArray, dims::Integer) = logsumexp(ŷ; dims)
 
 """
     binarycrossentropy(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
