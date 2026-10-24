@@ -1,0 +1,158 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Backends · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li><a class="toctext" href="../models/basics.html">
+Model Building Basics
+              </a></li><li><a class="toctext" href="../models/templates.html">
+Model Templates
+              </a></li><li><a class="toctext" href="../models/recurrent.html">
+Recurrence
+              </a></li><li><a class="toctext" href="../models/debugging.html">
+Debugging
+              </a></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li><a class="toctext" href="batching.html">
+Batching
+              </a></li><li class="current"><a class="toctext" href="backends.html">
+Backends
+              </a><ul class="internal"><li><a class="toctext" href="#Basic-Usage-1">
+Basic Usage
+                  </a></li><li><a class="toctext" href="#Native-Integration-1">
+Native Integration
+                  </a></li></ul></li><li><a class="toctext" href="storage.html">
+Storing Models
+              </a></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Logistic Regression
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Other APIs
+            </li><li><a href="backends.html">
+Backends
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1c317eeefec910170cc72a4fe09ac54e187b3624/docs/src/apis/backends.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Backends-1" id="Backends-1">
+Backends
+        </a></h1><h2><a class="nav-anchor" href="#Basic-Usage-1" id="Basic-Usage-1">
+Basic Usage
+        </a></h2><pre><code class="language-julia">model = Chain(Affine(10, 20), σ, Affine(20, 15), softmax)
+xs = rand(10)</code></pre><p>
+Currently, Flux's pure-Julia backend has no optimisations. This means that calling
+      </p><pre><code class="language-julia">model(rand(10)) #&gt; [0.0650, 0.0655, ...]</code></pre><p>
+directly won't have great performance. In order to run a computationally intensive training process, we rely on a backend like MXNet or TensorFlow.
+      </p><p>
+This is easy to do. Just call either 
+<code>mxnet</code>
+ or 
+<code>tf</code>
+ on a model to convert it to a model of that kind:
+      </p><pre><code class="language-julia">mxmodel = mxnet(model, (10, 1))
+mxmodel(xs) #&gt; [0.0650, 0.0655, ...]
+# or
+tfmodel = tf(model)
+tfmodel(xs) #&gt; [0.0650, 0.0655, ...]</code></pre><p>
+These new models look and feel exactly like every other model in Flux, including returning the same result when you call them, and can be trained as usual using 
+<code>Flux.train!()</code>
+. The difference is that the computation is being carried out by a backend, which will usually give a large speedup.
+      </p><h2><a class="nav-anchor" href="#Native-Integration-1" id="Native-Integration-1">
+Native Integration
+        </a></h2><p>
+Flux aims to provide high-level APIs that work well across backends, but in some cases you may want to take advantage of features specific to a given backend. In these cases it's easy to "drop down" and use the backend's API directly, where appropriate. For example:
+      </p><pre><code class="language-julia">using MXNet
+Flux.loadmx()
+
+mxmodel = mx.FeedForward(model)</code></pre><p>
+This returns a standard 
+<code>mx.FeedForward</code>
+ instance, just like you might have created using MXNet's usual API. You can then use this with MXNet's data provider implementation, custom optimisers, or distributed training processes.
+      </p><p>
+Same goes for TensorFlow, where it's easy to create a 
+<code>Tensor</code>
+ object:
+      </p><pre><code class="language-julia">using TensorFlow
+Flux.loadtf()
+
+x  = placeholder(Float32)
+y = Tensor(model, x)</code></pre><p>
+This makes makes it easy to take advantage of Flux's model description and debugging tools while also getting the benefit of the work put into these backends. You can check out how this looks with the integration examples 
+        <a href="https://github.com/MikeInnes/Flux.jl/tree/master/examples">
+here
+        </a>
+.
+      </p><footer><hr/><a class="previous" href="batching.html"><span class="direction">
+Previous
+          </span><span class="title">
+Batching
+          </span></a><a class="next" href="storage.html"><span class="direction">
+Next
+          </span><span class="title">
+Storing Models
+          </span></a></footer></article></body></HTML>
