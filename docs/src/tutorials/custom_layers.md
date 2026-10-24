@@ -80,6 +80,36 @@ Flux.@layer Affine trainable=(W,)
 
 There is a second, more severe, kind of restriction possible. This is not recommended, but is included here for completeness. Calling `Functors.@functor Affine (W,)` means that no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
 
+## [Customising the precision of a layer](@id man-custom-precision)
+
+[`f32`](@ref), [`f64`](@ref), [`f16`](@ref) and [`bf16`](@ref) change the element type of the floating point arrays in a model. They walk through the model and call a 2-argument method, such as `f16(x, cx)`, on each part `x` of it. By default this method converts arrays, and recurses into the fields of other structs. A layer can change how it is converted by adding a method of this form, which is then used wherever the layer appears in a model.
+
+For example, normalization layers often keep their parameters in `Float32` while the data flowing through them is in `Float16` or `BFloat16`, as Flux's own [`BatchNorm`](@ref) and [`LayerNorm`](@ref) do. To do the same for a custom layer, convert it with `f32`:
+
+```julia
+Flux.f16(m::MyNorm, cx) = f32(m, cx)
+Flux.bf16(m::MyNorm, cx) = f32(m, cx)
+```
+
+A method can also convert each field differently. This keeps a buffer of frequencies in `Float32`, while the rest of the layer becomes `BFloat16`:
+
+```julia
+struct Rotary{D, V}
+  proj::D
+  freqs::V
+end
+
+Flux.@layer Rotary
+
+Flux.bf16(r::Rotary, cx) = Rotary(bf16(r.proj, cx), f32(r.freqs, cx))
+```
+
+When writing such a method:
+
+- Pass `cx` on to the conversion of the fields. It remembers the arrays already converted, so that an array used in several places in the model, such as tied weights, is converted once and stays shared.
+- Define the 2-argument method. A 1-argument method such as `Flux.f16(m::MyNorm)` is only used when the layer itself is the argument, not when it is part of a larger model.
+- Return a layer with the same fields, changing only their element types. The gradient of a conversion, as in `gradient(m -> loss(bf16(m), x), m)`, treats it as the identity, and maps the gradient of each field back to the same field of the input.
+
 ## Custom multiple input or output layer
 
 Sometimes a model needs to receive several separate inputs at once or produce several separate outputs at once. In other words, there multiple paths within this high-level layer, each processing a different input or producing a different output. A simple example of this in machine learning literature is the [inception module](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Szegedy_Rethinking_the_Inception_CVPR_2016_paper.pdf).
