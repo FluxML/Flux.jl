@@ -132,6 +132,10 @@ end
     ŷ = randn(C)
     @test logitcrossentropy(ŷ, fill(2)) ≈ logitcrossentropy(ŷ, onehot(2, 1:C))
     @test crossentropy(softmax(ŷ), fill(2)) ≈ crossentropy(softmax(ŷ), onehot(2, 1:C))
+    for (loss, x) in ((logitcrossentropy, ŷ), (crossentropy, softmax(ŷ)))
+      @test gradient(x -> loss(x, fill(2)), x)[1] ≈ gradient(x -> loss(x, onehot(2, 1:C)), x)[1]
+      @test gradient(x -> loss(x, fill(2); agg = sum), x)[1] ≈ gradient(x -> loss(x, onehot(2, 1:C); agg = sum), x)[1]
+    end
   end
 
   @testset "OneHotArray" begin
