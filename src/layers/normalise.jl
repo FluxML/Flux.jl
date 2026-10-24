@@ -571,11 +571,11 @@ true
 Salimans & Kingma, _Weight Normalization_ (2016) <https://arxiv.org/abs/1602.07868>
 """
 function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
-    hasfield(L, which) || throw(ArgumentError("`$L` does not have field `:$which`."))
+    hasfield(L, which) || throw(ArgumentError(lazy"`$L` does not have field `:$which`."))
 
     x = getfield(layer, which)
     iszero(x) && throw(ArgumentError(
-        "`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
+        lazy"`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
 
     d = if dims isa Colon
         1:ndims(x)

@@ -13,11 +13,15 @@ conv_reshape_bias(bias::AbstractVector, stride) = reshape(bias, map(_->1, stride
 # `:zeros` is handled natively by the convolution kernels (no pre-padding).
 const _PAD_MODES = (:zeros, :circular, :reflect, :replicate, :symmetric)
 
-function _check_pad_mode(pad_mode)
+# Without `repr` in the `Symbol` method: inferring it costs ~1 s on the first `Conv`,
+# even when nothing is thrown (#2780).
+function _check_pad_mode(pad_mode::Symbol)
   pad_mode in _PAD_MODES || throw(ArgumentError(
-    "Unsupported pad_mode $(repr(pad_mode)). Supported modes are $(_PAD_MODES)."))
+    lazy"Unsupported pad_mode :$(pad_mode). Supported modes are $(_PAD_MODES)."))
   return pad_mode
 end
+_check_pad_mode(pad_mode) =
+  throw(ArgumentError(lazy"pad_mode must be a Symbol, got $(repr(pad_mode))."))
 
 # Pad the spatial dimensions of `x` according to `pad_mode` (identity for `:zeros`,
 # whose padding is applied by the convolution itself). `pad` is a `2N`-tuple
@@ -235,7 +239,7 @@ function _print_conv_opt(io::IO, l)
   l.σ == identity || print(io, ", ", l.σ)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
   if hasproperty(l, :pad_mode)
-    (l.pad_mode === :zeros) || print(io, ", pad_mode=", repr(l.pad_mode))
+    (l.pad_mode === :zeros) || print(io, ", pad_mode=:", l.pad_mode)
   end
   all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
   all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
@@ -548,7 +552,7 @@ This is internally used to validate weight initialization functions.
 function _sizecheck(f, sz::Integer...)
   W = f(sz...)
   size(W) == sz || throw(DimensionMismatch(
-      "Weight shape mismatch: expected $(sz), got $(size(W))",
+      lazy"Weight shape mismatch: expected $(sz), got $(size(W))",
   ))
   W
 end
