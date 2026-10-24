@@ -219,6 +219,9 @@ Flux.Losses._gather(x::Reactant.AnyTracedRArray, idx::AbstractArray) = x[idx]
 # A traced array has eltype `TracedRNumber{T}`. Enzyme converts the gradient of the upcast back to `T`.
 Flux.Losses._upcast(x::Reactant.AnyTracedRArray{<:Flux.Losses.LowPrecision}) = Float32.(x)
 Flux.Losses._upcasttype(::Type{Reactant.TracedRNumber{T}}) where {T <: Flux.Losses.LowPrecision} = Float32
+# NNlib's `logsumexp` accumulates a traced `Float16`/`BFloat16` array in its own eltype.
+Flux.Losses._logsumexp(ŷ::Reactant.AnyTracedRArray{<:Flux.Losses.LowPrecision}, dims::Integer) =
+    Flux.Losses.logsumexp(Float32.(ŷ); dims)
 
 _require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(
