@@ -361,6 +361,66 @@ end
   end
 end
 
+# Layers with their own precision conversion, through the 2-argument methods of f16 etc.
+struct PrecisionNorm{V}
+  scale::V
+end
+Flux.@layer PrecisionNorm
+(n::PrecisionNorm)(x) = n.scale .* x
+Flux.f16(n::PrecisionNorm, cx) = f32(n, cx)
+Flux.bf16(n::PrecisionNorm, cx) = f32(n, cx)
+
+struct PrecisionRotary{D, V}
+  proj::D
+  freqs::V
+end
+Flux.@layer PrecisionRotary
+(r::PrecisionRotary)(x) = r.proj(x) .* cos.(r.freqs)
+Flux.bf16(r::PrecisionRotary, cx) = PrecisionRotary(bf16(r.proj, cx), f32(r.freqs, cx))
+Flux.f64(r::PrecisionRotary, cx) = PrecisionRotary(f64(r.proj, cx), f32(r.freqs, cx))
+
+@testset "Custom precision methods" begin
+  W = randn(Float32, 4, 4)
+  m = Chain(Dense(W), SkipConnection(Chain(PrecisionNorm(ones(Float32, 4))), +),
+            PrecisionRotary(Dense(W), rand(Float32, 4)), Dense(4 => 2))
+  for (cast, T) in ((f16, Float16), (bf16, BFloat16))
+    h = cast(m)
+    @test eltype(h[1].weight) == T
+    @test eltype(h[2].layers[1].scale) == Float32  # the method applies deep in a model
+    @test h[1].weight === h[3].proj.weight  # tied arrays stay tied, also across methods
+  end
+  b = bf16(m)
+  @test eltype(b[3].proj.weight) == BFloat16
+  @test eltype(b[3].freqs) == Float32
+  @test eltype(f16(m)[3].freqs) == Float16  # no `f16` method for PrecisionRotary
+  @test eltype(f16(PrecisionNorm(ones(4))).scale) == Float32  # the layer itself as argument
+  @test eltype(f64(f16(m))[2].layers[1].scale) == Float64
+
+  bn = BatchNorm(3)
+  h = f16(Chain(bn, Dense(3 => 3), bn))
+  @test h[1] === h[3]  # a mutable layer used twice stays one layer
+
+  @testset "gradient" begin
+    x = randn(Float32, 4, 3)
+    m = Chain(Dense(W, true, tanh), LayerNorm(4), PrecisionRotary(Dense(4 => 4), rand(Float32, 4)), Dense(W))
+    loss(m) = sum(abs2, m(x))
+    g = gradient(loss, m)[1]
+    g64 = gradient(m -> loss(f64(m)), m)[1]
+    # each use of the tied `W` gets its own gradient, as without conversion
+    @test g64.layers[1].weight ≈ g.layers[1].weight
+    @test g64.layers[4].weight ≈ g.layers[4].weight
+    @test g64.layers[2].diag.scale ≈ g.layers[2].diag.scale
+    @test g64.layers[3].proj.weight ≈ g.layers[3].proj.weight
+    @test g64.layers[3].freqs ≈ g.layers[3].freqs
+    @test eltype(g64.layers[1].weight) == Float32
+    @test eltype(g64.layers[3].freqs) == Float32
+
+    gb = gradient(m -> loss(bf16(m)), m)[1]
+    @test eltype(gb.layers[1].weight) == Float32
+    @test eltype(gb.layers[3].freqs) == Float32
+  end
+end
+
 @testset "zero bias" begin
   m = Dense(3 => 2; bias=false)
   @test f64(m).bias === m.bias === false
