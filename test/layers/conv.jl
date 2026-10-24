@@ -192,6 +192,7 @@ end
 
 @testset "pad_mode validation & show" begin
   @test_throws ArgumentError Conv((3,3), 1=>1; pad_mode=:bogus)
+  @test_throws ArgumentError Conv((3,3), 1=>1; pad_mode="reflect")
   @test occursin("pad_mode=:circular", repr(Conv((3,3), 1=>1; pad=1, pad_mode=:circular)))
   @test !occursin("pad_mode", repr(Conv((3,3), 1=>1; pad=1)))  # default :zeros is hidden
   @test Flux.f16(Conv((3,3), 1=>1; pad_mode=:reflect)).pad_mode === :reflect  # survives fmap
