@@ -239,7 +239,7 @@ function _print_conv_opt(io::IO, l)
   l.σ == identity || print(io, ", ", l.σ)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
   if hasproperty(l, :pad_mode)
-    (l.pad_mode === :zeros) || print(io, ", pad_mode=:", l.pad_mode)
+    (l.pad_mode === :zeros) || print(io, ", pad_mode=", repr(l.pad_mode))
   end
   all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
   all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
@@ -552,7 +552,7 @@ This is internally used to validate weight initialization functions.
 function _sizecheck(f, sz::Integer...)
   W = f(sz...)
   size(W) == sz || throw(DimensionMismatch(
-      lazy"Weight shape mismatch: expected $(sz), got $(size(W))",
+      "Weight shape mismatch: expected $(sz), got $(size(W))",
   ))
   W
 end
