@@ -297,6 +297,36 @@ function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
 
+# `logsumexp(ŷ; dims) .- ŷ[y]` for class labels `y`, with the size of `_gather_labels(ŷ, y, dims)`,
+# in Float32 for low-precision `ŷ`. Its rule writes the cotangent `(softmax(ŷ; dims) .- onehot(y)) .* Δ`
+# in the eltype of `ŷ`: a broadcast over `ŷ`, then an update of the entries of the labels.
+function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels before reducing ŷ
+  return reshape(_logsumexp(ŷ, dims), size(ŷy)) .- ŷy
+end
+
+function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  idx = _label_indices(ŷ, y, dims)
+  ŷy = _upcast(_gather(ŷ, idx))
+  lse = _logsumexp(ŷ, dims)
+  function _logitce_back(Δ)
+    T, lseΔ = float(eltype(ŷ)), tuple.(lse, reshape(unthunk(Δ), size(lse)))
+    # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
+    # comparing the classes to the labels.
+    dŷ = _logitce_grad.(T, ŷ, lseΔ, false)
+    dŷ[idx] = _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
+    return NoTangent(), dŷ, NoTangent(), NoTangent()
+  end
+  return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
+end
+
+# Inlined, so that NNlib's `_exp`, unlike Base's `exp`, vectorizes on the CPU.
+@inline _logitce_grad(::Type{T}, x, (lse, Δ), isy) where {T} = _downcast(T, (NNlib._exp(_upcast(x) - lse) - isy) * Δ)
+
+# For low-precision `ŷ`, `logsumexp` accumulates in Float32 and returns Float32, without copying `ŷ`.
+# Overloaded for traced arrays in FluxReactantExt.
+_logsumexp(ŷ::AbstractArray, dims::Integer) = logsumexp(ŷ; dims)
+
 """
     binarycrossentropy(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
 

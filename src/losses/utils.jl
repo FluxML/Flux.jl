@@ -73,16 +73,12 @@ _islabels(ŷ::AbstractArray, y::OneHotArray{<:Any, <:Any, <:Any, <:AbstractArra
 _gather_labels(ŷ::AbstractArray, y::AbstractArray, dims::Integer) =
   _gather(ŷ, _label_indices(ŷ, y, dims))
 
-function _gather_labels(ŷ::AbstractArray, y::OneHotArray, dims::Integer)
-  labels = _indices(y)
-  return reshape(_gather_labels(ŷ, labels, dims), 1, size(labels)...)
-end
-
 # `x[idx]` for linear indices `idx`. Unlike that of `getindex`, the gradient of `NNlib.gather` stays
 # on the GPU. Overloaded for traced arrays in FluxReactantExt.
 _gather(x::AbstractArray, idx::AbstractArray) = NNlib.gather(vec(x), idx)
 
-# Linear indices into `ŷ`, viewed as a `prod(size(ŷ)[1:dims-1]) × size(ŷ, dims) × :` array.
+# Linear indices into `ŷ`, viewed as a `prod(size(ŷ)[1:dims-1]) × size(ŷ, dims) × :` array,
+# with the size of the entries that `_gather_labels` picks.
 # The closures capture `sz`, not `ŷ`, so that Reactant doesn't trace these reductions.
 function _label_indices(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   sz = size(ŷ)
@@ -92,6 +88,11 @@ function _label_indices(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   B = prod(d -> sz[d], dims+1:length(sz); init = 1)
   idx = (1:A) .+ A .* (reshape(y, A, B) .- 1) .+ (A * C) .* (0:B-1)'
   return reshape(idx, size(y))
+end
+
+function _label_indices(ŷ::AbstractArray, y::OneHotArray, dims::Integer)
+  labels = _indices(y)
+  return reshape(_label_indices(ŷ, labels, dims), 1, size(labels)...)
 end
 
 function _check_labels(sz::Dims, y::AbstractArray, dims::Integer)
@@ -110,27 +111,3 @@ _check_label_values(y, C) = all(l -> 1 <= l <= C, y) || throw(ArgumentError(
 
 ChainRulesCore.@non_differentiable _islabels(::Any...)
 ChainRulesCore.@non_differentiable _label_indices(::Any...)
-
-# `logsumexp(ŷ; dims) .- ŷ[y]` for class labels `y`, with the size of `_gather_labels(ŷ, y, dims)`,
-# in Float32 for low-precision `ŷ`. Its rule writes the cotangent
-# `(softmax(ŷ; dims) .- onehot(y)) .* Δ` in one broadcast, in the eltype of `ŷ`.
-function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
-  ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels before reducing ŷ
-  return reshape(logsumexp(_upcast(ŷ); dims), size(ŷy)) .- ŷy
-end
-
-function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
-  ŷy = _upcast(_gather_labels(ŷ, y, dims))
-  lse = logsumexp(_upcast(ŷ); dims)
-  function _logitce_back(Δ)
-    class = reshape(axes(ŷ, dims), ntuple(d -> d == dims ? size(ŷ, d) : 1, Val(ndims(ŷ))))
-    labels, Δ = reshape(_labels(y), size(lse)), reshape(unthunk(Δ), size(lse))
-    return NoTangent(), _logitce_grad.(ŷ, lse, class .== labels, Δ), NoTangent(), NoTangent()
-  end
-  return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
-end
-
-_logitce_grad(x::T, lse, isy, Δ) where {T} = _downcast(float(T), (exp(_upcast(x) - lse) - isy) * Δ)
-
-_labels(y::AbstractArray) = y
-_labels(y::OneHotArray) = _indices(y)
