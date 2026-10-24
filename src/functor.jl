@@ -124,34 +124,66 @@ Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:AbstractFloat}) w
 Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
   convert(AbstractArray{Complex{T}}, x)
 
-# `Float16`/`BFloat16` are "half precision": under these casts, some layers keep part
-# of their parameters in `Float32` (mixed precision, see `_keep_f32_under_halfprec`).
-_ishalfprec(::Type) = false
-_ishalfprec(::Type{Float16}) = true
-_ishalfprec(::Type{BFloat16}) = true
+# One call of `f16`, `bf16`, `f32` or `f64` creates a `CastContext` and passes it to every
+# 2-argument method it reaches. It holds a cache per target eltype, so that an object
+# reached twice (e.g. tied weights) is converted once, even across a layer's own method.
+struct CastContext
+  f16::IdDict{Any,Any}
+  bf16::IdDict{Any,Any}
+  f32::IdDict{Any,Any}
+  f64::IdDict{Any,Any}
+end
+CastContext() = CastContext(IdDict{Any,Any}(), IdDict{Any,Any}(), IdDict{Any,Any}(), IdDict{Any,Any}())
+ChainRulesCore.@non_differentiable CastContext()
 
-# Layers that override half-precision conversion to keep (some of) their arrays in
-# `Float32`. Extended for normalization layers in `layers/normalise.jl`.
-_keep_f32_under_halfprec(::Any) = false
+_cache(cx::CastContext, ::Type{Float16}) = cx.f16
+_cache(cx::CastContext, ::Type{BFloat16}) = cx.bf16
+_cache(cx::CastContext, ::Type{Float32}) = cx.f32
+_cache(cx::CastContext, ::Type{Float64}) = cx.f64
 
-function _paramtype(::Type{T}, m) where T
-  if _ishalfprec(T)
-    # Stop the walk at layers that manage their own precision and hand them to `f32`
-    # (so their statistics/affine parameters stay in `Float32`); convert every other
-    # leaf array to `T`.
-    fmap(m; exclude = x -> _keep_f32_under_halfprec(x) || Functors.isleaf(x)) do x
-      _keep_f32_under_halfprec(x) ? f32(x) : adapt(FluxEltypeAdaptor{T}(), x)
-    end
-  else
-    fmap(adapt(FluxEltypeAdaptor{T}()), m)
-  end
+_castfn(::Type{Float16}) = f16
+_castfn(::Type{BFloat16}) = bf16
+_castfn(::Type{Float32}) = f32
+_castfn(::Type{Float64}) = f64
+
+# Like Functors' cache: identity matters for mutable objects and arrays.
+_usecache(x) = ismutable(x) || x isa AbstractArray
+
+# The default conversion of a node: convert a leaf, or call the 2-argument method of
+# `f16` etc. on each child, so that a layer's own method applies anywhere in a model.
+function _paramtype(::Type{T}, x, cx::CastContext) where T
+  _usecache(x) || return _convert(T, x, cx)
+  cache = _cache(cx, T)
+  haskey(cache, x) && return cache[x]::Base.promote_op(_convert, Type{T}, typeof(x), typeof(cx))
+  return cache[x] = _convert(T, x, cx)
 end
 
-# fastpath for arrays
-_paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} =
-  convert(AbstractArray{T}, x)
-_paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} =
-  convert(AbstractArray{Complex{T}}, x)
+function _convert(::Type{T}, x, cx) where T
+  Functors.isleaf(x) && return adapt(FluxEltypeAdaptor{T}(), x)
+  f = _castfn(T)
+  return Functors.DefaultWalk()(c -> f(c, cx), x)
+end
+
+# A conversion keeps the structure of the model, so its pullback maps each cotangent back
+# onto the input, projected to the input's eltype. This also keeps Zygote from tracing
+# the walk, and gives each use of a tied array its own gradient.
+function ChainRulesCore.rrule(::typeof(_paramtype), ::Type{T}, x, cx::CastContext) where T
+  _paramtype_back(dy) = (NoTangent(), NoTangent(), _paramtype_pullback(x, dy), NoTangent())
+  return _paramtype(T, x, cx), _paramtype_back
+end
+
+function _paramtype_pullback(x, dy)
+  dy = unthunk(dy)
+  dy isa Union{Nothing, AbstractZero} ? dy : _project_back(x, dy)
+end
+_project_back(x, dy) = dy
+_project_back(x::AbstractArray{<:Number}, dy) = ProjectTo(x)(dy)
+_project_back(x::AbstractArray, dy::AbstractArray) = map(_paramtype_pullback, x, dy)
+_project_back(x::AbstractArray{<:Number}, dy::AbstractArray) = ProjectTo(x)(dy)
+_project_back(x::Tuple, dy::Tuple) = map(_paramtype_pullback, x, dy)
+_project_back(x, dy::Tangent) = _project_back(x, ChainRulesCore.backing(dy))
+_project_back(x, dy::NamedTuple{K}) where K =
+  NamedTuple{K}(map(k -> _paramtype_pullback(getfield(x, k), getfield(dy, k)), K))
 
 # BFloat16 needs a hand-rolled conversion. On x86-64 with LLVM 18 (Julia 1.12.x) the
 # native `Float32`->`BFloat16` round (`Base.fptrunc`) auto-vectorizes into an
@@ -179,31 +211,42 @@ end
 
 Adapt.adapt_storage(::FluxEltypeAdaptor{BFloat16}, x::AbstractArray{<:AbstractFloat}) = _to_bf16(x)
 Adapt.adapt_storage(::FluxEltypeAdaptor{BFloat16}, x::AbstractArray{<:Complex{<:AbstractFloat}}) = _to_bf16(x)
-_paramtype(::Type{BFloat16}, x::AbstractArray{<:AbstractFloat}) = _to_bf16(x)
-_paramtype(::Type{BFloat16}, x::AbstractArray{<:Complex{<:AbstractFloat}}) = _to_bf16(x)
 
 """
     f32(m)
+    f32(m, cx)
 
 Converts the `eltype` of model's *floating point* parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
+The recursion calls the 2-argument method `f32(child, cx)` on each part of the model, so a
+layer can change how it is converted by adding a method of it, see
+[Customising the precision of a layer](@ref man-custom-precision).
+
 See also [`f64`](@ref), [`f16`](@ref) and [`bf16`](@ref).
 """
-f32(m) = _paramtype(Float32, m)
+f32(m) = f32(m, CastContext())
+f32(m, cx) = _paramtype(Float32, m, cx)
 
 """
     f64(m)
+    f64(m, cx)
 
 Converts the `eltype` of model's *floating point* parameters to `Float64`.
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
+The recursion calls the 2-argument method `f64(child, cx)` on each part of the model, so a
+layer can change how it is converted by adding a method of it, see
+[Customising the precision of a layer](@ref man-custom-precision).
+
 See also [`f32`](@ref), [`f16`](@ref) and [`bf16`](@ref).
 """
-f64(m) = _paramtype(Float64, m)
+f64(m) = f64(m, CastContext())
+f64(m, cx) = _paramtype(Float64, m, cx)
 
 """
     f16(m)
+    f16(m, cx)
 
 Converts the `eltype` of model's *floating point* parameters to `Float16`.
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
@@ -216,6 +259,16 @@ converted in *mixed precision*: their statistics and affine parameters are kept 
 `Float32` while the data flowing through stays in `Float16`. This matches the functional
 operators in NNlib (and cuDNN), which require `Float32` parameters for half-precision
 feature maps.
+
+The recursion calls the 2-argument method `f16(child, cx)` on each part of the model, so a
+layer can change how it is converted by adding a method of it. For example, this keeps a
+custom normalization layer in `Float32`, like the built-in ones:
+
+```julia
+Flux.f16(m::MyNorm, cx) = f32(m, cx)
+```
+
+See [Customising the precision of a layer](@ref man-custom-precision) for details.
 
 See also [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
 
@@ -234,10 +287,12 @@ Chain(
 )                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
 ```
 """
-f16(m) = _paramtype(Float16, m)
+f16(m) = f16(m, CastContext())
+f16(m, cx) = _paramtype(Float16, m, cx)
 
 """
     bf16(m)
+    bf16(m, cx)
 
 Converts the `eltype` of model's *floating point* parameters to `BFloat16`
 (from [BFloat16s.jl](https://github.com/JuliaMath/BFloat16s.jl)).
@@ -256,6 +311,16 @@ converted in *mixed precision*: their statistics and affine parameters are kept 
 operators in NNlib (and cuDNN), which require `Float32` parameters for half-precision
 feature maps.
 
+The recursion calls the 2-argument method `bf16(child, cx)` on each part of the model, so a
+layer can change how it is converted by adding a method of it. For example, this keeps a
+custom normalization layer in `Float32`, like the built-in ones:
+
+```julia
+Flux.bf16(m::MyNorm, cx) = f32(m, cx)
+```
+
+See [Customising the precision of a layer](@ref man-custom-precision) for details.
+
 See also [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
 
 # Example
@@ -273,4 +338,5 @@ Chain(
 )                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
 ```
 """
-bf16(m) = _paramtype(BFloat16, m)
+bf16(m) = bf16(m, CastContext())
+bf16(m, cx) = _paramtype(BFloat16, m, cx)
