@@ -17,8 +17,8 @@ loadleaf!(dst::Bool, src::AbstractArray) = iszero(dst) ? dst :
   error("Cannot copy non-zero parameter to boolean parameter == true.")
 
 function loadleaf!(dst::AbstractArray, src::AbstractArray)
-  err = DimensionMismatch("Tried to load size $(size(src)) array into size $(size(dst))")
-  (size(dst) == size(src)) || throw(err)
+  size(dst) == size(src) ||
+    throw(DimensionMismatch(lazy"Tried to load size $(size(src)) array into size $(size(dst))"))
   copyto!(dst, src)
 end
 
@@ -98,7 +98,7 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
   lsrcs = _filter_children(filter, Functors.children(src))
   keys_ldsts = keys(ldsts)
   keys_lsrcs = keys(lsrcs)
-  collect(keys_ldsts) == collect(keys_lsrcs) || throw(ArgumentError("Tried to load $(keys_lsrcs) into $(keys_ldsts) but the structures do not match."))
+  collect(keys_ldsts) == collect(keys_lsrcs) || throw(ArgumentError(lazy"Tried to load $(keys_lsrcs) into $(keys_ldsts) but the structures do not match."))
   
   for k in keys_lsrcs
     lsrc, ldst = lsrcs[k], ldsts[k]
