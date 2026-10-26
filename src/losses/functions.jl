@@ -316,7 +316,7 @@ function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::Abstrac
     # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
     # comparing the classes to the labels.
     dŷ = _logitce_grad.(T, ŷ, lseΔ, false)
-    dŷ[vec(idx)] = _logitce_grad.(T, vec(ŷy), vec(lseΔ), true)
+    dŷ[idx] .= _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
     return NoTangent(), dŷ, NoTangent(), NoTangent()
   end
   return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
