@@ -74,7 +74,9 @@ GPT-2 124M (`--preset fineweb`, 2^19 tokens per step in micro-batches of 16), bf
 | [Flux + Reactant](flux-reactant/)\* | 111k | 4.7 | 95 | 723 s |
 | [Flux + CUDA.jl](flux-cuda/) | 135k | 3.9 | 115 | 72 s |
 | [PyTorch](pytorch/), `--attn math` | 67k | 7.8 | 58 | 8.0 s |
+| [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.9 | 92 | 20 s |
 | [PyTorch](pytorch/), `--attn flash` (the default) | 158k | 3.3 | 135 | 3.6 s |
+| [PyTorch](pytorch/), `--attn flash --compile` | 164k | 3.2 | 140 | 13 s |
 
 \* With Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295. Flux 0.16.14 keeps the LayerNorm
 parameters of a bfloat16 model in `Float32`, and under Reactant NNlib 0.9.55 then promotes the
@@ -92,4 +94,6 @@ activations to `Float32`: the model trains at half the speed (56k tokens/s) unti
   garbage collection after each micro-batch to free them before the next one; a micro-batch of 16
   then peaks at 22 GB.
 - **PyTorch** runs eagerly too, with flash attention by default; `--attn math` materializes the
-  attention matrix as Flux does under Reactant. See [`pytorch/`](pytorch/).
+  attention matrix as Flux does under Reactant. `--compile` (`torch.compile`) fuses the model's
+  elementwise operations: with materialized attention it is then about as fast as Reactant, and with
+  flash attention it gains 4%. See [`pytorch/`](pytorch/).

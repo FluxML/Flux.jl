@@ -38,10 +38,17 @@ steady-state steps (see the [comparison](../README.md#performance) for the versi
 | Flux + Reactant, `--precision bf16` | 111k | 4.7 | 95 | 723 s |
 | Flux + CUDA.jl, `--precision bf16` | 135k | 3.9 | 115 | 72 s |
 | PyTorch, bf16 autocast, `--attn math` | 67k | 7.8 | 58 | 8.0 s |
+| PyTorch, bf16 autocast, `--attn math --compile` | 107k | 4.9 | 92 | 20 s |
 | PyTorch, bf16 autocast, `--attn flash` | 158k | 3.3 | 135 | 3.6 s |
+| PyTorch, bf16 autocast, `--attn flash --compile` | 164k | 3.2 | 140 | 13 s |
 
 Flux + Reactant materializes the attention matrix, as Reactant has no fused attention for traced
 arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)): with the same
-materialized attention, PyTorch is 1.7× slower than Flux, but its default flash-attention kernel
-makes it 1.4× faster. Its first step includes compiling the whole training step with XLA. Flux +
-CUDA.jl runs cuDNN's flash attention, like PyTorch's default, at 85% of its speed.
+materialized attention, eager PyTorch is 1.7× slower than Flux and compiled PyTorch about as fast,
+but its default flash-attention kernel makes it 1.4× faster. Its first step includes compiling the
+whole training step with XLA. Flux + CUDA.jl runs cuDNN's flash attention, like PyTorch's default,
+at 85% of its eager speed and 82% of its compiled one.
+
+`--compile` compiles the model, not the loss. Its cache doesn't depend on `--attn`: after a compiled
+run with one `--attn`, a compiled run with the other reuses its graph, attention included. Point
+`TORCHINDUCTOR_CACHE_DIR` to an empty directory to compare them.
