@@ -78,8 +78,8 @@ GPT-2 124M (`--preset fineweb`, 2^19 tokens per step in micro-batches of 16), bf
 
 \* With Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295. Flux 0.16.14 keeps the LayerNorm
 parameters of a bfloat16 model in `Float32`, and under Reactant NNlib 0.9.55 then promotes the
-activations to `Float32`: the model trains at half the speed (56k tokens/s) until NNlib handles
-Reactant's traced numbers.
+activations to `Float32`: the model trains at half the speed (56k tokens/s) until
+[NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872) is released.
 
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
   program, which fuses the elementwise operations and plans the memory of the whole step, but it
