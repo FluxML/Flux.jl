@@ -71,11 +71,12 @@ end
 #     numeric arrays;
 #   * a `NamedTuple` is rebuilt from its `names` after `autodiff` — rebuilding a `NamedTuple` tail
 #     inside `autodiff` fails to compile for non-trivial aux.
+# Fields are `::Any` rather than e.g. `Tuple{Vararg{Symbol}}`, which Reactant fails to trace.
 mutable struct _WithAux{F}
     f::F
-    kind::Symbol                  # :scalar | :tuple | :named
-    names::Tuple{Vararg{Symbol}}  # keys(val) for :named
-    aux::Any                      # the values after the loss, unused for :scalar
+    kind::Symbol   # :scalar | :tuple | :named
+    names::Any     # keys(val) for :named
+    aux::Any       # the values after the loss, unused for :scalar
 end
 _WithAux(f) = _WithAux(f, :scalar, (), nothing)
 
