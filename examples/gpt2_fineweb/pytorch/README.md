@@ -30,16 +30,18 @@ and `--compile` (`torch.compile`).
 ## Performance comparison
 
 GPT-2 124M (`--preset fineweb --batchsize 16`, gradient accumulation to 2^19 tokens per step) on an
-**RTX 5090**, Julia 1.13 / Flux 0.16 / Reactant 0.2.295 vs PyTorch 2.14.1 (cu130), steady-state
-steps:
+**RTX 5090**, Julia 1.13 / Flux 0.16 / Reactant 0.2.295 / CUDA.jl 6.4 vs PyTorch 2.14.1 (cu130),
+steady-state steps (see the [comparison](../README.md#performance) for the versions):
 
 | | tokens/s | s/step | TFLOPS | first step |
 | --- | --- | --- | --- | --- |
 | Flux + Reactant, `--precision bf16` | 111k | 4.7 | 95 | 723 s |
+| Flux + CUDA.jl, `--precision bf16` | 135k | 3.9 | 115 | 72 s |
 | PyTorch, bf16 autocast, `--attn math` | 67k | 7.8 | 58 | 8.0 s |
 | PyTorch, bf16 autocast, `--attn flash` | 158k | 3.3 | 135 | 3.6 s |
 
-Flux materializes the attention matrix, as Reactant has no fused attention for traced arrays yet
-([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)): with the same
+Flux + Reactant materializes the attention matrix, as Reactant has no fused attention for traced
+arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)): with the same
 materialized attention, PyTorch is 1.7× slower than Flux, but its default flash-attention kernel
-makes it 1.4× faster. Flux's first step includes compiling the whole training step with XLA.
+makes it 1.4× faster. Its first step includes compiling the whole training step with XLA. Flux +
+CUDA.jl runs cuDNN's flash attention, like PyTorch's default, at 85% of its speed.

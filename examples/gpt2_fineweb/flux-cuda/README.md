@@ -24,23 +24,22 @@ $ julia --project=. train.jl --preset fineweb --resume log/checkpoint_05000.jld2
 $ julia --project=. hellaswag.jl log/checkpoint_19073.jld2
 ```
 
-The options are those of the [Reactant version](../flux-reactant/README.md#running), except that
-`--batchsize` defaults to 8 for `fineweb` (see the notes). The tokenized datasets in `../data/` are shared with the other
-versions, and the checkpoints are interchangeable with the Reactant version's.
+The options are those of the [Reactant version](../flux-reactant/README.md#running). The tokenized
+datasets in `../data/` are shared with the other versions, and the checkpoints are interchangeable
+with the Reactant version's.
 
 ## Results
 
-Measured on an **RTX 5090 (32 GB)**, Julia 1.13, Flux 0.16, CUDA.jl 6.4, cuDNN 9.27. Full training
-runs are still to be done.
+Measured on an **RTX 5090 (32 GB)**, Julia 1.13, Flux 0.16.14, NNlib 0.9.55, Zygote 0.7.14, CUDA.jl
+6.4, cuDNN 9.27, over the first steps of `train.jl`. Full training runs are still to be done.
 
-**`tinystories`** — 0.53 s per step (~125k tokens/s), against 0.17 s with Reactant, and ~90 s for
-the first step, against ~160 s. Over the first steps, the training and validation losses agree with
-Reactant's to the fourth digit.
+**`tinystories`** — 0.18 s per step (~360k tokens/s), and ~70 s for the first step. Over the first
+steps, the training and validation losses agree with Reactant's to the fourth digit.
 
-**`fineweb`** — ~31k tokens/s (~27 TFLOPS) at micro-batch 8, i.e. ~17 s per step of 2^19 tokens,
-measured on micro-batches of synthetic data; see the [comparison](../README.md#performance). The
-garbage collection after each micro-batch makes it 1.4× faster (262 ms per micro-batch instead of
-365 ms, on average).
+**`fineweb`** — ~3.9 s per step of 2^19 tokens (~135k tokens/s, ~115 TFLOPS) at the default
+micro-batch of 16, and ~72 s for the first step; see the [comparison](../README.md#performance).
+The garbage collection after each micro-batch makes it 1.7× faster (132 ms per micro-batch instead
+of 224 ms, on average).
 
 ## Notes
 
@@ -51,13 +50,16 @@ garbage collection after each micro-batch makes it 1.4× faster (262 ms per micr
 - **Attention.** With cuDNN.jl loaded, the causal `Attention` layers of the bfloat16 model run
   cuDNN's fused flash-attention kernels, forward and backward, so the `(T, T, heads, batch)`
   attention matrix is never materialized. In `Float32` they use NNlib's fused kernel.
+- **Fused kernels.** LayerNorm (`NNlib.layernorm`) and the cross-entropy over the logits run as
+  fused kernels, forward and backward, that accumulate in `Float32`. Every other operation is a
+  kernel of its own.
 - **Memory.** Zygote keeps every intermediate array of the forward pass for the backward pass, and
-  CUDA.jl frees GPU memory only when Julia's garbage collector finalizes the arrays. GPT-2 124M
-  therefore fits 8 sequences per micro-batch in 32 GB, which is the script's default for `fineweb`
-  (the gradient accumulation still makes 2^19 tokens per step). The script also runs an incremental
-  garbage collection after each micro-batch (`gc = true` in `train`), which frees the step's arrays
-  before the next one allocates.
-- **Compilation.** There is no XLA compilation: the first step takes ~1.5 minutes of Julia
+  CUDA.jl frees GPU memory only when Julia's garbage collector finalizes the arrays. The script runs
+  an incremental garbage collection after each micro-batch (`gc = true` in `train`), which frees the
+  micro-batch's arrays before the next one allocates: a micro-batch of 16 sequences of GPT-2 124M
+  then peaks at 22 GB. Without it, the memory pool fills up to 31 GB and CUDA.jl stalls on full
+  collections.
+- **Compilation.** There is no XLA compilation: the first step takes ~1.2 minutes of Julia
   compilation, against ~3 to 12 minutes with Reactant.
 - **Automatic differentiation.** Only Zygote, for now. Mooncake 0.5.65 cannot differentiate this
   model on CUDA ([Mooncake.jl#1393](https://github.com/chalk-lab/Mooncake.jl/issues/1393),
@@ -65,7 +67,3 @@ garbage collection after each micro-batch makes it 1.4× faster (262 ms per micr
   [#1395](https://github.com/chalk-lab/Mooncake.jl/issues/1395),
   [NNlib.jl#823](https://github.com/FluxML/NNlib.jl/issues/823)), and the latest Enzyme.jl
   requires LLVM.jl 9, which holds back CUDA.jl.
-- **Tied embedding.** The gradient of the output layer reaches the token embedding as a
-  `Transpose` of a `CuArray`, which Zygote 0.7.13 adds to the embedding's own gradient through host
-  memory ([Zygote.jl#1676](https://github.com/FluxML/Zygote.jl/issues/1676)): a round trip of
-  77 MB per micro-batch.

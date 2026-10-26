@@ -43,7 +43,9 @@ each), `--precision` (see below), `--resume`, `--seed`, `--data-dir`, `--log-dir
 
 ## Results
 
-Measured on an **RTX 5090 (32 GB)**, Julia 1.13, Flux 0.16, Reactant 0.2.295.
+Measured on an **RTX 5090 (32 GB)**, Julia 1.13, Flux 0.16.13, NNlib 0.9.50, Reactant 0.2.295. With
+Flux 0.16.14 and NNlib 0.9.55, the bfloat16 model trains in `Float32` under Reactant, at about half
+the speed (see the [comparison](../README.md#performance)).
 
 **`tinystories`** — 22 minutes of training (0.18 s per step, ~365k tokens/s) after ~3 minutes of
 compilation. The validation loss goes 3.21 → 2.01 → 1.67 → **1.488** at steps 250, 1000, 3000 and

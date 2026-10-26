@@ -66,28 +66,30 @@ streams and tokenizes its dataset into `data/<dataset>/`: ~1 min and 0.95 GB for
 
 ## Performance
 
-GPT-2 124M (`--preset fineweb`, 2^19 tokens per step), bfloat16, on an **RTX 5090 (32 GB)**,
-Julia 1.13, Flux 0.16, Reactant 0.2.295, CUDA.jl 6.4, PyTorch 2.14.1 (cu130), steady-state steps:
+GPT-2 124M (`--preset fineweb`, 2^19 tokens per step in micro-batches of 16), bfloat16, on an
+**RTX 5090 (32 GB)**, Julia 1.13, CUDA.jl 6.4, PyTorch 2.14.1 (cu130), steady-state steps:
 
-| | micro-batch | tokens/s | s/step | TFLOPS | first step |
-| --- | --- | --- | --- | --- | --- |
-| [Flux + Reactant](flux-reactant/) | 16 | 111k | 4.7 | 95 | 723 s |
-| [Flux + CUDA.jl](flux-cuda/)\* | 8 | 31k | 16.8 | 27 | ~100 s |
-| [PyTorch](pytorch/), `--attn math` | 16 | 67k | 7.8 | 58 | 8.0 s |
-| [PyTorch](pytorch/), `--attn flash` (the default) | 16 | 158k | 3.3 | 135 | 3.6 s |
+| | tokens/s | s/step | TFLOPS | first step |
+| --- | --- | --- | --- | --- |
+| [Flux + Reactant](flux-reactant/)\* | 111k | 4.7 | 95 | 723 s |
+| [Flux + CUDA.jl](flux-cuda/) | 135k | 3.9 | 115 | 72 s |
+| [PyTorch](pytorch/), `--attn math` | 67k | 7.8 | 58 | 8.0 s |
+| [PyTorch](pytorch/), `--attn flash` (the default) | 158k | 3.3 | 135 | 3.6 s |
 
-\* Measured on micro-batches of synthetic data (the mean of 32, after the first), not yet over a
-run of `train.jl`; the first step is estimated from the first micro-batch (83 s).
+\* With Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295. Flux 0.16.14 keeps the LayerNorm
+parameters of a bfloat16 model in `Float32`, and under Reactant NNlib 0.9.55 then promotes the
+activations to `Float32`: the model trains at half the speed (56k tokens/s) until NNlib handles
+Reactant's traced numbers.
 
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
   program, which fuses the elementwise operations and plans the memory of the whole step, but it
   has no fused attention yet: it materializes the attention matrix
   ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)). Its first step
   includes compiling that program.
-- **CUDA.jl** runs each operation of the forward and backward passes as its own kernel, and the
-  attention as cuDNN's flash-attention kernels. Zygote keeps all the activations for the backward
-  pass, which limits the micro-batch to 8. In the profile of a micro-batch the GPU is busy ~60%
-  of the time; the rest goes to the host, including a round trip of the tied embedding's gradient
-  through host memory ([Zygote.jl#1676](https://github.com/FluxML/Zygote.jl/issues/1676)).
+- **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
+  cross-entropy as fused kernels, and every other operation of the forward and backward passes as a
+  kernel of its own. Zygote keeps all the activations for the backward pass, and the script runs a
+  garbage collection after each micro-batch to free them before the next one; a micro-batch of 16
+  then peaks at 22 GB.
 - **PyTorch** runs eagerly too, with flash attention by default; `--attn math` materializes the
   attention matrix as Flux does under Reactant. See [`pytorch/`](pytorch/).
