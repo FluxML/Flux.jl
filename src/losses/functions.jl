@@ -310,11 +310,13 @@ function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::Abstrac
   ŷy = _upcast(_gather(ŷ, idx))
   lse = logsumexp(ŷ; dims)
   function _logitce_back(Δ)
-    T, lseΔ = float(eltype(ŷ)), tuple.(lse, reshape(unthunk(Δ), size(lse)))
+    # For a vector `ŷ` and 0-dimensional labels, the loss and `Δ` are scalars.
+    Δ = unthunk(Δ)
+    T, lseΔ = float(eltype(ŷ)), tuple.(lse, Δ isa AbstractArray ? reshape(Δ, size(lse)) : Δ)
     # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
     # comparing the classes to the labels.
     dŷ = _logitce_grad.(T, ŷ, lseΔ, false)
-    dŷ[idx] = _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
+    dŷ[idx] .= _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
     return NoTangent(), dŷ, NoTangent(), NoTangent()
   end
   return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
