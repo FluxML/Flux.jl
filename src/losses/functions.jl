@@ -291,14 +291,39 @@ julia> Flux.logitcrossentropy(y_model, [1, 2, 3, 1, 2, 1, 1])  # integer class l
 ```
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
+  _islabels(ŷ, y, dims) && return agg(_logitce(ŷ, y, dims))
   ŷ, y = _upcast(ŷ), _upcast(y)
-  if _islabels(ŷ, y, dims)
-    ŷy = _gather_labels(ŷ, y, dims)
-    return agg(reshape(logsumexp(ŷ; dims), size(ŷy)) .- ŷy)
-  end
   _check_sizes(ŷ, y)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
+
+# `logsumexp(ŷ; dims) .- ŷ[y]` for class labels `y`, with the size of `_gather_labels(ŷ, y, dims)`,
+# in Float32 for low-precision `ŷ`. Its rule writes the cotangent `(softmax(ŷ; dims) .- onehot(y)) .* Δ`
+# in the eltype of `ŷ`: a broadcast over `ŷ`, then an update of the entries of the labels.
+function _logitce(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  ŷy = _upcast(_gather_labels(ŷ, y, dims))  # checks the labels before reducing ŷ
+  return reshape(logsumexp(ŷ; dims), size(ŷy)) .- ŷy
+end
+
+function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::AbstractArray, dims::Integer)
+  idx = _label_indices(ŷ, y, dims)
+  ŷy = _upcast(_gather(ŷ, idx))
+  lse = logsumexp(ŷ; dims)
+  function _logitce_back(Δ)
+    # For a vector `ŷ` and 0-dimensional labels, the loss and `Δ` are scalars.
+    Δ = unthunk(Δ)
+    T, lseΔ = float(eltype(ŷ)), tuple.(lse, Δ isa AbstractArray ? reshape(Δ, size(lse)) : Δ)
+    # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
+    # comparing the classes to the labels.
+    dŷ = _logitce_grad.(T, ŷ, lseΔ, false)
+    dŷ[idx] .= _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
+    return NoTangent(), dŷ, NoTangent(), NoTangent()
+  end
+  return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
+end
+
+# Inlined, so that NNlib's `_exp`, unlike Base's `exp`, vectorizes on the CPU.
+@inline _logitce_grad(::Type{T}, x, (lse, Δ), isy) where {T} = _downcast(T, (NNlib._exp(_upcast(x) - lse) - isy) * Δ)
 
 """
     binarycrossentropy(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
@@ -560,7 +585,7 @@ Calculated as:
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
 """
-function tversky_loss(ŷ, y; beta::Real = 0.7, β = nothing)
+function tversky_loss(ŷ, y; beta::Real = 0.7)
   ŷ, y = _upcast(ŷ), _upcast(y)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
@@ -644,7 +669,7 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ=nothing, γ=nothing)
+function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
   _check_sizes(ŷ, y)

@@ -523,8 +523,9 @@ hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
 # layers in `Float32` (mixed precision). `NNlib.batchnorm`, `NNlib.instancenorm`,
 # `NNlib.groupnorm` and `NNlib.layernorm` require `Float32` scale/bias/statistics
 # for half-precision feature maps (as does cuDNN), and half-precision running
-# statistics are numerically poor. See `_paramtype`.
-_keep_f32_under_halfprec(::Union{BatchNorm, InstanceNorm, GroupNorm, LayerNorm}) = true
+# statistics are numerically poor.
+f16(l::Union{BatchNorm, InstanceNorm, GroupNorm, LayerNorm}, cx) = f32(l, cx)
+bf16(l::Union{BatchNorm, InstanceNorm, GroupNorm, LayerNorm}, cx) = f32(l, cx)
 
 struct WeightNorm{L, G, D}
     layer::L
@@ -570,11 +571,11 @@ true
 Salimans & Kingma, _Weight Normalization_ (2016) <https://arxiv.org/abs/1602.07868>
 """
 function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
-    hasfield(L, which) || throw(ArgumentError("`$L` does not have field `:$which`."))
+    hasfield(L, which) || throw(ArgumentError(lazy"`$L` does not have field `:$which`."))
 
     x = getfield(layer, which)
     iszero(x) && throw(ArgumentError(
-        "`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
+        lazy"`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
 
     d = if dims isa Colon
         1:ndims(x)

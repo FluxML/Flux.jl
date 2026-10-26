@@ -39,9 +39,9 @@ _zero_seed(x::NamedTuple) = map(_zero_seed, x)
 _zero_seed(x) = x
 
 # The rules in `rules.jl` come from Mooncake's own `MooncakeFluxExt`, which Mooncake ships
-# before 0.6. Its methods have the same signatures, so defining both would overwrite one with
-# the other: ours are loaded only from Mooncake 0.6.
-const MOONCAKE_SHIPS_RULES = pkgversion(Mooncake) < v"0.6"
+# before 0.5.67. Its methods have the same signatures, so defining both would overwrite one
+# with the other: ours are loaded only from Mooncake 0.5.67.
+const MOONCAKE_SHIPS_RULES = pkgversion(Mooncake) < v"0.5.67"
 
 MOONCAKE_SHIPS_RULES || include("rules.jl")
 

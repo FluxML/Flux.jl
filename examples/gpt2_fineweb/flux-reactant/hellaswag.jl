@@ -7,9 +7,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
     using PythonCall   # before Flux, see train.jl
     include("model.jl")
     include("data.jl")
+    using Reactant
 end
 
-using Flux, HuggingFaceDatasets, Reactant, Statistics
+using Flux, HuggingFaceDatasets, JLD2, Statistics
 
 # Tokenized HellaSwag rows, 4 per example, right-padded to a common length `Tmax`: `x` and `y` are
 # the inputs and next-token targets, and `mask` selects the target positions inside the ending.
@@ -46,17 +47,14 @@ function ending_losses(model, x, y, mask)
 end
 
 # A function `model -> (; acc, acc_norm)` giving the HellaSwag accuracy (`acc` sums the ending
-# loss, `acc_norm` averages it), scoring batches of `data.group` examples moved to `device`. On
-# Reactant the scoring is compiled once, for models with the structure of `model`.
-function hellaswag_evaluator(model, data; device=identity)
+# loss, `acc_norm` averages it), scoring batches of `data.group` examples moved to `device`.
+# The scoring function is `compile(ending_losses, args)` for arguments `args` like those it gets:
+# `Reactant.compile` compiles it once, for models with the structure of `model`.
+function hellaswag_evaluator(model, data; device=identity, compile=(f, args) -> f)
     (; x, y, mask, labels, n, group) = data
     cols(b) = (4group*(b-1)+1):(4group*b)
     batch(b) = device((x[:, cols(b)], y[:, cols(b)], mask[:, cols(b)]))
-    score = if Flux.get_device_type(model) <: Flux.ReactantDevice
-        Reactant.@compile ending_losses(model, batch(1)...)
-    else
-        ending_losses
-    end
+    score = compile(ending_losses, (model, batch(1)...))
     counts = reshape(vec(sum(mask; dims=1))[1:4n], 4, n)
     return function (model)
         losses = reduce(vcat, (Array(score(model, batch(b)...)) for b in 1:cld(n, group)))
@@ -67,12 +65,16 @@ function hellaswag_evaluator(model, data; device=identity)
     end
 end
 
+# Prints the HellaSwag accuracy of the model saved in the checkpoint at `path`, in Float32.
+function hellaswag_checkpoint(path; device, compile=(f, args) -> f)
+    ckpt = JLD2.load(path)
+    model = Flux.loadmodel!(GPT(ckpt["cfg"]), ckpt["model_state"]) |> device
+    evaluate = hellaswag_evaluator(model, hellaswag_data(gpt2_tokenizer()); device, compile)
+    (; acc, acc_norm) = evaluate(model)
+    println("HellaSwag (step $(ckpt["step"])): acc = $(round(acc, digits=4)), acc_norm = $(round(acc_norm, digits=4))")
+end
+
 # `julia --project=. hellaswag.jl <checkpoint.jld2>`
 if abspath(PROGRAM_FILE) == @__FILE__
-    using JLD2
-    ckpt = JLD2.load(ARGS[1])
-    dev = reactant_device()
-    model = Flux.loadmodel!(GPT(ckpt["cfg"]), ckpt["model_state"]) |> dev
-    (; acc, acc_norm) = hellaswag_evaluator(model, hellaswag_data(gpt2_tokenizer()); device=dev)(model)
-    println("HellaSwag (step $(ckpt["step"])): acc = $(round(acc, digits=4)), acc_norm = $(round(acc_norm, digits=4))")
+    hellaswag_checkpoint(ARGS[1]; device=reactant_device(), compile=Reactant.compile)
 end

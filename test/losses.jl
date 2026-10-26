@@ -112,9 +112,9 @@ end
       l = loss(x, y; dims, agg = identity)
       @test size(l) == size(y)
       @test l ≈ dropdims(loss(x, yhot; dims, agg = identity); dims)
-      if sz in ((C, 5), (3, C, 5))
-        @test gradient(x -> loss(x, y; dims), x)[1] ≈ gradient(x -> loss(x, yhot; dims), x)[1]
-      end
+      @test gradient(x -> loss(x, y; dims), x)[1] ≈ gradient(x -> loss(x, yhot; dims), x)[1]
+      agg = l -> sum(abs2, l)
+      @test gradient(x -> loss(x, y; dims, agg), x)[1] ≈ gradient(x -> loss(x, yhot; dims, agg), x)[1]
     end
   end
 
@@ -132,6 +132,10 @@ end
     ŷ = randn(C)
     @test logitcrossentropy(ŷ, fill(2)) ≈ logitcrossentropy(ŷ, onehot(2, 1:C))
     @test crossentropy(softmax(ŷ), fill(2)) ≈ crossentropy(softmax(ŷ), onehot(2, 1:C))
+    for (loss, x) in ((logitcrossentropy, ŷ), (crossentropy, softmax(ŷ)))
+      @test gradient(x -> loss(x, fill(2)), x)[1] ≈ gradient(x -> loss(x, onehot(2, 1:C)), x)[1]
+      @test gradient(x -> loss(x, fill(2); agg = sum), x)[1] ≈ gradient(x -> loss(x, onehot(2, 1:C); agg = sum), x)[1]
+    end
   end
 
   @testset "OneHotArray" begin
@@ -232,6 +236,8 @@ end
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  # the old Greek keyword `β` is not accepted, rather than silently ignored
+  @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
 end
 
 @testset "no spurious promotions" begin
@@ -268,6 +274,9 @@ end
       @test logitcrossentropy(x16, labels) ≈ logitcrossentropy(Float32.(x16), labels)
       @test logitcrossentropy(x16, onehotbatch(labels, 1:100)) ≈ logitcrossentropy(Float32.(x16), labels)
       @test crossentropy(softmax(x16), labels) ≈ crossentropy(Float32.(softmax(x16)), labels)
+      g = gradient(x -> logitcrossentropy(x, labels), x16)[1]
+      @test g isa Matrix{eltype(x16)}
+      @test g ≈ lowprec(gradient(x -> logitcrossentropy(x, labels), Float32.(x16))[1])
     end
     @test mse(fill(Float16(300), 10), zeros(Float16, 10)) == 90000
   end
@@ -309,6 +318,9 @@ end
     @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; gamma=0) ≈ Flux.crossentropy(ŷ, y)
+    # the old Greek keywords `γ`, `ϵ` are not accepted, rather than silently ignored
+    @test_throws MethodError Flux.focal_loss(ŷ, y; γ=0)
+    @test_throws MethodError Flux.focal_loss(ŷ, y; ϵ=0.1)
 end
   
 @testset "siamese_contrastive_loss" begin

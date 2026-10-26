@@ -40,3 +40,15 @@ end
         )
     end
 end
+
+@testset "mooncake gradient through f64" begin
+    W = randn(Float32, 4, 4)
+    m = Chain(Dense(W, true, tanh), LayerNorm(4), Dense(W))  # tied weight
+    x = randn(Float32, 4, 3)
+    loss(m) = sum(abs2, m(x))
+    g = Flux.gradient(loss, AutoMooncake(), m)[1]
+    g64 = Flux.gradient(m -> loss(f64(m)), AutoMooncake(), m)[1]
+    @test eltype(g64.layers[1].weight) == Float32
+    @test g64.layers[1].weight ≈ g.layers[1].weight
+    @test g64.layers[2].diag.scale ≈ g.layers[2].diag.scale
+end

@@ -1,5 +1,6 @@
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
 HuggingFaceTokenizers = "a6888d44-1185-43bb-bd0f-7806f9976d18"
@@ -8,19 +9,20 @@ MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [sources]
-Flux = {path = "../.."}
+Flux = {path = "../../.."}
 
 [compat]
 ArgParse = "1"
-Flux = "0.16.13"
+CUDA = "6.3"
+Flux = "0.16.14"
 HuggingFaceDatasets = "0.4.4"
 HuggingFaceTokenizers = "0.1.1"
 JLD2 = "0.6"
 MLUtils = "0.4.15"
 PythonCall = "0.9"
-Reactant = "0.2.295"
+cuDNN = "6.3"
 julia = "1.12"

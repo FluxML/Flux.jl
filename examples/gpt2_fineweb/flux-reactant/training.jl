@@ -1,15 +1,6 @@
-# Pretrain GPT-2 with Flux, compiling the training step with Reactant (XLA).
-# The first run for a dataset streams and tokenizes it into `data_dir` (see data.jl).
+# The training loop, independent of the device: `train.jl` runs it with Reactant, and
+# ../flux-cuda/train.jl with CUDA.jl. Load PythonCall before including this file (see train.jl).
 
-# Read when Reactant initializes. XLA reserves 75% of the GPU memory by default; the INFO logs it
-# would print include a register-spill note for every matmul kernel it autotunes.
-get!(ENV, "XLA_REACTANT_GPU_MEM_FRACTION", "0.9")
-get!(ENV, "TF_CPP_MIN_LOG_LEVEL", "1")
-
-# Before Flux: CondaPkg resolves the Python environment when PythonCall loads, capping libstdc++ at
-# Julia's, which Julia 1.13 fails to detect once CompilerSupportLibraries_jll is loaded
-# (JuliaLang/julia#63967). Without the cap, the environment re-resolves whenever the load order changes.
-using PythonCall
 using Printf, Random, Statistics
 using ArgParse
 using Flux
@@ -18,10 +9,6 @@ using JLD2
 
 include("model.jl")
 include("data.jl")
-
-using Reactant
-using Reactant: PrecisionConfig
-
 include("hellaswag.jl")
 
 # The `fineweb` preset follows build-nanogpt's GPT-2 (124M) run: 2^19 tokens per step for 19073
@@ -45,10 +32,9 @@ end
 
 # Numerical precision. `bf16`: the parameters and activations are bfloat16, the optimizer updates
 # Float32 copies of the parameters (`MixedPrecision`), and the loss is computed in Float32.
-# `tf32`: Float32, with matrix multiplications at XLA's default precision on NVIDIA GPUs (like
-# TF32). `f32`: exact Float32. Reactant reads the configuration when it compiles a function.
+# `tf32`: Float32, with matrix multiplications on TF32 tensor cores. `f32`: exact Float32.
+# The backend sets the precision of the matrix multiplications for `tf32` and `f32`.
 const PRECISIONS = ("bf16", "tf32", "f32")
-precision_config(precision) = precision == "f32" ? (; dot_general_precision=PrecisionConfig.HIGHEST) : (;)
 
 # Weight decay applies to matrices only, not to biases and LayerNorm parameters.
 function no_decay!(opt_state, model)
@@ -71,9 +57,15 @@ function save_checkpoint(path, model, opt_state, step, pos, cfg)
             step, pos, cfg)
 end
 
-function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
-              log_dir=joinpath(@__DIR__, "log"), precision="bf16", resume=nothing, seed=0,
-              peak_tflops=nothing, kws...)
+# Trains on device `dev`, logging to `log_dir`. `compile(f, args)` returns the function to call in
+# place of `f` on arguments like `args`, for the validation loss and the HellaSwag scoring:
+# `Reactant.compile` on Reactant, `f` itself to run eagerly. With `gc = true`, an incremental
+# garbage collection after each micro-batch frees the memory of the arrays it left behind. The
+# other keywords (`batchsize`, `steps`, `lr`, `eval_every`, `hellaswag_every`, `ckpt_every`)
+# override the preset's values.
+function train(dev; log_dir, compile=(f, args) -> f, gc=false, preset="tinystories",
+               data_dir=joinpath(@__DIR__, "..", "data"), precision="bf16", resume=nothing,
+               seed=0, peak_tflops=nothing, kws...)
     p = merge(PRESETS[preset], (; (k => v for (k, v) in kws if v !== nothing)...))
     cfg = p.model
     B, T = p.batchsize, cfg.block_size
@@ -82,7 +74,6 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
     accum = p.total_batch ÷ (B * T)
     precision in PRECISIONS || throw(ArgumentError("precision must be one of $PRECISIONS"))
 
-    dev = reactant_device()
     Random.seed!(seed)
     train_data = token_blocks(p.dataset, :train; block_size=T, data_dir)
     val_data = token_blocks(p.dataset, :val; block_size=T, data_dir)
@@ -120,64 +111,63 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
                  preset, sum(length, Flux.trainables(model))/1e6, B, T, accum, p.total_batch,
                  precision, p.steps))
 
-    Reactant.with_config(; precision_config(precision)...) do
-        val_batches = [dev(getbatch(val_data, (i - 1) * B + 1, B)[1]) for i in 1:p.val_steps]
-        val_loss = Reactant.@compile lm_loss(model, val_batches[1]...)
-        eval_hellaswag = hellaswag === nothing ? nothing : hellaswag_evaluator(model, hellaswag; device=dev)
+    val_batches = [dev(getbatch(val_data, (i - 1) * B + 1, B)[1]) for i in 1:p.val_steps]
+    val_loss = compile(lm_loss, (model, val_batches[1]...))
+    eval_hellaswag = hellaswag === nothing ? nothing : hellaswag_evaluator(model, hellaswag; device=dev, compile)
 
-        for step in step0+1:p.steps
-            t0 = time()
-            lr = learning_rate(step, p)
-            Flux.adjust!(opt_state, lr)
-            loss = 0.0
-            for _ in 1:accum
-                batch, pos = getbatch(train_data, pos, B)
-                loss += Flux.trainstep!(lm_loss, model, dev(batch), opt_state)
-            end
-            loss /= accum
-            dt = time() - t0
-            tps = p.total_batch / dt
-            tflops = flops * tps / 1e12
-            mfu = peak_tflops === nothing ? "" : @sprintf(" mfu=%.1f%%", 100tflops / peak_tflops)
-            logmsg(@sprintf("[train] step=%d loss=%.4f lr=%.2e dt=%.2fs tok/s=%.0f tflops=%.1f%s",
-                         step, loss, lr, dt, tps, tflops, mfu))
-            isfinite(loss) || error("non-finite loss at step $step")
+    for step in step0+1:p.steps
+        t0 = time()
+        lr = learning_rate(step, p)
+        Flux.adjust!(opt_state, lr)
+        loss = 0.0
+        for _ in 1:accum
+            batch, pos = getbatch(train_data, pos, B)
+            loss += Flux.trainstep!(lm_loss, model, dev(batch), opt_state)
+            gc && GC.gc(false)
+        end
+        loss /= accum
+        dt = time() - t0
+        tps = p.total_batch / dt
+        tflops = flops * tps / 1e12
+        mfu = peak_tflops === nothing ? "" : @sprintf(" mfu=%.1f%%", 100tflops / peak_tflops)
+        logmsg(@sprintf("[train] step=%d loss=%.4f lr=%.2e dt=%.2fs tok/s=%.0f tflops=%.1f%s",
+                     step, loss, lr, dt, tps, tflops, mfu))
+        isfinite(loss) || error("non-finite loss at step $step")
 
-            last = step == p.steps
-            if p.eval_every > 0 && (step % p.eval_every == 0 || last)
-                vl = mean(Float32(val_loss(model, x, y)) for (x, y) in val_batches)
-                logmsg(@sprintf("[eval] step=%d val_loss=%.4f", step, vl))
-                for (i, s) in enumerate(generate(Flux.f32(cpu(model)), prompt))
-                    logmsg("[sample $i] " * repr(detokenize(tok, s)))
-                end
+        last = step == p.steps
+        if p.eval_every > 0 && (step % p.eval_every == 0 || last)
+            vl = mean(Float32(val_loss(model, x, y)) for (x, y) in val_batches)
+            logmsg(@sprintf("[eval] step=%d val_loss=%.4f", step, vl))
+            for (i, s) in enumerate(generate(Flux.f32(cpu(model)), prompt))
+                logmsg("[sample $i] " * repr(detokenize(tok, s)))
             end
-            if eval_hellaswag !== nothing && (step % p.hellaswag_every == 0 || last)
-                (; acc, acc_norm) = eval_hellaswag(model)
-                logmsg(@sprintf("[hellaswag] step=%d acc=%.4f acc_norm=%.4f", step, acc, acc_norm))
-            end
-            if p.ckpt_every > 0 && (step % p.ckpt_every == 0 || last)
-                path = joinpath(log_dir, @sprintf("checkpoint_%05d.jld2", step))
-                save_checkpoint(path, model, opt_state, step, pos, cfg)
-                logmsg("[checkpoint] $path")
-            end
+        end
+        if eval_hellaswag !== nothing && (step % p.hellaswag_every == 0 || last)
+            (; acc, acc_norm) = eval_hellaswag(model)
+            logmsg(@sprintf("[hellaswag] step=%d acc=%.4f acc_norm=%.4f", step, acc, acc_norm))
+        end
+        if p.ckpt_every > 0 && (step % p.ckpt_every == 0 || last)
+            path = joinpath(log_dir, @sprintf("checkpoint_%05d.jld2", step))
+            save_checkpoint(path, model, opt_state, step, pos, cfg)
+            logmsg("[checkpoint] $path")
         end
     end
     close(logfile)
     return model
 end
 
-function parse_cli(args)
-    s = ArgParseSettings(description="Pretrain GPT-2 with Flux and Reactant.", autofix_names=true)
+# The command-line options, without those left unset.
+function parse_cli(args; description)
+    s = ArgParseSettings(; description, autofix_names=true)
     @add_arg_table! s begin
         "--preset"
             help = "fineweb (GPT-2 124M on FineWeb-Edu 10B) or tinystories (small model, ~30 min)"
             default = "tinystories"
         "--data-dir"
             help = "directory for the tokenized datasets, written on the first run"
-            default = joinpath(@__DIR__, "data")
+            default = normpath(joinpath(@__DIR__, "..", "data"))
         "--log-dir"
-            help = "directory for log.txt and checkpoints"
-            default = joinpath(@__DIR__, "log")
+            help = "directory for log.txt and checkpoints (default: log/ next to the script)"
         "--batchsize"
             help = "sequences per micro-batch; gradients are accumulated up to the preset's tokens per step"
             arg_type = Int
@@ -209,10 +199,5 @@ function parse_cli(args)
             help = "peak matmul TFLOPS of the GPU, to report the model FLOPs utilization"
             arg_type = Float64
     end
-    return parse_args(args, s; as_symbols=true)
-end
-
-function (@main)(args)
-    main(; parse_cli(args)...)
-    return nothing
+    return (; (k => v for (k, v) in parse_args(args, s; as_symbols=true) if v !== nothing)...)
 end
