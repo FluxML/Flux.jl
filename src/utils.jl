@@ -731,7 +731,7 @@ function early_stopping(f, delay; distance = -, init_score = Inf, min_dist = 0)
       Δ = distance(best_score, score)
       best_score = Δ < 0 ? best_score : score
 
-      return Δ < min_dist
+      return Δ <= min_dist
     end
   end
 
@@ -774,7 +774,7 @@ function plateau(f, width; distance = -, init_score = Inf, min_dist = 1f-6)
       Δ = abs(distance(last_score, score))
       last_score = score
 
-      return Δ < min_dist
+      return Δ <= min_dist
     end
   end
 
