@@ -82,6 +82,16 @@ end
     @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
     @test g4.val.loss ≈ 1.75
     @test g4.val.aux == "[1.0, 0.5, 0.25]"
+    # NamedTuple aux with a numeric array (whole-value stashing would zero the gradient here):
+    m2 = Dense([1 2 3; 4 5 6f0] ./ 10, [0, 1f0], tanh)
+    x2 = Float32[1 -1 0.5 2; 0 1 2 3; -1 0 1 2]
+    fnt = (m, x) -> (loss=sum(m(x)), pred=m(x))
+    gnt = Flux.withgradient(fnt, Duplicated(deepcopy(m2)), x2)
+    gzy = Flux.withgradient(fnt, m2, x2)
+    @test gnt.val.loss ≈ gzy.val.loss
+    @test gnt.val.pred ≈ gzy.val.pred
+    @test gnt.grad[1].weight ≈ gzy.grad[1].weight
+    @test gnt.grad[2] ≈ gzy.grad[2]
     # Aux value matches Zygote's, and the scalar-loss branch is unaffected:
     for f in (x -> (sum(abs2, x), 1 ./ x),
               x -> (loss=sum(abs2, x), acc=sum(x)),
