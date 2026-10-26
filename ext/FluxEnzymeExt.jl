@@ -65,18 +65,19 @@ end
 
 # Wraps a loss `f` that may return a `Tuple`/`NamedTuple` whose first element is the scalar loss.
 # The wrapper returns only that scalar to Enzyme (so reverse mode is happy) and stashes the
-# auxiliary outputs in `aux` as a side effect. How the aux is stashed matters, because rebuilding it
-# inside the differentiated call misbehaves with Enzyme:
-#   * a `Tuple` return stashes `Base.tail` — storing the whole tuple instead makes Enzyme drop the
-#     gradient to zero when the aux holds numeric arrays;
-#   * a `NamedTuple` return stashes the whole value — rebuilding a `NamedTuple` tail inside `autodiff`
-#     fails to compile for non-trivial aux.
+# auxiliary outputs in `aux` as a side effect. How the aux is stashed matters with Enzyme:
+#   * only the values after the loss are stored, as a plain `Tuple` — storing the whole value
+#     (which holds the returned loss) makes Enzyme drop the gradient to zero when the aux holds
+#     numeric arrays;
+#   * a `NamedTuple` is rebuilt from its `names` after `autodiff` — rebuilding a `NamedTuple` tail
+#     inside `autodiff` fails to compile for non-trivial aux.
 mutable struct _WithAux{F}
     f::F
-    kind::Symbol   # :scalar | :tuple | :named
-    aux::Any       # Base.tail(val) for :tuple, the whole val for :named, unused for :scalar
+    kind::Symbol                  # :scalar | :tuple | :named
+    names::Tuple{Vararg{Symbol}}  # keys(val) for :named
+    aux::Any                      # the values after the loss, unused for :scalar
 end
-_WithAux(f) = _WithAux(f, :scalar, nothing)
+_WithAux(f) = _WithAux(f, :scalar, (), nothing)
 
 function (w::_WithAux)(args...)
     val = w.f(args...)
@@ -86,7 +87,8 @@ function (w::_WithAux)(args...)
         return val[1]
     elseif val isa NamedTuple
         w.kind = :named
-        w.aux = val
+        w.names = keys(val)
+        w.aux = Base.tail(values(val))
         return val[1]
     else
         return val
@@ -96,7 +98,7 @@ end
 # Reassemble the full `val` from the primal `loss` returned by Enzyme and the stashed aux.
 _aux_val(w::_WithAux, loss) =
     w.kind === :tuple ? (loss, w.aux...) :
-    w.kind === :named ? w.aux :
+    w.kind === :named ? NamedTuple{w.names}((loss, w.aux...)) :
     loss
 
 
