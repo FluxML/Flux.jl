@@ -388,6 +388,38 @@ end
   m = LayerNorm((2,3,4), affine=false)
   @test Flux.hasaffine(m) == false
   @test length(Flux.trainables(m)) == 0
+
+  @testset "NNlib.layernorm forward" begin
+    x = randn(Float32, 2, 3, 4)
+    m = LayerNorm((2, 3), tanh)
+    m.diag.scale .= randn(Float32, 2, 3)
+    m.diag.bias .= randn(Float32, 2, 3)
+    @test m(x) ≈ tanh.(m.diag.scale .* Flux.normalise(x; dims=1:2) .+ m.diag.bias)
+    test_gradients(m, x)
+    test_gradients(Chain(Dense(2 => 2), LayerNorm(2, tanh; affine=false)), randn(Float32, 2, 5))
+
+    # a hand-built `Scale` without bias falls back to normalising, then scaling
+    m = LayerNorm(identity, Flux.Scale(Float32[2, 3], false), 1f-5, (2,), true)
+    x = randn(Float32, 2, 5)
+    @test m(x) ≈ Float32[2, 3] .* Flux.normalise(x; dims=1)
+    test_gradients(m, x)
+  end
+
+  @testset "half-precision input" begin
+    m = LayerNorm(3, relu)
+    m.diag.scale .= randn(Float32, 3)
+    m.diag.bias .= randn(Float32, 3)
+    x = randn(Float32, 3, 5)
+    @test f16(m).diag.scale isa Vector{Float32}  # NNlib.layernorm needs Float32 parameters
+    @test bf16(m).diag.bias isa Vector{Float32}
+    y = f16(m)(f16(x))
+    @test y isa Matrix{Float16}  # normalised in Float32, returned in the input's eltype
+    @test y ≈ m(x)  rtol=1e-2
+    @test m(f16(x)) isa Matrix{Float16}
+    dm, dx = gradient((m, x) -> sum(abs2, m(x)), f16(m), f16(x))
+    @test dm.diag.scale isa Vector{Float32}
+    @test dx isa Matrix{Float16}
+  end
 end
 
 @testset "GroupNorm" begin

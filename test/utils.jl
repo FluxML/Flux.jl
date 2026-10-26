@@ -303,6 +303,9 @@ end
   # BFloat16
   @test eltype(bf16(m)[1].weight) == BFloat16
   @test eltype(bf16(m)(x32)) == BFloat16  # _match_eltype converts the input
+  xb = bf16(x32)
+  @test Flux._match_eltype(bf16(m)[1], xb) === xb  # doesn't copy when eltype is OK
+  @test bf16(m[2])(onehotbatch([1, 3], 1:5)) ≈ bf16(m[2])(bf16(Float32.(onehotbatch([1, 3], 1:5))))
   @test eltype(f32(bf16(m))[1].weight) == Float32
   @test bf16(x64) isa Vector{BFloat16}
   @test bf16(x32) isa Vector{BFloat16}
@@ -313,18 +316,20 @@ end
 
   @testset "mixed-precision normalization ($cast)" for cast in (f16, bf16)
     Thalf = cast === f16 ? Float16 : BFloat16
-    # BatchNorm/InstanceNorm/GroupNorm keep statistics and affine parameters in Float32
-    # under half precision; LayerNorm is converted fully.
+    # Normalization layers keep statistics and affine parameters in Float32 under half
+    # precision, while other layers are converted fully.
     for layer in (BatchNorm(3),
                   InstanceNorm(3; affine=true, track_stats=true),
-                  GroupNorm(4, 2))
+                  GroupNorm(4, 2),
+                  LayerNorm(3))
       hl = cast(layer)
       params = filter(x -> x isa AbstractArray, collect(Functors.fleaves(hl)))
       @test !isempty(params)
       @test all(p -> eltype(p) == Float32, params)
     end
-    @test all(p -> eltype(p) == Thalf,
-              filter(x -> x isa AbstractArray, collect(Functors.fleaves(cast(LayerNorm(3))))))
+    hc = cast(Chain(Dense(3 => 3), LayerNorm(3)))
+    @test eltype(hc[1].weight) == Thalf
+    @test eltype(hc[2].diag.scale) == Float32
 
     # Forward is only exercised for Float16: the generic bf16 CPU normalization path can
     # hang LLVM codegen (JuliaMath/BFloat16s.jl#107), so bf16 norms are tested on the GPU.
@@ -333,6 +338,7 @@ end
       @test eltype(f16(BatchNorm(3))(xh)) == Float16          # mixed: Float32 params, f16 data
       @test eltype(f16(InstanceNorm(3; affine=true))(xh)) == Float16
       @test eltype(f16(GroupNorm(4, 2))(f16(randn(Float32, 4, 4, 4, 2)))) == Float16
+      @test eltype(f16(LayerNorm(4))(xh)) == Float16
     end
   end
 
@@ -352,6 +358,66 @@ end
     @test f32(ci64) === ci64    
     nt = (a = ci64, b = ci32)
     @test f16(nt) === nt
+  end
+end
+
+# Layers with their own precision conversion, through the 2-argument methods of f16 etc.
+struct PrecisionNorm{V}
+  scale::V
+end
+Flux.@layer PrecisionNorm
+(n::PrecisionNorm)(x) = n.scale .* x
+Flux.f16(n::PrecisionNorm, cx) = f32(n, cx)
+Flux.bf16(n::PrecisionNorm, cx) = f32(n, cx)
+
+struct PrecisionRotary{D, V}
+  proj::D
+  freqs::V
+end
+Flux.@layer PrecisionRotary
+(r::PrecisionRotary)(x) = r.proj(x) .* cos.(r.freqs)
+Flux.bf16(r::PrecisionRotary, cx) = PrecisionRotary(bf16(r.proj, cx), f32(r.freqs, cx))
+Flux.f64(r::PrecisionRotary, cx) = PrecisionRotary(f64(r.proj, cx), f32(r.freqs, cx))
+
+@testset "Custom precision methods" begin
+  W = randn(Float32, 4, 4)
+  m = Chain(Dense(W), SkipConnection(Chain(PrecisionNorm(ones(Float32, 4))), +),
+            PrecisionRotary(Dense(W), rand(Float32, 4)), Dense(4 => 2))
+  for (cast, T) in ((f16, Float16), (bf16, BFloat16))
+    h = cast(m)
+    @test eltype(h[1].weight) == T
+    @test eltype(h[2].layers[1].scale) == Float32  # the method applies deep in a model
+    @test h[1].weight === h[3].proj.weight  # tied arrays stay tied, also across methods
+  end
+  b = bf16(m)
+  @test eltype(b[3].proj.weight) == BFloat16
+  @test eltype(b[3].freqs) == Float32
+  @test eltype(f16(m)[3].freqs) == Float16  # no `f16` method for PrecisionRotary
+  @test eltype(f16(PrecisionNorm(ones(4))).scale) == Float32  # the layer itself as argument
+  @test eltype(f64(f16(m))[2].layers[1].scale) == Float64
+
+  bn = BatchNorm(3)
+  h = f16(Chain(bn, Dense(3 => 3), bn))
+  @test h[1] === h[3]  # a mutable layer used twice stays one layer
+
+  @testset "gradient" begin
+    x = randn(Float32, 4, 3)
+    m = Chain(Dense(W, true, tanh), LayerNorm(4), PrecisionRotary(Dense(4 => 4), rand(Float32, 4)), Dense(W))
+    loss(m) = sum(abs2, m(x))
+    g = gradient(loss, m)[1]
+    g64 = gradient(m -> loss(f64(m)), m)[1]
+    # each use of the tied `W` gets its own gradient, as without conversion
+    @test g64.layers[1].weight ≈ g.layers[1].weight
+    @test g64.layers[4].weight ≈ g.layers[4].weight
+    @test g64.layers[2].diag.scale ≈ g.layers[2].diag.scale
+    @test g64.layers[3].proj.weight ≈ g.layers[3].proj.weight
+    @test g64.layers[3].freqs ≈ g.layers[3].freqs
+    @test eltype(g64.layers[1].weight) == Float32
+    @test eltype(g64.layers[3].freqs) == Float32
+
+    gb = gradient(m -> loss(bf16(m)), m)[1]
+    @test eltype(gb.layers[1].weight) == Float32
+    @test eltype(gb.layers[3].freqs) == Float32
   end
 end
 

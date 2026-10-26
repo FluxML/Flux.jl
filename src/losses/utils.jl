@@ -25,7 +25,7 @@ end
 end
 
 ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # should help Diffractor's broadcasting
-ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
+ChainRulesCore.@scalar_rule xlogx(x) (log(x) + true)
 
 const LowPrecision = Union{Float16, BFloat16}
 
@@ -41,8 +41,9 @@ function ChainRulesCore.rrule(::typeof(_upcast), x::Union{LowPrecision, Abstract
   return _upcast(x), _upcast_back
 end
 
-_downcast(::Type{T}, Δ::Union{Real, AbstractArray{<:Real}}) where {T} = T.(Δ)
-_downcast(::Type{BFloat16}, Δ::Union{Real, AbstractArray{<:Real}}) = _to_bf16(Δ)
+_downcast(::Type{T}, Δ::Real) where {T} = T(Δ)
+_downcast(::Type{BFloat16}, Δ::Real) = _to_bf16(Δ)
+_downcast(::Type{T}, Δ::AbstractArray{<:Real}) where {T} = _downcast.(T, Δ)
 _downcast(::Type, Δ) = Δ
 
 # The eltype that `_upcast` converts to, for the defaults of keywords such as `eps`.
@@ -72,16 +73,12 @@ _islabels(ŷ::AbstractArray, y::OneHotArray{<:Any, <:Any, <:Any, <:AbstractArra
 _gather_labels(ŷ::AbstractArray, y::AbstractArray, dims::Integer) =
   _gather(ŷ, _label_indices(ŷ, y, dims))
 
-function _gather_labels(ŷ::AbstractArray, y::OneHotArray, dims::Integer)
-  labels = _indices(y)
-  return reshape(_gather_labels(ŷ, labels, dims), 1, size(labels)...)
-end
-
 # `x[idx]` for linear indices `idx`. Unlike that of `getindex`, the gradient of `NNlib.gather` stays
 # on the GPU. Overloaded for traced arrays in FluxReactantExt.
 _gather(x::AbstractArray, idx::AbstractArray) = NNlib.gather(vec(x), idx)
 
-# Linear indices into `ŷ`, viewed as a `prod(size(ŷ)[1:dims-1]) × size(ŷ, dims) × :` array.
+# Linear indices into `ŷ`, viewed as a `prod(size(ŷ)[1:dims-1]) × size(ŷ, dims) × :` array,
+# with the size of the entries that `_gather_labels` picks.
 # The closures capture `sz`, not `ŷ`, so that Reactant doesn't trace these reductions.
 function _label_indices(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   sz = size(ŷ)
@@ -91,6 +88,11 @@ function _label_indices(ŷ::AbstractArray, y::AbstractArray, dims::Integer)
   B = prod(d -> sz[d], dims+1:length(sz); init = 1)
   idx = (1:A) .+ A .* (reshape(y, A, B) .- 1) .+ (A * C) .* (0:B-1)'
   return reshape(idx, size(y))
+end
+
+function _label_indices(ŷ::AbstractArray, y::OneHotArray, dims::Integer)
+  labels = _indices(y)
+  return reshape(_label_indices(ŷ, labels, dims), 1, size(labels)...)
 end
 
 function _check_labels(sz::Dims, y::AbstractArray, dims::Integer)

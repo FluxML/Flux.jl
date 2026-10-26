@@ -24,6 +24,8 @@ jobs:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }}${{ matrix.group == 'reactant' && ' - Reactant' || '' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
+    # a failing nightly must not turn the CI badge red
+    continue-on-error: ${{ matrix.version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:

@@ -351,9 +351,10 @@ end
         m = mk()
         opt = Flux.setup(Descent(0f0), m)
         scaled(m, a, b, s) = s * Flux.mse(m(a), b)
-        n = length(ext.COMPILE_CACHE)
         ls = [Flux.trainstep!(scaled, m, (x, y, Reactant.ConcreteRNumber(s)), opt) for s in (1f0, 2f0, 3f0)]
-        @test length(ext.COMPILE_CACHE) == n + 1
+        # Count this model's entries only: a step may prune those of earlier, collected models.
+        handle = first(Flux.trainables(m))
+        @test count(v -> v[1].value === handle, values(ext.COMPILE_CACHE)) == 1
         @test ls ≈ ls[1] .* [1, 2, 3]
     end
 

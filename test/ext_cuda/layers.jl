@@ -307,11 +307,13 @@ end
   @test back1(one.(y1))[2].weight ≈ cpu(gback1(one.(gy1))[2].weight)  rtol=0.1
   @test eltype(gback1(one.(gy1))[2].bias) == BFloat16
 
-  # LayerNorm converts fully to bf16 (it wraps NNlib.normalise, which has no scale/bias
-  # and so no Float32-parameter requirement).
+  # LayerNorm is converted in mixed precision: NNlib.layernorm needs Float32 scale/bias
+  # for bf16 data, and normalises it in Float32.
   gm2 = Chain(LayerNorm(3), Dropout(0.1)) |> bf16 |> gpu
+  @test eltype(gm2[1].diag.scale) == Float32
   @test eltype(gm2(gx)) == BFloat16
   @test Float32.(gm2(gx)) ≈ f32(gm2)(f32(gx))  rtol=0.1
+  @test eltype(gradient(m -> sum(abs2, m(gx)), gm2)[1].layers[1].diag.scale) == Float32
 
   if CUDA.capability(CUDA.device()) >= v"8.0"  # cuDNN has no BFloat16 kernels before sm_80
   # BatchNorm, InstanceNorm and GroupNorm are converted in mixed precision: statistics

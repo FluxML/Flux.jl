@@ -1,6 +1,6 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.16.13"
+version = "0.16.14"
 
 [workspace]
 projects = ["test", "docs"]
@@ -73,7 +73,7 @@ MPI = "0.20.19"
 MacroTools = "0.5"
 Mooncake = "0.5.1"
 NCCL = "0.1.1"
-NNlib = "0.9.50"
+NNlib = "0.9.53"
 OneHotArrays = "0.2.4"
 Optimisers = "0.4.10"
 Preferences = "1"

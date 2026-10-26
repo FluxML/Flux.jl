@@ -52,6 +52,13 @@ end
   @test_throws ArgumentError loss(gpu(x), gpu([0; y[2:end]]))
   test_gradients(loss, x, y, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 
+  @testset "$lowprec" for lowprec in (f16, bf16)
+    x16 = lowprec(x)
+    g = gradient(x -> loss(x, gpu(y)), gpu(x16))[1]
+    @test g isa CuArray{eltype(x16)}
+    @test cpu(g) ≈ gradient(x -> loss(x, y), x16)[1]
+  end
+
   x3 = softmax(randn(Float32, 3, 5, 4); dims = 2)
   y3 = rand(1:5, 3, 4)
   @test loss(gpu(x3), gpu(y3); dims = 2) ≈ loss(x3, y3; dims = 2)
