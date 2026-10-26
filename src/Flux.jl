@@ -139,4 +139,6 @@ export MPIBackend, NCCLBackend, DistributedUtils
 
 include("deprecations.jl")
 
+include("precompile.jl")
+
 end # module
