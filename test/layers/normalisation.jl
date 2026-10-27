@@ -524,3 +524,22 @@ end
   include("../test_common/normalization.jl")
   normalization_testsuite(cpu)
 end
+
+@testset "WeightNorm with dims = :" begin
+  # https://github.com/FluxML/Flux.jl/issues/2796
+  wn = WeightNorm(Dense(2 => 3); dims = :)
+  @test wn.g isa AbstractArray
+  @test size(wn.g) == (1, 1)
+  @test wn.g[] ≈ sqrt(sum(abs2, wn.layer.weight)) rtol=1f-6
+
+  x = rand(Float32, 2, 4)
+  @test wn(x) ≈ wn.layer(x)  # `g` starts at the norm of the weight
+  @test Flux.remove_weight_norms(wn)(x) ≈ wn(x)
+
+  opt = Flux.setup(Adam(0.1), wn)
+  @test opt.g isa Optimisers.Leaf
+  g_before = copy(wn.g)
+  grad = gradient(m -> sum(abs2, m(x)), wn)[1]
+  Flux.update!(opt, wn, grad)
+  @test wn.g != g_before
+end
