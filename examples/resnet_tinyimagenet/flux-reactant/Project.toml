@@ -1,0 +1,20 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
+MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[sources]
+Flux = {path = "../../.."}
+
+[compat]
+ArgParse = "1"
+Flux = "0.16.14"
+HuggingFaceDatasets = "0.4.4"
+MLUtils = "0.4.15"
+Reactant = "0.2.300"
+julia = "1.12"
