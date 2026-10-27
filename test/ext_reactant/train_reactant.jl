@@ -69,6 +69,7 @@ end
         Flux.trainstep!(loss, model, (x, y), opt)
     end
     @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < l0
+    @test !haskey(Flux.Train.STEP_PACERS, objectid(Flux.Train._first_param(model)))   # XLA owns the buffers
 
     # Host-resident data must be rejected by both entry points.
     @test_throws ArgumentError Flux.trainstep!(loss, model, (X, Y), opt)

@@ -195,6 +195,96 @@ end
   @test m1.bias ≈ m2.bias
 end
 
+@testset "paced GC" begin
+  T = Flux.Train
+  gpu = Flux.CUDADevice   # the pacer only looks at the device type, so no GPU is needed
+  newtypes() = (gensym(),)   # as if a step had new argument types, and compiled
+  seen = newtypes()
+  T._new_step_types!(seen)
+
+  @testset "full GC after a step with new types" begin
+    # (`Base.gc_num().full_sweep` sometimes misses a `GC.gc(true)`, so it can't tell which GC ran.)
+    fixed = T.FixedGCPacer(3)
+    types = newtypes()
+    n = T.GC_COUNT[]
+    T.maybe_gc!(fixed, 0.0, types)   # collects on its first step only because the types are new
+    @test T.GC_COUNT[] == n + 1
+    T.maybe_gc!(fixed, 0.0, types)   # no longer new
+    @test T.GC_COUNT[] == n + 1
+
+    # The full GC isn't timed: `t_gc` is the cost of an incremental one.
+    auto = T.AutoGCPacer()
+    T.maybe_gc!(auto, 0.0, newtypes())
+    @test auto.t_gc == 0
+    T.maybe_gc!(auto, 0.0, seen)
+    @test auto.t_gc > 0
+
+    # `train!` records the types of its steps.
+    m = Dense(2 => 1)
+    opt = Flux.setup(Descent(0.1), m)
+    loss(m, x) = sum(m(x))
+    x = rand(Float32, 2, 3)
+    Flux.train!(loss, m, [(x,)], opt)
+    @test T._step_types(loss, AutoZygote(), m, (x,), opt) in T.STEP_TYPES
+  end
+
+  @testset "a collection by any pacer restarts the count" begin
+    a, b = T.FixedGCPacer(2), T.FixedGCPacer(2)
+    T.maybe_gc!(b, 0.0, seen)
+    T.maybe_gc!(a, 0.0, seen)
+    T.maybe_gc!(a, 0.0, seen)   # collects
+    n = T.GC_COUNT[]
+    T.maybe_gc!(b, 0.0, seen)   # b's first step since then
+    @test T.GC_COUNT[] == n
+    T.maybe_gc!(b, 0.0, seen)
+    @test T.GC_COUNT[] == n + 1
+  end
+
+  @testset "a pacer per model" begin
+    w1, w2 = rand(2), rand(2)   # stand for the first parameters of two models
+    pacer1 = T._step_pacer(w1, gpu, :auto)
+    @test pacer1 isa T.AutoGCPacer
+    @test T._step_pacer(w1, gpu, :auto) === pacer1
+    @test T._step_pacer(w2, gpu, :auto) !== pacer1
+    @test T._step_pacer(w1, gpu, 3) isa T.FixedGCPacer
+    @test T._step_pacer(w1, gpu, 0) isa T.NoGCPacer
+    @test_throws ArgumentError T._step_pacer(w1, gpu, :never)
+
+    @test T._step_pacer(w1, Flux.CPUDevice, :auto) isa T.AutoGCPacer
+    @test T._step_pacer(w1, Flux.ReactantDevice, :auto) isa T.NoGCPacer
+    @test T._step_pacer(w1, Nothing, :auto) isa T.NoGCPacer   # a model with no arrays
+    @test T._step_pacer(1:2, gpu, :auto) isa T.NoGCPacer      # can't identify its model
+    cache = Flux.Train.GPUArrays.AllocCache()
+    @test Flux.Train.GPUArrays.@cached(cache, T._step_pacer(w1, gpu, :auto)) isa T.NoGCPacer
+
+    # The entries of freed models are pruned.
+    empty!(T.STEP_PACERS)
+    T._step_pacer(w1, gpu, :auto)
+    foreach(_ -> T._step_pacer(rand(2), gpu, :auto), 1:3)
+    GC.gc(true)
+    T._prune_step_pacers!()
+    # `<= 2` because a reference to the last array may linger on the stack.
+    @test length(T.STEP_PACERS) <= 2
+    @test any(e -> e[1].value === w1, values(T.STEP_PACERS))
+  end
+
+  @testset "trainstep! and train! share the model's pacer" begin
+    m = Dense(2 => 1)
+    opt = Flux.setup(Descent(0.1), m)
+    loss(m, x) = sum(m(x))
+    x = rand(Float32, 2, 3)
+    Flux.trainstep!(loss, m, (x,), opt)
+    pacer = T.STEP_PACERS[objectid(m.weight)][2]
+    @test pacer isa T.AutoGCPacer
+    Flux.train!(loss, m, [(x,)], opt)
+    @test T.STEP_PACERS[objectid(m.weight)][2] === pacer
+    Flux.trainstep_withgradient!(loss, m, x, opt; gc_interval = 2)
+    @test T.STEP_PACERS[objectid(m.weight)][2] isa T.FixedGCPacer
+    @test_throws ArgumentError Flux.trainstep!(loss, m, (x,), opt; gc_interval = :never)
+    @test_throws ArgumentError Flux.trainstep_withgradient!(loss, m, (x,), opt; gc_interval = :never)
+  end
+end
+
 @testset "Flux.update! features" begin
   m = Chain(Dense(2=>3, tanh), Dense(3=>1), only)
   x = rand(Float32, 2)
