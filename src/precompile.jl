@@ -19,5 +19,9 @@ using PrecompileTools: @setup_workload, @compile_workload
             withgradient(m -> mse(m(input), yf), model)
             train!((m, x, y) -> logitcrossentropy(m(x), y), model, [(input, y)], opt_state)
         end
+        # The GC pacers' registries hold `WeakRef`s and `objectid` hashes, which would mean nothing
+        # once the package image is loaded.
+        empty!(Train.STEP_PACERS)
+        empty!(Train.STEP_TYPES)
     end
 end

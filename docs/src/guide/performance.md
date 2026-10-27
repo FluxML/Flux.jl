@@ -77,7 +77,7 @@ This will avoid the splatting penalty, and will hit the optimised `reduce` metho
 
 ## Be aware of GPU memory inefficiencies
 
-GPU arrays are freed by Julia's garbage collector, which seldom runs on its own, since they take little CPU memory. [`train!`](@ref Flux.train!) and [`trainstep!`](@ref Flux.trainstep!) therefore run collections between training steps, which keeps the GPU memory in use close to what one step needs (see the section on GPU memory in the docstring of `trainstep!`). Other code that allocates on the GPU in a loop, such as an evaluation loop, does not get this: there, running an incremental garbage collection, `GC.gc(false)`, after each batch or every few batches keeps GPU memory from filling up. See other tips for CUDA memory management [here](https://cuda.juliagpu.org/stable/usage/memory/).
+GPU arrays are freed by Julia's garbage collector, which seldom runs on its own, since they take little CPU memory. [`train!`](@ref Flux.train!) and [`trainstep!`](@ref Flux.trainstep!) therefore run collections between training steps, which keeps the GPU memory in use close to what one step needs (see the section on garbage collection in the docstring of `train!`). Other code that allocates on the GPU in a loop, such as an evaluation loop, does not get this: there, running an incremental garbage collection, `GC.gc(false)`, after each batch or every few batches keeps GPU memory from filling up. See other tips for CUDA memory management [here](https://cuda.juliagpu.org/stable/usage/memory/).
 
 ## Compile your training with Reactant
 

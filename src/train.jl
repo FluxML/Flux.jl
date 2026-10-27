@@ -27,15 +27,15 @@ function _reactant_trainstep_withgradient! end
 # fires on its own here (the `CuArray` wrappers are tiny on the CPU heap), so reserved GPU
 # memory creeps up (issue #2523). A periodic incremental GC bounds that growth at a fraction
 # of the cost of collecting every step. A `GCPacer` decides, after each training step and
-# given how long it took, whether to run `GC.gc(false)`. `train!` makes a pacer for each call,
-# while `trainstep!` keeps one for each GPU model, in `STEP_PACERS`.
+# given how long it took, whether to run `GC.gc(false)`. Each model has its own, in
+# `STEP_PACERS`, used by both `trainstep!` and `train!` (see `_paced_step`).
 # ---------------------------------------------------------------------------
 abstract type GCPacer end
 
 # No paced GC: with the caching allocator on a mid-step GC reclaims nothing (the step's
 # buffers are pinned), and `gc_interval = 0` disables pacing explicitly.
 struct NoGCPacer <: GCPacer end
-maybe_gc!(::NoGCPacer, dt::Real) = nothing
+maybe_gc!(::NoGCPacer, dt::Real, types::Tuple) = nothing
 
 # Number of collections run by all pacers. A pacer counts its steps since the last of them,
 # whichever pacer ran it, as that collection freed the garbage of the steps before it. So models
@@ -43,49 +43,59 @@ maybe_gc!(::NoGCPacer, dt::Real) = nothing
 # Julia's automatic collections don't count: they run mid-step, while its arrays are in use.
 const GC_COUNT = Threads.Atomic{Int}(0)
 
-# The pacers have the fields `steps` (steps taken), `since` (steps since the last collection)
-# and `seen` (`GC_COUNT` after their last step).
-function count_step!(p::GCPacer)
+# The pacers have the fields `since` (steps since the last collection) and `seen` (`GC_COUNT`
+# after their last step).
+function count_step!(pacer::GCPacer)
     c = GC_COUNT[]
-    if c != p.seen
-        p.since = 0
-        p.seen = c
+    if c != pacer.seen
+        pacer.since = 0
+        pacer.seen = c
     end
-    p.steps += 1
-    p.since += 1
+    pacer.since += 1
     return nothing
 end
 
-function run_gc!(p::GCPacer, full::Bool)
+function run_gc!(pacer::GCPacer, full::Bool)
     GC.gc(full)
-    p.seen = Threads.atomic_add!(GC_COUNT, 1) + 1
-    p.since = 0
+    pacer.seen = Threads.atomic_add!(GC_COUNT, 1) + 1
+    pacer.since = 0
     return nothing
 end
 
-# A first step longer than `GC_FULL_S` seconds, typically because it compiles, leaves the arrays
-# it allocated in the old generation, which `GC.gc(false)` doesn't free (#2795). It is followed
-# by a full GC instead. That costs ~0.1 s, too much to run after the first step of every call
-# when `train!` is called once per batch.
-const GC_FULL_S = 1.0
+# The types of the arguments of the steps run so far (see `_step_types`). A step with new ones
+# compiles, for seconds or minutes, and the arrays it allocates survive Julia's automatic
+# collections during that time. That moves them to the old generation, which `GC.gc(false)`
+# doesn't free (#2795), so such a step is followed by a full GC instead. A full GC costs ~0.1 s,
+# too much to run after every step, or after the first step of every `train!` call when it is
+# called once per batch. A lookup costs ~0.2 μs.
+const STEP_TYPES = Set{Any}()
+const STEP_TYPES_LOCK = ReentrantLock()
 
-full_gc_due(p::GCPacer, dt::Real) = p.steps == 1 && dt >= GC_FULL_S
+_step_types(loss, adtype, model, batch, opt_state) =
+    (typeof(loss), typeof(adtype), typeof(model), typeof(batch), typeof(opt_state))
+
+function _new_step_types!(types::Tuple)
+    @lock STEP_TYPES_LOCK begin
+        types in STEP_TYPES && return false
+        push!(STEP_TYPES, types)
+        return true
+    end
+end
 
 # Fixed cadence: collect every `interval` steps.
 mutable struct FixedGCPacer <: GCPacer
     interval::Int
-    steps::Int
     since::Int
     seen::Int
 end
-FixedGCPacer(interval::Integer) = FixedGCPacer(interval, 0, 0, GC_COUNT[])
+FixedGCPacer(interval::Integer) = FixedGCPacer(interval, 0, GC_COUNT[])
 
-function maybe_gc!(p::FixedGCPacer, dt::Real)
-    count_step!(p)
-    if full_gc_due(p, dt)
-        run_gc!(p, true)
-    elseif p.since >= p.interval
-        run_gc!(p, false)
+function maybe_gc!(pacer::FixedGCPacer, dt::Real, types::Tuple)
+    count_step!(pacer)
+    if _new_step_types!(types)
+        run_gc!(pacer, true)
+    elseif pacer.since >= pacer.interval
+        run_gc!(pacer, false)
     end
     return nothing
 end
@@ -111,31 +121,30 @@ mutable struct AutoGCPacer <: GCPacer
     t_step::Float64   # EMA of step wall-time (seconds)
     t_gc::Float64     # EMA of one GC's wall-time (seconds)
     interval::Int     # current number of steps between collections
-    steps::Int
     since::Int
     seen::Int
 end
-AutoGCPacer() = AutoGCPacer(0.0, 0.0, 1, 0, 0, GC_COUNT[])
+AutoGCPacer() = AutoGCPacer(0.0, 0.0, 1, 0, GC_COUNT[])
 
-function maybe_gc!(p::AutoGCPacer, dt::Real)
-    count_step!(p)
-    spike = p.t_step > 0.0 && dt > 3 * p.t_step
-    p.t_step = p.t_step == 0.0 ? dt : 0.9 * p.t_step + 0.1 * dt
-    base = if p.t_step >= GC_HIDE_S           # compute-bound: GC hides → every step
+function maybe_gc!(pacer::AutoGCPacer, dt::Real, types::Tuple)
+    count_step!(pacer)
+    spike = pacer.t_step > 0.0 && dt > 3 * pacer.t_step
+    pacer.t_step = pacer.t_step == 0.0 ? dt : 0.9 * pacer.t_step + 0.1 * dt
+    base = if pacer.t_step >= GC_HIDE_S               # compute-bound: GC hides → every step
         1
-    elseif p.t_gc == 0.0 || p.t_step == 0.0  # not measured yet
+    elseif pacer.t_gc == 0.0 || pacer.t_step == 0.0   # not measured yet
         1
-    else                                     # cheap step: bound amortized GC cost to ε
-        clamp(round(Int, p.t_gc / (GC_OVERHEAD * p.t_step)), 1, 4096)
+    else                                              # cheap step: bound amortized GC cost to ε
+        clamp(round(Int, pacer.t_gc / (GC_OVERHEAD * pacer.t_step)), 1, 4096)
     end
-    p.interval = spike ? max(1, p.interval ÷ 2) : clamp(p.interval + 1, 1, base)
-    if full_gc_due(p, dt)
-        run_gc!(p, true)   # untimed: `t_gc` is the cost of an incremental GC
-    elseif p.since >= p.interval
+    pacer.interval = spike ? max(1, pacer.interval ÷ 2) : clamp(pacer.interval + 1, 1, base)
+    if _new_step_types!(types)
+        run_gc!(pacer, true)   # untimed: `t_gc` is the cost of an incremental GC
+    elseif pacer.since >= pacer.interval
         g0 = time_ns()
-        run_gc!(p, false)
+        run_gc!(pacer, false)
         gdt = (time_ns() - g0) / 1e9
-        p.t_gc = p.t_gc == 0.0 ? gdt : 0.9 * p.t_gc + 0.1 * gdt
+        pacer.t_gc = pacer.t_gc == 0.0 ? gdt : 0.9 * pacer.t_gc + 0.1 * gdt
     end
     return nothing
 end
@@ -152,8 +161,8 @@ _gc_pacer(gc_interval) =
     !_pacing(gc_interval) ? NoGCPacer() :
     gc_interval === :auto ? AutoGCPacer() : FixedGCPacer(gc_interval)
 
-_paces(p::AutoGCPacer, gc_interval) = gc_interval === :auto
-_paces(p::FixedGCPacer, gc_interval) = gc_interval isa Integer && p.interval == gc_interval
+_paces(pacer::AutoGCPacer, gc_interval) = gc_interval === :auto
+_paces(pacer::FixedGCPacer, gc_interval) = gc_interval isa Integer && pacer.interval == gc_interval
 _paces(::NoGCPacer, gc_interval) = false
 
 # The pacers of `trainstep!`, keyed on the `objectid` of the model's first parameter array, with
@@ -168,21 +177,23 @@ _prune_step_pacers!() = filter!(kv -> kv.second[1].value !== nothing, STEP_PACER
 # `ALLOC_CACHE` is a GPUArrays internal.
 _in_alloc_cache() = isdefined(GPUArrays, :ALLOC_CACHE) && GPUArrays.ALLOC_CACHE[] !== nothing
 
-# The pacer for a `trainstep!` call on a model whose first parameter is `p`, on a device of type
-# `dev`. Only an eager GPU model gets one: on the CPU, the GC counts the arrays' memory and
-# collects on its own, and on Reactant XLA owns the buffers. Inside `GPUArrays.@cached` the cache
-# keeps the step's buffers, so a GC would free nothing.
-function _step_pacer(p, dev::Type, gc_interval::Union{Integer, Symbol})
+# The pacer of a model whose first parameter is `param`, on a device of type `devtype`. Only an
+# eager model gets one, on the CPU or a GPU: on Reactant XLA owns the buffers. On the CPU, the GC
+# counts the arrays' memory and collects on its own, but mid-step, while the arrays are in use: it
+# then runs full collections, which made compute-bound models 1.1–1.5× slower than with pacing.
+# Inside `GPUArrays.@cached` the cache keeps the step's buffers, so a GC would free nothing. An
+# immutable `param` (a `StaticArray`) can't identify its model.
+function _step_pacer(param, devtype::Type, gc_interval::Union{Integer, Symbol})
     _check_gc_interval(gc_interval)
-    (_pacing(gc_interval) && dev <: Flux.MLDataDevices.AbstractGPUDevice && !_in_alloc_cache()) ||
-        return NoGCPacer()
-    key = objectid(p)
+    (_pacing(gc_interval) && ismutable(param) && !_in_alloc_cache() &&
+     devtype <: Union{Flux.CPUDevice, Flux.MLDataDevices.AbstractGPUDevice}) || return NoGCPacer()
+    key = objectid(param)
     @lock STEP_PACERS_LOCK begin
         ref, pacer = get(STEP_PACERS, key, (WeakRef(), NoGCPacer()))
-        ref.value === p && _paces(pacer, gc_interval) && return pacer
+        ref.value === param && _paces(pacer, gc_interval) && return pacer
         _prune_step_pacers!()
         pacer = _gc_pacer(gc_interval)
-        STEP_PACERS[key] = (WeakRef(p), pacer)
+        STEP_PACERS[key] = (WeakRef(param), pacer)
         return pacer
     end
 end
@@ -236,7 +247,7 @@ Special method for use with Enzyme.jl, ignores the stored gradient.
 setup(rule::Optimisers.AbstractRule, model::Duplicated) = setup(rule, model.val)
 
 """
-    train!(loss, [adtype,] model, data, opt_state)
+    train!(loss, [adtype,] model, data, opt_state; gc_interval = :auto)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule encoded in `opt_state`.
@@ -275,9 +286,27 @@ It adds only a few features to the loop above:
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
-* Manage memory. Runs garbage collections between steps as [`trainstep!`](@ref Flux.trainstep!)
-  does on a GPU (see its section on GPU memory), with the same keyword `gc_interval`. `train!` runs
-  them on the CPU too, where they make larger models train faster.
+* Manage memory, by running garbage collections between steps (see below).
+
+## Garbage collection
+
+On a GPU, arrays are freed by the garbage collector, which seldom runs on its own, since they take
+little CPU memory. So `train!` runs collections between steps, as [`trainstep!`](@ref Flux.trainstep!)
+does, which keeps the GPU memory in use close to what one step needs. It runs them on the CPU too,
+where they make larger models train faster. The keyword `gc_interval` sets how often:
+
+* `:auto` (the default): an incremental collection after each step that takes more than a few
+  milliseconds, and less often after faster steps, so that collections take about 2% of the
+  training time;
+* an integer `n`: an incremental collection every `n` steps;
+* `0`: no collections.
+
+Unless `gc_interval = 0`, a step that compiles, that is, the first one with the types of its
+arguments (loss, model, batch and optimiser state), is followed by a full collection instead, as
+incremental ones don't free the arrays of such a step. Collections are paced for each model, also
+across calls of `train!` and `trainstep!` (see [`trainstep!`](@ref Flux.trainstep!)). There are none
+on a Reactant device, nor inside `GPUArrays.@cached`, where they would free nothing; with
+`caching_allocator = true`, the steps after the first one run there.
 """
 function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_state; cb = nothing,
                 caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
@@ -289,23 +318,14 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
 
     # Resolve the AD backend and the Reactant flag exactly once here (not per batch), then thread both
     # into the per-step worker below. On a Reactant device the fused step is compiled; the caching
-    # allocator and the paced GC below are CUDA-oriented (they manage `CuArray` reserved memory) and
-    # don't apply.
-    adtype, on_reactant, _, _ = _resolve_backend(model, adtype)
-    if on_reactant
-        cache = nothing
-        pacer = NoGCPacer()
-    else
-        cache = caching_allocator ? GPUArrays.AllocCache() : nothing
-        # With the cache on, a step's buffers are pinned, so a GC between steps reclaims nothing.
-        pacer = cache === nothing ? _gc_pacer(gc_interval) : NoGCPacer()
-    end
+    # allocator is CUDA-oriented (it manages `CuArray` reserved memory) and doesn't apply.
+    adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
+    cache = caching_allocator && !on_reactant ? GPUArrays.AllocCache() : nothing
 
     @withprogress for (i, batch) in enumerate(data)
-        t0 = time_ns()
         # A `Tuple` batch is spliced into the loss (`loss(model, batch...)`), anything else is passed
         # as-is (`loss(model, batch)`) — the wrapping `trainstep!` would otherwise do. We call the
-        # internal `_trainstep!` directly so the resolved backend/Reactant flag are reused instead of
+        # internal `_paced_step` directly so the resolved backend/Reactant flag are reused instead of
         # re-derived every batch.
         b = batch isa Tuple ? batch : (batch,)
         # The first step is run without the cache on purpose. On a GPU it triggers cuDNN's
@@ -313,11 +333,14 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
         # would be pinned by the cache — they are never reused and can be large enough to
         # blow past GPU memory.
         if cache === nothing || i == 1
-            l = _trainstep!(loss, adtype, on_reactant, model, b, opt_state)
+            l = _paced_step(_trainstep!, loss, adtype, on_reactant, param, devtype, model, b, opt_state,
+                            gc_interval)
         else
-            # Reuse the memory allocated during the previous step, see issue #2523.
+            # Reuse the memory allocated during the previous step, see issue #2523. A GC would free
+            # nothing here, so there is none.
             GPUArrays.@cached cache begin
-                l = _trainstep!(loss, adtype, on_reactant, model, b, opt_state)
+                l = _paced_step(_trainstep!, loss, adtype, on_reactant, param, devtype, model, b,
+                                opt_state, gc_interval)
             end
         end
 
@@ -327,8 +350,6 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
         # outputs — guard on the scalar.
         ls = _loss_scalar(l)
         isfinite(ls) || throw(DomainError(lazy"Loss is $ls on data item $i, stopping training"))
-
-        maybe_gc!(pacer, (time_ns() - t0) / 1e9)
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
@@ -383,22 +404,13 @@ unchanged (`train!` turns this into a `DomainError`). The loss value, and with
 [`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) the gradient, are still returned.
 On a Reactant device the check runs inside the compiled step.
 
-## GPU memory
+## Garbage collection
 
-GPU arrays are freed by the garbage collector, which seldom runs on its own, since they take little
-CPU memory. So on a GPU, `trainstep!` runs collections between steps, which keeps the memory in
-use close to what one step needs:
-
-* an incremental collection after each step that takes more than a few milliseconds, and less
-  often after faster steps, so that collections take about 2% of the training time;
-* a full collection after a model's first step, if that took more than a second (because it
-  compiled). Incremental collections don't free the arrays of such a step.
-
-The keyword `gc_interval` sets how often: `:auto` (the default) as above, an integer `n` for an
-incremental collection every `n` steps, or `0` for none. Each model has its own count of steps,
-which restarts after any collection, so models trained in alternation, as in a GAN, don't each
-collect. There are no such collections on the CPU, on a Reactant device, or inside
-`GPUArrays.@cached`.
+Like [`train!`](@ref Flux.train!), `trainstep!` runs garbage collections between steps, which keep
+the GPU memory in use close to what one step needs, with the same keyword `gc_interval` (see
+`train!` for its values). Since each call is a single step, they are paced for each model, across
+calls. Each model has its own count of steps, which restarts after any collection, so models
+trained in alternation, as in a GAN, don't each collect.
 
 ## Reactant
 
@@ -431,12 +443,19 @@ trainstep!(loss, adtype::Union{Nothing, AbstractADType}, model, batch, opt_state
 
 function trainstep!(loss, adtype::Union{Nothing, AbstractADType}, model, batch::Tuple, opt_state;
                     gc_interval::Union{Integer, Symbol} = :auto)
-    adtype, on_reactant, p, dev = _resolve_backend(model, adtype)
-    pacer = _step_pacer(p, dev, gc_interval)
+    adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
+    return _paced_step(_trainstep!, loss, adtype, on_reactant, param, devtype, model, batch, opt_state,
+                       gc_interval)
+end
+
+# Runs `step!` (`_trainstep!` or `_trainstep_withgradient!`), followed by the model's paced GC.
+function _paced_step(step!, loss, adtype, on_reactant, param, devtype, model, batch, opt_state,
+                     gc_interval)
+    pacer = _step_pacer(param, devtype, gc_interval)
     t0 = time_ns()
-    l = _trainstep!(loss, adtype, on_reactant, model, batch, opt_state)
-    maybe_gc!(pacer, (time_ns() - t0) / 1e9)
-    return l
+    r = step!(loss, adtype, on_reactant, model, batch, opt_state)
+    maybe_gc!(pacer, (time_ns() - t0) / 1e9, _step_types(loss, adtype, model, batch, opt_state))
+    return r
 end
 
 # Single step with the backend already resolved (shared by `trainstep!` and the `train!` loop).
@@ -467,12 +486,9 @@ trainstep_withgradient!(loss, adtype::Union{Nothing, AbstractADType}, model, bat
 
 function trainstep_withgradient!(loss, adtype::Union{Nothing, AbstractADType}, model, batch::Tuple, opt_state;
                                  gc_interval::Union{Integer, Symbol} = :auto)
-    adtype, on_reactant, p, dev = _resolve_backend(model, adtype)
-    pacer = _step_pacer(p, dev, gc_interval)
-    t0 = time_ns()
-    vg = _trainstep_withgradient!(loss, adtype, on_reactant, model, batch, opt_state)
-    maybe_gc!(pacer, (time_ns() - t0) / 1e9)
-    return vg
+    adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
+    return _paced_step(_trainstep_withgradient!, loss, adtype, on_reactant, param, devtype, model,
+                       batch, opt_state, gc_interval)
 end
 
 # Single step with the backend already resolved; like `_trainstep!` but returns `(val, grad)`.
@@ -505,8 +521,8 @@ _first_param(x::AbstractArray{<:Number}) = x
 _first_param(x::Duplicated) = _first_param(x.val)
 function _first_param(x)
     for c in children(x)
-        p = _first_param(c)
-        p === nothing || return p
+        param = _first_param(c)
+        param === nothing || return param
     end
     return nothing
 end
@@ -521,9 +537,9 @@ end
 # (it's what `train!` keys on too); the extension then checks the batch is device-resident, so keying
 # on the model here keeps the "host-resident data" error meaningful.
 function _resolve_backend(model, adtype::Union{Nothing, AbstractADType})
-    p = _first_param(model)
-    dev = p === nothing ? Nothing : Flux.get_device_type(p)
-    on_reactant = dev <: Flux.ReactantDevice
+    param = _first_param(model)
+    devtype = param === nothing ? Nothing : Flux.get_device_type(param)
+    on_reactant = devtype <: Flux.ReactantDevice
     model isa Duplicated && on_reactant && throw(ArgumentError(
         "`Duplicated` models are not supported on Reactant devices; pass the plain model \
          that already lives on the Reactant device."))
@@ -533,7 +549,7 @@ function _resolve_backend(model, adtype::Union{Nothing, AbstractADType})
     resolved = adtype === nothing ?
         ((on_reactant || model isa Duplicated) ? AutoEnzyme() : AutoZygote()) :
         adtype
-    return resolved, on_reactant, p, dev
+    return resolved, on_reactant, param, devtype
 end
 
 _update!(opt_state, model, grads) = Optimisers.update!(opt_state, model, grads)
