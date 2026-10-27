@@ -31,6 +31,16 @@ end
     @test g2.val.aux == "[1.0, 0.5, 0.25]"
 end
 
+@testset "mooncake mse rule" begin
+    @testset "$P" for P in (Float32, Float64)
+        rng = Random.Xoshiro(123)
+        Mooncake.TestUtils.test_rule(
+            rng, Flux.Losses.mse, randn(rng, P, 3), randn(rng, P, 3);
+            is_primitive=true, perf_flag=:none, mode=Mooncake.ReverseMode,
+        )
+    end
+end
+
 @testset "mooncake gradient through f64" begin
     W = randn(Float32, 4, 4)
     m = Chain(Dense(W, true, tanh), LayerNorm(4), Dense(W))  # tied weight
