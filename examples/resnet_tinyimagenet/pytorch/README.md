@@ -4,12 +4,12 @@ A line-for-line PyTorch translation of the Flux example ([`../training.jl`](../t
 deliberately close so the frameworks can be compared head to head on the same GPU and the same data;
 see the [comparison](../README.md#performance).
 
-Same everything: small-image ResNet-18 (3×3 stride-1 stem, four 2-block stages 64→128→256→512,
-global average pool, linear head, **11.27M params**), the same `zh-plus/tiny-imagenet` dataset
-pulled through HuggingFace `datasets`, the same ImageNet normalization, pad-4 random-crop +
-horizontal-flip augmentation, `AdamW(lr=1e-3)` with **`weight_decay=0`** (Flux's `AdamW` default;
-PyTorch's is `0.01`) and the same cosine learning-rate schedule, cross-entropy loss, the same
-command-line options and log lines.
+Same everything but the initialization (see below): small-image ResNet-18 (3×3 stride-1 stem,
+four 2-block stages 64→128→256→512, global average pool, linear head, **11.27M params**), the same
+`zh-plus/tiny-imagenet` dataset pulled through HuggingFace `datasets`, the same ImageNet
+normalization, pad-4 random-crop + horizontal-flip augmentation, `AdamW(lr=1e-3)` with
+**`weight_decay=0`** (Flux's `AdamW` default; PyTorch's is `0.01`) and the same cosine
+learning-rate schedule, cross-entropy loss, the same command-line options and log lines.
 
 ## Running
 
@@ -28,10 +28,15 @@ back to the default wheels.
 
 ## Notes on faithfulness
 
+- **Initialization** follows each framework's defaults: Flux's `Conv` and `Dense` use
+  `glorot_uniform` weights and zero biases, PyTorch's `Conv2d` and `Linear` use
+  `kaiming_uniform(a=√5)`, whose 3×3 convolution weights are ~1.7× smaller. After 3 epochs,
+  PyTorch is ~4 points behind Flux in validation accuracy (30–31% vs 34–35%); with
+  `nn.init.xavier_uniform_` weights and zero biases, it reaches 35% too.
 - **Augmentation** runs on the GPU and is vectorized over the batch (one crop offset + flip decision
   per batch) rather than per image as in the Julia `augment`, which runs on the CPU in the
-  data-loading workers. This is cheaper and, at batch size 128, statistically negligible for this
-  comparison.
+  data-loading workers. This is cheaper, and per-image augmentation changes the validation
+  accuracy after 3 epochs by less than the run-to-run variation.
 - **Data layout**: HuggingFace `datasets` with `.with_format("torch")` hands an Image column back
   as an NCHW uint8 tensor already, so no permute is needed (the Julia "julia" format instead yields
   CWHN and permutes to WHCN).

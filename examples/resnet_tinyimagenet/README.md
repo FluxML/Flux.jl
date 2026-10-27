@@ -113,4 +113,6 @@ With `XLA_REACTANT_GPU_PREALLOCATE=false` it allocates on demand, at the same sp
 Loading the packages, starting the data-loading workers and the first evaluation take ~1.5 min
 before the first epoch with CUDA.jl, ~2 min with Reactant (with the compilation of the evaluation)
 and ~25 s with PyTorch. After 3 epochs, the validation accuracy is 34–35% with Flux and 30–31%
-with PyTorch (single runs).
+with PyTorch (single runs). The difference comes from the default initialization of the weights:
+`glorot_uniform` in Flux, and in PyTorch a `kaiming_uniform` that makes the weights of the 3×3
+convolutions ~1.7× smaller. With Flux's initialization, PyTorch reaches 35% too.
