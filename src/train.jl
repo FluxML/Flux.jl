@@ -40,12 +40,27 @@ tic(::GCPacer) = zero(UInt64)
 struct NoGCPacer <: GCPacer end
 maybe_gc!(::NoGCPacer, i::Integer, t0::UInt64) = nothing
 
+# A first step longer than `GC_FULL_S` seconds, typically because it compiles, leaves the arrays
+# it allocated in the old generation, which `GC.gc(false)` doesn't free (#2795). It is followed
+# by a full GC instead. That costs ~0.1 s, too much to run after the first step of every call
+# when `train!` is called once per batch.
+const GC_FULL_S = 1.0
+
+full_gc_due(i::Integer, dt::Real) = i == 1 && dt >= GC_FULL_S
+
 # Fixed cadence: collect every `interval` steps.
 struct FixedGCPacer <: GCPacer
     interval::Int
 end
-function maybe_gc!(p::FixedGCPacer, i::Integer, ::UInt64)
-    i % p.interval == 0 && GC.gc(false)
+
+tic(::FixedGCPacer) = time_ns()
+
+function maybe_gc!(p::FixedGCPacer, i::Integer, t0::UInt64)
+    if full_gc_due(i, (time_ns() - t0) / 1e9)
+        GC.gc(true)
+    elseif i % p.interval == 0
+        GC.gc(false)
+    end
     return nothing
 end
 
@@ -89,7 +104,10 @@ function maybe_gc!(p::AutoGCPacer, i::Integer, t0::UInt64)
     end
     p.interval = spike ? max(1, p.interval ÷ 2) : clamp(p.interval + 1, 1, base)
     p.since += 1
-    if p.since >= p.interval
+    if full_gc_due(i, dt)
+        GC.gc(true)   # untimed: `t_gc` is the cost of an incremental GC
+        p.since = 0
+    elseif p.since >= p.interval
         g0 = time_ns()
         GC.gc(false)
         gdt = (time_ns() - g0) / 1e9
@@ -196,7 +214,8 @@ It adds only a few features to the loop above:
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
-* Manage memory. Runs an incremental garbage collection adaptively.
+* Manage memory. Runs an incremental garbage collection adaptively, and a full one after a
+  first step that takes more than a second, such as one that compiles.
 """
 function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_state; cb = nothing,
                 caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)

@@ -195,6 +195,24 @@ end
   @test m1.bias ≈ m2.bias
 end
 
+@testset "train! runs a full GC after a slow first step" begin
+  # As if the step had taken 2 GC_FULL_S, compiling: its arrays may be in the old generation (#2795).
+  slow = time_ns() - round(UInt64, 2e9 * Flux.Train.GC_FULL_S)
+  for pacer in (Flux.Train.AutoGCPacer(), Flux.Train.FixedGCPacer(3))
+    n = Base.gc_num().full_sweep
+    Flux.Train.maybe_gc!(pacer, 1, slow)
+    @test Base.gc_num().full_sweep > n
+  end
+
+  # A fast first step gets the usual timed incremental GC, a slow one doesn't skew its timing.
+  fast = Flux.Train.AutoGCPacer()
+  Flux.Train.maybe_gc!(fast, 1, time_ns())
+  @test fast.t_gc > 0
+  slowpacer = Flux.Train.AutoGCPacer()
+  Flux.Train.maybe_gc!(slowpacer, 1, slow)
+  @test slowpacer.t_gc == 0
+end
+
 @testset "Flux.update! features" begin
   m = Chain(Dense(2=>3, tanh), Dense(3=>1), only)
   x = rand(Float32, 2)
