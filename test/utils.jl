@@ -619,10 +619,10 @@ end
       n_iter = 0
       while n_iter < 99
         es(-n_iter) && break
-        n_iter += 3
+        n_iter += 4
       end
 
-      @test n_iter == 99  # every iter improves by at least 3
+      @test n_iter == 100  # every iter improves by more than 3
 
       n_iter = 0
       while n_iter < 99
@@ -631,6 +631,18 @@ end
       end
       
       @test n_iter == 9  # first iteration improves by at least 3; next ones don't
+    end
+
+    @testset "constant score" begin
+      # a score that stops changing is not an improvement
+      es = Flux.early_stopping(identity, 3)
+      @test findfirst(_ -> es(1.0), 1:100) == 4
+
+      es = Flux.early_stopping(identity, 3)
+      @test findfirst(es, [5.0, 4.0, 4.0, 4.0, 4.0, 4.0]) == 5
+
+      es = Flux.early_stopping(identity, 3; min_dist = 3)
+      @test findfirst(es, [0, -3, -6, -9, -12]) == 4  # improving by exactly min_dist counts
     end
   end
 
@@ -648,6 +660,10 @@ end
     end
 
     @test n_iter == 3
+
+    # a constant score is a plateau, also with min_dist = 0
+    trigger = Flux.plateau(identity, 3; min_dist = 0)
+    @test findfirst(_ -> trigger(1.0), 1:100) == 4
   end
 end
 
