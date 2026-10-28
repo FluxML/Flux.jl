@@ -191,7 +191,7 @@ end
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
 
   # Embedding's input is indices, so its vocabulary size can't be inferred:
-  @test_throws ArgumentError @autosize (2, 3) Embedding(_ => 10)
+  @test_throws ArgumentError("@autosize cannot infer the `_` in `Embedding(_ => out)`, as this is the vocabulary size, not a size of the input") @autosize (2, 3) Embedding(_ => 10)
   # but layers after it can be:
   m = @autosize (12, 4) Chain(Embedding(100 => 8), Dense(_ => 2))
   @test m[2].weight |> size == (2, 8)
