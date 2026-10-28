@@ -30,8 +30,8 @@ function learning_rate(step, p)
     return p.lr / 10 + (p.lr - p.lr / 10) * (1 + cos(π * progress)) / 2
 end
 
-# Numerical precision. `bf16`: the parameters and activations are bfloat16, the optimizer updates
-# Float32 copies of the parameters (`MixedPrecision`), and the loss is computed in Float32.
+# Numerical precision. `bf16`: bfloat16 parameters and activations, Float32 LayerNorm parameters,
+# Float32 master weights (`MixedPrecision`), and a Float32 loss.
 # `tf32`: Float32, with matrix multiplications on TF32 tensor cores. `f32`: exact Float32.
 # The backend sets the precision of the matrix multiplications for `tf32` and `f32`.
 const PRECISIONS = ("bf16", "tf32", "f32")
@@ -109,8 +109,9 @@ function train(dev; log_dir, compile=(f, args) -> f, preset="tinystories",
                  preset, sum(length, Flux.trainables(model))/1e6, B, T, accum, p.total_batch,
                  precision, p.steps))
 
-    val_batches = [dev(getbatch(val_data, (i - 1) * B + 1, B)[1]) for i in 1:p.val_steps]
-    val_loss = compile(lm_loss, (model, val_batches[1]...))
+    val_batches = p.eval_every > 0 ?
+        [dev(getbatch(val_data, (i - 1) * B + 1, B)[1]) for i in 1:p.val_steps] : []
+    val_loss = p.eval_every > 0 ? compile(lm_loss, (model, val_batches[1]...)) : nothing
     eval_hellaswag = hellaswag === nothing ? nothing : hellaswag_evaluator(model, hellaswag; device=dev, compile)
 
     for step in step0+1:p.steps

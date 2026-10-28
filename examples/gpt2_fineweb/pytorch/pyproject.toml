@@ -7,7 +7,7 @@ dependencies = [
     "torch>=2.14",
     "numpy",
     "tokenizers",
-    "datasets>=4.0",
+    "datasets>=5.1",
 ]
 
 [tool.uv.sources]

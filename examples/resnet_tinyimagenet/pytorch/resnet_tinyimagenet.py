@@ -1,4 +1,5 @@
 import argparse
+import math
 import time
 
 import torch
@@ -35,8 +36,8 @@ def decode(batch):
 def augment(x):
     """Standard small-image augmentation, applied per batch on the GPU: zero-pad by 4 and take a
     random 64x64 crop, then flip horizontally with probability 1/2. Vectorized over the batch —
-    every image in the batch shares one crop offset / flip decision, matching nothing in the Julia
-    version (which is per-image) but far cheaper; per-image variants are commented below."""
+    every image in the batch shares one crop offset / flip decision, unlike the Julia version
+    (which is per-image), but far cheaper."""
     N, C, H, W = x.shape
     pad = 4
     x = F.pad(x, (pad, pad, pad, pad))  # zero-pad H and W
@@ -103,7 +104,7 @@ def resnet18(nclasses=NCLASSES):
 
 
 @torch.no_grad()
-def loss_and_accuracy(loader, model):
+def evaluate(loader, model):
     model.eval()
     correct, total, lsum = 0, 0, 0.0
     for batch in loader:
@@ -115,28 +116,25 @@ def loss_and_accuracy(loader, model):
     return lsum / total, correct / total
 
 
-def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None, use_compile=False):
-    print(f"[setup] device={DEVICE} epochs={epochs} batchsize={batchsize} lr={lr} "
-          f"num_workers={num_workers} compile={use_compile}")
+def main(epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0, num_workers=4, seed=0,
+         clip_norm=False, use_compile=False):
+    torch.manual_seed(seed)
     torch.backends.cudnn.benchmark = True
 
     train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
     val_ds = load_dataset("zh-plus/tiny-imagenet", split="valid")
     # A handful of Tiny-ImageNet images are grayscale; force RGB so every image stacks uniformly.
-    train_ds = train_ds.cast_column("image", hfds.Image(mode="RGB"))
-    val_ds = val_ds.cast_column("image", hfds.Image(mode="RGB"))
-    train_ds = train_ds.with_format("torch")
-    val_ds = val_ds.with_format("torch")
+    train_ds = train_ds.cast_column("image", hfds.Image(mode="RGB")).with_format("torch")
+    val_ds = val_ds.cast_column("image", hfds.Image(mode="RGB")).with_format("torch")
 
+    # As in Flux, the last, smaller training batch of an epoch is dropped.
     train_loader = DataLoader(
         train_ds, batch_size=batchsize, shuffle=True, num_workers=num_workers,
-        pin_memory=True, drop_last=False,
-        persistent_workers=num_workers > 0,
+        pin_memory=True, drop_last=True, persistent_workers=num_workers > 0,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batchsize, shuffle=False, num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=num_workers > 0,
+        pin_memory=True, persistent_workers=num_workers > 0,
     )
 
     global MEAN, STD
@@ -144,48 +142,51 @@ def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None
 
     model = resnet18().to(DEVICE)
     nparams = sum(p.numel() for p in model.parameters())
-    print(f"[model] resnet18  params={nparams/1e6:.2f}M")
+    print(f"[setup] device={DEVICE} params={nparams/1e6:.2f}M epochs={epochs} batchsize={batchsize} "
+          f"lr={lr:g} weight_decay={weight_decay:g} num_workers={num_workers} compile={use_compile}")
     # torch.compile (TorchInductor) is PyTorch's analogue of Reactant's XLA compilation: it captures
     # the forward — and, via AOTAutograd, the backward — into fused Triton/cuDNN kernels. The optimiser
-    # step and the CPU-side augmentation stay eager, so this compiles less of the loop than Reactant,
-    # which fuses forward + reverse + update into a single executable.
+    # step and the augmentation stay eager, so this compiles less of the loop than Reactant, which
+    # fuses forward + reverse + update into a single executable.
     if use_compile:
         model = torch.compile(model)
-    # Match Flux's AdamW default (lambda=0 -> no weight decay); torch defaults to 0.01.
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
+    # Flux's AdamW defaults to no weight decay; torch's to 0.01.
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    def run_eval(epoch):
-        train_loss, train_acc = loss_and_accuracy(train_loader, model)
-        val_loss, val_acc = loss_and_accuracy(val_loader, model)
-        print(f"[eval] epoch={epoch} train_loss={train_loss:.4f} train_acc={train_acc:.4f} "
-              f"val_loss={val_loss:.4f} val_acc={val_acc:.4f}")
+    def log_eval(epoch):
+        val_loss, val_acc = evaluate(val_loader, model)
+        print(f"[eval] epoch={epoch} val_loss={val_loss:.4f} val_acc={val_acc:.4f}", flush=True)
 
-    # In benchmark mode, time training only (no evaluation) so this run matches `flux_bench.jl`;
-    # a normal run still evaluates each epoch, mirroring `../resnet_tinyimagenet.jl`.
-    benchmarking = benchmark_epochs is not None
-
-    if not benchmarking:
-        run_eval(0)
+    log_eval(0)
     for epoch in range(1, epochs + 1):
+        lr_epoch = lr * (1 + math.cos(math.pi * (epoch - 1) / epochs)) / 2   # cosine annealing towards 0
+        for g in opt.param_groups:
+            g["lr"] = lr_epoch
         model.train()
-        t0 = time.perf_counter()
+        lsum = torch.zeros((), device=DEVICE)
+        correct = torch.zeros((), dtype=torch.long, device=DEVICE)
         nimg = 0
+        t0 = time.perf_counter()
         for batch in train_loader:
             x, y = decode(batch)
             x = augment(x)
             opt.zero_grad(set_to_none=True)
-            loss = F.cross_entropy(model(x), y)
+            logits = model(x)
+            loss = F.cross_entropy(logits, y)
             loss.backward()
+            if clip_norm:   # per parameter, as Flux's ClipNorm
+                for q in model.parameters():
+                    torch.nn.utils.clip_grad_norm_(q, 10.0)
             opt.step()
+            lsum += loss.detach() * y.numel()
+            correct += (logits.detach().argmax(1) == y).sum()
             nimg += y.numel()
         if DEVICE.type == "cuda":
             torch.cuda.synchronize()   # CUDA is async — wait for the queued work before timing
         dt = time.perf_counter() - t0
-        print(f"[train] epoch={epoch} time={dt:.2f}s throughput={nimg/dt:.0f} img/s")
-        if not benchmarking:
-            run_eval(epoch)
-        if benchmarking and epoch >= benchmark_epochs:
-            break
+        print(f"[train] epoch={epoch} lr={lr_epoch:.2e} loss={lsum.item()/nimg:.4f} "
+              f"acc={correct.item()/nimg:.4f} time={dt:.1f}s img/s={nimg/dt:.0f}")
+        log_eval(epoch)
 
     return model
 
@@ -194,10 +195,14 @@ def parse_cli():
     p = argparse.ArgumentParser(description="Train a small-image ResNet-18 on Tiny-ImageNet-200.")
     p.add_argument("--epochs", type=int, default=30, help="number of training epochs")
     p.add_argument("--batchsize", type=int, default=128, help="minibatch size")
-    p.add_argument("--lr", type=float, default=1e-3, help="AdamW learning rate")
+    p.add_argument("--lr", type=float, default=1e-3,
+                   help="peak AdamW learning rate (cosine-annealed towards 0 over training)")
+    p.add_argument("--weight-decay", type=float, default=0.0,
+                   help="AdamW decoupled weight decay (0 = plain Adam)")
     p.add_argument("--num-workers", type=int, default=4, help="data-loading worker processes")
-    p.add_argument("--benchmark-epochs", type=int, default=None,
-                   help="stop after this many train epochs (for timing runs)")
+    p.add_argument("--seed", type=int, default=0, help="random seed")
+    p.add_argument("--clip-norm", action="store_true",
+                   help="clip the gradient norm of each parameter to 10")
     p.add_argument("--compile", action="store_true",
                    help="wrap the model in torch.compile (TorchInductor) — PyTorch's XLA analogue")
     return p.parse_args()
@@ -205,6 +210,6 @@ def parse_cli():
 
 if __name__ == "__main__":
     args = parse_cli()
-    main(epochs=args.epochs, batchsize=args.batchsize, lr=args.lr,
-         num_workers=args.num_workers, benchmark_epochs=args.benchmark_epochs,
+    main(epochs=args.epochs, batchsize=args.batchsize, lr=args.lr, weight_decay=args.weight_decay,
+         num_workers=args.num_workers, seed=args.seed, clip_norm=args.clip_norm,
          use_compile=args.compile)

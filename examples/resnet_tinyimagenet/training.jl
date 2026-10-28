@@ -1,16 +1,15 @@
-using Random, Statistics
+# The data pipeline, the model and the training loop, independent of the device:
+# flux-cuda/train.jl runs them with CUDA.jl, and flux-reactant/train.jl with Reactant.
+
+# Before Flux: CondaPkg resolves the Python environment when PythonCall loads, capping libstdc++ at
+# Julia's, which Julia 1.13 fails to detect once CompilerSupportLibraries_jll is loaded
+# (JuliaLang/julia#63967). Without the cap, the environment re-resolves whenever the load order changes.
+using HuggingFaceDatasets
+
+using Printf, Random, Statistics
 using ArgParse
 using Flux
-using Flux.Losses: logitcrossentropy
-using Flux: onehotbatch, onecold, trainmode!, testmode!
-using MLUtils: MLUtils, mapobs
-using HuggingFaceDatasets
-# using CUDA     # Replace with `Metal` or `AMDGPU` for other backends.
-               # Comment out if using Reactant.
-using Reactant # Automatically selects the available gpu or cpu backend.
-               # Comment out if don't want XLA compilation.
-               # See https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration
-               # for memory management.
+using MLUtils: mapobs
 
 # ------------------------------------------------------------------------------------------------
 # Data
@@ -28,10 +27,10 @@ function decode(batch)
     x = Float32.(batch["image"]) ./ 255f0     # (C, W, H, N)
     x = permutedims(x, (2, 3, 1, 4))          # (W, H, C, N) — Flux WHCN layout
     x = (x .- MEAN) ./ STD
-    return (x, batch["label"])                # labels are 0-based class ids (0:199)
+    return (x, batch["label"] .+ 1)           # class labels 1:200 (0-based in the dataset)
 end
 
-# Standard small-image training augmentation, applied per batch: zero-pad by 4 and take a random
+# Standard small-image training augmentation, applied per image: zero-pad by 4 and take a random
 # 64x64 crop, then flip horizontally with probability 1/2.
 function augment(xy)
     x, y = xy
@@ -40,7 +39,6 @@ function augment(xy)
     out = similar(x)
     padded = zeros(Float32, W + 2pad, H + 2pad, C)
     for n in 1:N
-        fill!(padded, 0f0)
         @views padded[pad+1:pad+W, pad+1:pad+H, :] .= x[:, :, :, n]
         i, j = rand(0:2pad), rand(0:2pad)                  # random top-left crop offset
         if rand(Bool)
@@ -55,6 +53,13 @@ end
 # On-the-fly training pipeline: decode then augment. A named function (not a closure) so the
 # `num_workers` path can ship it — and the module globals it reads — to worker processes.
 train_transform(batch) = augment(decode(batch))
+
+function tinyimagenet(split)
+    ds = load_dataset("zh-plus/tiny-imagenet"; split)
+    # A handful of images are grayscale: decode every image as 3-channel RGB so that the batches
+    # always stack to a uniform (C, W, H, N) array.
+    return ds.cast_column("image", datasets.Image(mode="RGB"))
+end
 
 # ------------------------------------------------------------------------------------------------
 # Model: ResNet-18 adapted for small (64x64) images.
@@ -121,96 +126,80 @@ end
 # ------------------------------------------------------------------------------------------------
 # Training
 
+# The cross-entropy of the integer class labels `y`, and the number of correct predictions, which
+# `Flux.trainstep!` returns alongside the loss without differentiating it.
 function loss_fn(model, x, y)
     ŷ = model(x)
-    loss = logitcrossentropy(ŷ, onehotbatch(y, 0:NCLASSES-1))
-    correct = sum(onecold(ŷ, 0:NCLASSES-1) .== y)
-    n = length(y)
-    return loss, (; correct, n)
+    return Flux.logitcrossentropy(ŷ, y), (; correct = sum(Flux.onecold(ŷ) .== y))
 end
 
-function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
-              num_workers=4, seed=0, clip_norm=false)
-    seed > 0 && Random.seed!(seed)
-    device = isdefined(Main, :Reactant) ? reactant_device() : gpu_device()
-    @info "Setup" device epochs batchsize lr weight_decay num_workers seed clip_norm
+# Trains on device `dev`. `compile(f, args)` returns the function to call in place of `f` on
+# arguments like `args`, for the evaluation: `Reactant.compile` on Reactant, `f` itself to run
+# eagerly. Flux.trainstep! manages training GC; evaluation on CUDA still needs collections.
+function train(dev; compile=(f, args) -> f, eval_gc=false, epochs=30, batchsize=128, lr=1e-3,
+               weight_decay=0.0, num_workers=4, seed=0, clip_norm=false)
+    Random.seed!(seed)
 
-    train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
-    val_ds   = load_dataset("zh-plus/tiny-imagenet", split="valid")
-    # A handful of Tiny-ImageNet images are grayscale; force every image to decode as 3-channel RGB
-    # so the batch always stacks to a uniform (C, W, H, N) array.
-    train_ds = train_ds.cast_column("image", datasets.Image(mode="RGB"))
-    val_ds   = val_ds.cast_column("image", datasets.Image(mode="RGB"))
+    # Dropping the last, smaller batch of an epoch keeps the shape of every training batch the
+    # same, which a compiled training step needs: a new shape would compile a new one.
+    train_loader = Flux.DataLoader(mapobs(train_transform, tinyimagenet("train"));
+                                   batchsize, shuffle=true, partial=false, num_workers)
+    val_loader = Flux.DataLoader(mapobs(decode, tinyimagenet("valid")); batchsize, num_workers)
+    # The device iterators move each batch to the device and free the previous one.
+    train_loader, val_loader = dev(train_loader), dev(val_loader)
 
-    train_data = mapobs(train_transform, train_ds)
-    val_data   = mapobs(decode, val_ds)
-
-    train_loader = Flux.DataLoader(train_data; batchsize, shuffle=true, num_workers, )
-    val_loader   = Flux.DataLoader(val_data; batchsize, num_workers)
-    train_loader = device(train_loader)  # in loops, move each batch to the GPU and free the previous one
-    val_loader   = device(val_loader)
-
-    model = resnet18() |> device
-
+    model = resnet18() |> dev
     rule = AdamW(; eta=lr, lambda=weight_decay)
-    clip_norm && (rule = OptimiserChain(ClipNorm(), rule))   # clip gradient L2 norm, then AdamW step
+    clip_norm && (rule = OptimiserChain(ClipNorm(), rule))   # norm of each gradient array ≤ 10
     opt_state = Flux.setup(rule, model)
+    @printf("[setup] device=%s params=%.2fM epochs=%d batchsize=%d lr=%g weight_decay=%g num_workers=%d\n",
+            nameof(typeof(dev)), sum(length, Flux.trainables(model)) / 1e6, epochs, batchsize, lr,
+            weight_decay, num_workers)
 
-    r(x) = round(x, digits=4)
-    r(x::Integer) = x
-
-    @static if isdefined(Main, :Reactant)
-        # Since the last batch of an epoch may be smaller than the others, 
-        # we need to compile and cache a separate executable for each distinct batch shape.
-        compiled_cache = Dict{Any, Any}()
-        function eval_loss_fn(m, x, y)
-            compiled_fn = get!(compiled_cache, (size(x), size(y))) do
-                Reactant.@compile(loss_fn(m, x, y))
-            end
-            return compiled_fn(m, x, y)
-        end
-    else
-        eval_loss_fn = loss_fn
-    end
-
-    function loss_and_accuracy(loader, model)
+    # One evaluation function per batch shape: the last validation batch is smaller.
+    eval_fns = Dict()
+    function evaluate(model)
         testmode!(model)
-        correct, total = 0, 0
-        lsum = 0.0
-        for (x, y) in loader
-            loss, stats = eval_loss_fn(model, x, y) |> cpu
-            lsum    += loss * stats.n
+        lsum, correct, n = 0.0, 0, 0
+        for (x, y) in val_loader
+            f = get!(() -> compile(loss_fn, (model, x, y)), eval_fns, size(x))
+            l, stats = cpu(f(model, x, y))
+            lsum += l * length(y)
             correct += stats.correct
-            total   += stats.n
+            n += length(y)
+            eval_gc && GC.gc(false)
         end
-        return lsum / total, correct / total
+        return lsum / n, correct / n
     end
 
-    val_loss, val_acc = loss_and_accuracy(val_loader, model)
-    @info map(r, (; epoch=0, lr=NaN, train_loss=NaN, train_acc=NaN, val_loss, val_acc, time=NaN))
+    function log_eval(epoch)
+        val_loss, val_acc = evaluate(model)
+        @printf("[eval] epoch=%d val_loss=%.4f val_acc=%.4f\n", epoch, val_loss, val_acc)
+        flush(stdout)
+    end
+
+    log_eval(0)
     for epoch in 1:epochs
-        η = lr * (1 + cos(π * max(epoch - 1, 0) / epochs)) / 2
+        η = lr * (1 + cos(π * (epoch - 1) / epochs)) / 2   # cosine annealing towards 0
         Flux.adjust!(opt_state, η)
         trainmode!(model)
-        lsum, correct, total = 0.0, 0, 0
+        lsum, correct, n = 0.0, 0, 0
         t = @elapsed for (x, y) in train_loader
             l, stats = Flux.trainstep!(loss_fn, model, (x, y), opt_state)
-            # We use running sums to compute the epoch-average train loss and accuracy.
-            lsum += l * stats.n
+            lsum += l * length(y)
             correct += stats.correct
-            total += stats.n
+            n += length(y)
         end
-        train_loss, train_acc = lsum / total, correct / total
-        val_loss, val_acc = loss_and_accuracy(val_loader, model)
-        @info map(r, (; epoch, lr=η, train_loss, train_acc, val_loss, val_acc, time=t))
+        @printf("[train] epoch=%d lr=%.2e loss=%.4f acc=%.4f time=%.1fs img/s=%.0f\n",
+                epoch, η, lsum / n, correct / n, t, n / t)
+        log_eval(epoch)
     end
-
     return model
 end
 
-# Command-line interface. The defaults mirror `main`'s keyword defaults and are surfaced in `--help`.
-function parse_cli(ARGS)
-    s = ArgParseSettings(description="Train a small-image ResNet-18 on Tiny-ImageNet-200.")
+# The command-line options; the defaults are those of `train`.
+function parse_cli(args; description)
+    s = ArgParseSettings(; description)
     @add_arg_table! s begin
         "--epochs"
             help = "number of training epochs"
@@ -233,26 +222,12 @@ function parse_cli(ARGS)
             arg_type = Int
             default = 4
         "--seed"
-            help = "random seed for reproducibility"
+            help = "random seed"
             arg_type = Int
             default = 0
         "--clip-norm"
-            help = "clip the gradient L2 norm to 10 (wraps AdamW in OptimiserChain(ClipNorm(), …))"
+            help = "clip the gradient norm of each parameter to 10 (wraps AdamW in OptimiserChain(ClipNorm(), …))"
             action = :store_true
     end
-    return parse_args(ARGS, s)
-end
-
-function (@main)(ARGS)
-    opts = parse_cli(ARGS)
-    main(;
-        epochs       = opts["epochs"],
-        batchsize    = opts["batchsize"],
-        lr           = opts["lr"],
-        weight_decay = opts["weight-decay"],
-        num_workers  = opts["num-workers"],
-        seed         = opts["seed"],
-        clip_norm    = opts["clip-norm"],
-    )
-    return nothing
+    return (; (Symbol(replace(k, "-" => "_")) => v for (k, v) in parse_args(args, s))...)
 end
