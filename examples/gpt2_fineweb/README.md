@@ -3,20 +3,22 @@
 Pretrains a **GPT-2** language model from scratch, following Karpathy's
 [build-nanogpt](https://github.com/karpathy/build-nanogpt) reproduction of GPT-2 (124M): the same
 architecture, data (the 10B-token sample of [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu)),
-optimizer and schedule. The same training script comes in three versions, side by side:
+optimizer and schedule. The same training script comes in four versions, side by side:
 
 | folder | framework | the training step |
 | --- | --- | --- |
 | [`flux-reactant/`](flux-reactant/) | Flux + [Reactant](https://github.com/EnzymeAD/Reactant.jl) | compiled into a single XLA program by `Flux.trainstep!`; no CUDA.jl. **The reference version.** |
 | [`flux-cuda/`](flux-cuda/) | Flux + [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) | runs eagerly on `CuArray`s, differentiated by Zygote, with cuDNN's flash attention |
+| [`lux-reactant-nitro/`](lux-reactant-nitro/) | Lux + [ReactantNitro](https://github.com/EnzymeAD/ReactantNitro.jl) | an XLA program compiled by Nitro, which runs the loop; differentiated by Enzyme |
 | [`pytorch/`](pytorch/) | PyTorch | a port of the reference, for comparison |
 
 The two Flux versions share everything but their entry point: [`flux-cuda/train.jl`](flux-cuda/train.jl)
 includes the model, data pipeline, HellaSwag evaluation and training loop from
 [`flux-reactant/`](flux-reactant/), and only chooses the device and the precision of matrix
-multiplications. The PyTorch port reimplements them with the same presets, initialization,
-optimizer, schedule, evaluation and log format. The three read the same tokenized data from
-`data/`, which whichever runs first writes.
+multiplications. The Lux version includes the data pipeline of [`flux-reactant/`](flux-reactant/),
+and writes the model, the optimizer and the evaluations as a Nitro experiment. The PyTorch port
+reimplements them with the same presets, initialization, optimizer, schedule, evaluation and log
+format. The four read the same tokenized data from `data/`, which whichever runs first writes.
 
 ## What it does
 
@@ -55,14 +57,19 @@ $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 $ julia --project=. train.jl --preset tinystories
 $ julia --project=. train.jl --preset fineweb
 
+$ cd examples/gpt2_fineweb/lux-reactant-nitro
+$ julia --project=. -e 'using Pkg; Pkg.instantiate()'
+$ julia --threads=1,0 --project=. train.jl --preset tinystories
+
 $ cd examples/gpt2_fineweb/pytorch
 $ uv sync
 $ uv run python train_gpt2.py --preset fineweb
 ```
 
-The Julia environments use Flux from this checkout and NNlib from GitHub `master`. The latter
+The Flux environments use Flux from this checkout and NNlib from GitHub `master`. The latter
 includes the Reactant mixed precision fix in [NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872),
-which is not in the registered NNlib 0.9.55 release.
+which is not in the registered NNlib 0.9.55 release. The Lux environment uses registered releases
+only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.301).
 
 The scripts share the preset, batch size, precision, learning-rate and evaluation options
 (`--help` lists them), write `log/log.txt` in their own folder, and print the same training log
@@ -79,16 +86,19 @@ sampling, HellaSwag and checkpoints disabled. Steady timings and rates use steps
 step includes compilation, but excludes package loading and data preparation. These are short
 benchmarks, not full training runs.
 
-Both Julia environments use Julia 1.13.2 (32 threads), Flux 0.16.15, Optimisers 0.4.11,
+Both Flux environments use Julia 1.13.2 (32 threads), Flux 0.16.15, Optimisers 0.4.11,
 MLDataDevices 1.18 and NNlib master at
 [`8790de4`](https://github.com/FluxML/NNlib.jl/commit/8790de4ba6e5c4bf48f5392888dd8ceb6a799ca0).
-CUDA.jl and cuDNN.jl are 6.5.0, with cuDNN 9.27 and Zygote 0.7.15; Reactant is 0.2.301.
+CUDA.jl and cuDNN.jl are 6.5.0, with cuDNN 9.27 and Zygote 0.7.15; Reactant is 0.2.301. The Lux
+environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.5, ReactantNitro 0.2.1, Optimisers
+0.4.11, NNlib 0.9.56 and Reactant 0.2.301.
 PyTorch is 2.14.1+cu130, with cuDNN 9.24, `datasets` 5.1 and 16 CPU threads. Each compiled
 PyTorch run starts with separate empty Inductor and Triton caches.
 
 | | tokens/s | s/step | TFLOPS | first step |
 | --- | --- | --- | --- | --- |
 | [Flux + Reactant](flux-reactant/) | 131k | 4.01 | 111.7 | 636 s |
+| [Lux + ReactantNitro](lux-reactant-nitro/) | 138k | 3.81 | 117.7 | 97.8 s |
 | [Flux + CUDA.jl](flux-cuda/) | 167k | 3.13 | 143.1 | 53.1 s |
 | [PyTorch](pytorch/), `--attn math` | 67k | 7.78 | 57.7 | 8.0 s |
 | [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.90 | 91.6 | 18.6 s |
@@ -102,6 +112,7 @@ reported by `nvidia-smi`.
 | | peak memory in use | peak reserved |
 | --- | --- | --- |
 | Flux + Reactant | 18.9 GiB | 28.2 GiB |
+| Lux + ReactantNitro | 20.1 GiB | 23.5 GiB\* |
 | Flux + CUDA.jl | 18.7 GiB | 18.7 GiB |
 | PyTorch, `--attn math` | 26.4 GiB | 27.6 GiB |
 | PyTorch, `--attn math --compile` | 25.5 GiB | 25.9 GiB |
@@ -112,11 +123,20 @@ Reactant preallocation was disabled with `XLA_REACTANT_GPU_PREALLOCATE=false`; t
 otherwise reserves 90% of GPU memory. Its counters are `Reactant.XLA.allocatorstats()`'s
 `peak_bytes_in_use` and `peak_pool_bytes`. CUDA uses the memory pool's `USED_MEM_HIGH` and
 `RESERVED_MEM_HIGH`; PyTorch uses `max_memory_allocated()` and `max_memory_reserved()`.
+\* Lux + ReactantNitro was run with the default preallocation: with it disabled, its first step
+fails with an out-of-memory error while allocating 16.85 GiB, with the pool at 16 GiB and 6.7 GiB
+of it in use.
 
-To reproduce the Julia timing run from either environment:
+To reproduce the Julia timing run from either Flux environment:
 
 ```console
 $ XLA_REACTANT_GPU_PREALLOCATE=false julia --threads=32 --project=. train.jl --preset fineweb --steps 8 --eval-every 0 --hellaswag-every 0 --ckpt-every 0
+```
+
+and from the Lux environment:
+
+```console
+$ julia --threads=1,0 --project=. train.jl --preset fineweb --steps 8 --eval-every 0 --hellaswag-every 0 --ckpt-every 0
 ```
 
 For PyTorch, use `--preset fineweb --steps 8 --eval-every 0 --hellaswag-every 0` and each
@@ -130,6 +150,17 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)). Its first step
   includes compiling that program. NNlib master keeps the activations in bfloat16 with
   `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55.
+- **Lux + ReactantNitro** compiles the same program through Nitro, which owns the loop,
+  accumulating the gradients of the 32 micro-batches and updating the parameters with the
+  optimizer. It has no fused attention either, and reaches 138k tokens/s, 5% above Flux +
+  Reactant. Its first step takes 98 s, compared with 636 s; why has not been investigated, but
+  Nitro flattens the parameters and the optimizer state into one buffer per parameter group, which
+  keeps the optimizer program from growing with the number of arrays
+  ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). Its precision policy
+  is PyTorch's: `Float32` parameters, of which the model sees a bfloat16 copy, but for the
+  LayerNorm ones, with LayerNorm and the loss computed in `Float32`. The 30M-parameter
+  `tinystories` run trains to the same validation loss as the Flux version, see
+  [`lux-reactant-nitro/`](lux-reactant-nitro/#results).
 - **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
   cross-entropy as fused kernels. Flux 0.16.15 paces garbage collections between micro-batches
   and runs a full collection after the first step that compiles; no manual collections are needed.
