@@ -56,8 +56,8 @@ The three scripts take the same options: `--epochs`, `--batchsize`, `--lr`, `--w
 print the same log lines:
 
 ```
-[train] epoch=2 lr=7.50e-04 loss=3.4088 acc=0.2233 time=36.6s img/s=2734
-[eval] epoch=2 val_loss=3.2746 val_acc=0.2450
+[train] epoch=2 lr=7.50e-04 loss=3.4377 acc=0.2192 time=35.2s img/s=2840
+[eval] epoch=2 val_loss=3.2136 val_acc=0.2544
 ```
 
 The first run downloads the dataset (150 MB) into the HuggingFace cache, and the first run of each
@@ -69,60 +69,54 @@ Reactant also caps Python at 3.12.0, whose `multiprocess` prints an ignored `Att
 
 ## Performance
 
-The measurements below predate the update to CUDA/cuDNN 6.5, NNlib master, Flux 0.16.15 and
-MLDataDevices 1.18. In particular, they include Reactant's previous batch-memory retention, which
-MLDataDevices 1.18 fixes. They are retained as a baseline, not measurements of the current scripts.
-
-Measured on 27 October 2026 on an **RTX 5090 (32 GB)**, driver 595.84, batch size 128, 4 data-loading workers,
-3-epoch runs (`--epochs 3`). Julia 1.13.2, Flux 0.16.14, NNlib 0.9.55, Zygote 0.7.15, CUDA.jl
-6.4.2 with cuDNN 9.27, Reactant 0.2.300; PyTorch 2.14.1 (cu130) with cuDNN 9.24.
+Measured on 28 October 2026 on an **RTX 5090 (32 GB)**, driver 595.84, batch size 128,
+4 data-loading workers, 3-epoch runs (`--epochs 3`). Julia 1.13.2 (4 threads for timings,
+32 for memory profiles),
+Flux 0.16.15, NNlib master
+([`b184469`](https://github.com/FluxML/NNlib.jl/commit/b18446979d1b7b8dc03288f64f441b1c3b55d9b2)),
+MLDataDevices 1.18.0, Zygote 0.7.15, CUDA.jl and cuDNN.jl 6.5.0 with cuDNN 9.27,
+Reactant 0.2.301; PyTorch 2.14.1 (cu130) with cuDNN 9.24.
 
 | | s/epoch | images/s | first epoch | peak GPU memory in use | peak GPU memory reserved |
 | --- | --- | --- | --- | --- | --- |
-| [Flux + CUDA.jl](flux-cuda/) | 36.7 | 2720 | 77.6 s | 8.4 GiB | 8.7 GiB |
-| [Flux + Reactant](flux-reactant/) | 30.2 | 3310 | 103.0 s | 5.6 GiB | 23.5 GiB, or 9.2 GiB without preallocation\* |
-| [PyTorch](pytorch/) | 28.9 | 3460 | 29.4 s | 4.0 GiB | 4.1 GiB |
-| [PyTorch](pytorch/), `--compile` | 25.2 | 3960 | 42.1 s | 3.9 GiB | 4.1 GiB |
+| [Flux + CUDA.jl](flux-cuda/) | 35.3 | 2830 | 67.3 s | 8.4 GiB | 8.7 GiB |
+| [Flux + Reactant](flux-reactant/) | 30.6 | 3270 | 101.5 s | 2.6 GiB | 5.2 GiB\* |
+| [PyTorch](pytorch/) | 28.9 | 3450 | 29.4 s | 4.0 GiB | 4.1 GiB |
+| [PyTorch](pytorch/), `--compile` | 25.3 | 3950 | 42.6 s | 3.9 GiB | 4.1 GiB |
 
-*s/epoch* is the steady-state training time of an epoch (99,968 images, without the evaluation),
-and *first epoch* includes the compilation of the training step. The GPU memory is the most memory
-allocated at once (*in use*) and the most memory held by the allocator (*reserved*) over a 1-epoch
-run, as reported by the allocators: CUDA's memory pool, XLA's, and PyTorch's
-(`torch.cuda.max_memory_allocated` and `max_memory_reserved`). `nvidia-smi` shows the reserved
-memory plus ~0.5 GiB of CUDA context.
+*s/epoch* averages epochs 2 and 3 (99,968 images per epoch, without evaluation), and *first epoch*
+includes compilation of the training step. The `torch.compile` run starts with empty Inductor and
+Triton caches. Memory includes the initial evaluation, training and final evaluation, measured
+in separate 1-epoch runs for Flux and in the timing runs for PyTorch. It is the most memory
+allocated at once (*in use*) and held by the allocator (*reserved*): CUDA's pool high-water marks,
+XLA's peak bytes in use and peak pool bytes, and PyTorch's `max_memory_allocated` and
+`max_memory_reserved`. `nvidia-smi` also includes the CUDA context.
 
-\* When Reactant initializes, XLA reserves 75% of the GPU memory, whatever the program needs.
-With `XLA_REACTANT_GPU_PREALLOCATE=false` it allocates on demand, at the same speed;
-`XLA_REACTANT_GPU_MEM_FRACTION` changes the fraction. See Reactant's
+\* Reactant is measured with `XLA_REACTANT_GPU_PREALLOCATE=false`, allocating on demand.
+By default, XLA reserves 75% of GPU memory; `XLA_REACTANT_GPU_MEM_FRACTION` changes the fraction.
+See Reactant's
 [GPU configuration](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration).
 
-- **All four are limited by the GPU**, which is busy 94–97% of the time during training. Float32
-  convolutions run on TF32 tensor cores by default in all of them.
+- **All four use Float32 models**, with TF32 tensor cores enabled for cuDNN convolutions.
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
-  program. In these runs it trained 1.2× faster than CUDA.jl and 4% slower than eager
-  PyTorch. XLA plans the buffers of the whole step ahead of time: on a synthetic batch, a step
-  peaks at 2.6 GiB, as in PyTorch. Over a run, the batches moved to the GPU add up to 3 GiB more,
-  because they were freed only when Julia's garbage collector finalized them: MLDataDevices
-  1.17.10 did not free the previous batch on Reactant. Compiling the training
-  step takes ~73 s (the first epoch minus a steady one), and the two evaluation functions (for the
-  full and the last validation batch) take ~40 s more before the first evaluation.
+  program. It trains 1.15× faster than CUDA.jl and 6% slower than eager PyTorch in these runs.
+  MLDataDevices 1.18 frees the previous batch on Reactant, so input batches no longer accumulate
+  until a garbage collection. Over one epoch, peak memory in use falls from 5.6 GiB in the
+  previous measurement with MLDataDevices 1.17.10 to 2.6 GiB. The three-epoch run peaks at
+  4.4 GiB. Compilation adds about 71 s to the first training epoch; evaluation also compiles
+  separate functions for full and partial batches.
 - **CUDA.jl** runs every operation of the forward and backward passes eagerly, with cuDNN
-  convolutions and batch normalization. Zygote keeps all the intermediate arrays of the forward
-  pass for the backward pass, and CUDA.jl frees GPU memory only when Julia's garbage collector
-  finalizes the arrays: a step peaks at 8.4 GiB, 3× PyTorch's 2.6 GiB, since PyTorch frees each
-  tensor as soon as it is no longer needed. The measured script ran an incremental garbage collection
-  after each training step and each evaluation batch, and a full one after the first step; with
-  the collections after the training steps only, the process held 21.6 GiB, at the same speed.
-  Flux 0.16.15 now manages the training collections inside `trainstep!`, including the full
-  collection after a step that compiles. The first epoch included ~40 s of Julia compilation.
+  convolutions and batch normalization. Flux 0.16.15 manages garbage collection inside
+  `trainstep!`, including a full collection after a step that compiles; the script only adds
+  incremental collections during evaluation. The first training epoch takes about 32 s longer
+  than a steady one, including Julia compilation and cuDNN's algorithm search.
 - **PyTorch** reaches its steady speed in the first epoch; `torch.backends.cudnn.benchmark` times
   the convolution algorithms on the first batches. `--compile` (`torch.compile`) fuses the
   elementwise operations around the convolutions (batch normalization, ReLU, residual additions),
-  which makes it 1.15× faster than eager PyTorch, for ~17 s of compilation.
+  which makes it 1.14× faster than eager PyTorch, for ~17 s of compilation.
 
-Loading the packages, starting the data-loading workers and the first evaluation take ~1.5 min
-before the first epoch with CUDA.jl, ~2 min with Reactant (with the compilation of the evaluation)
-and ~25 s with PyTorch. After 3 epochs, the validation accuracy is 34–35% with Flux and 30–31%
-with PyTorch (single runs). The difference comes from the default initialization of the weights:
-`glorot_uniform` in Flux, and in PyTorch a `kaiming_uniform` that makes the weights of the 3×3
-convolutions ~1.7× smaller. With Flux's initialization, PyTorch reaches 35% too.
+After 3 epochs, validation accuracy is 34.3% with CUDA.jl, 34.6% with Reactant, 30.4% with eager
+PyTorch and 31.4% with compiled PyTorch (single runs). The defaults initialize weights differently:
+`glorot_uniform` in Flux, and in PyTorch a `kaiming_uniform` that makes the weights of most 3×3
+convolutions ~1.7× smaller. See the [PyTorch port's notes](pytorch/README.md#notes-on-faithfulness)
+for the other differences between the data pipelines.
