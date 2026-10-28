@@ -77,18 +77,30 @@ Flux 0.16.15, NNlib master
 MLDataDevices 1.18.0, Zygote 0.7.15, CUDA.jl and cuDNN.jl 6.5.0 with cuDNN 9.27,
 Reactant 0.2.301; PyTorch 2.14.1 (cu130) with cuDNN 9.24.
 
-| | s/epoch | images/s | first epoch | peak GPU memory in use | peak GPU memory reserved |
-| --- | --- | --- | --- | --- | --- |
-| [Flux + CUDA.jl](flux-cuda/) | 35.3 | 2830 | 67.3 s | 8.4 GiB | 8.7 GiB |
-| [Flux + Reactant](flux-reactant/) | 30.6 | 3270 | 101.5 s | 2.6 GiB | 5.2 GiB\* |
-| [PyTorch](pytorch/) | 28.9 | 3450 | 29.4 s | 4.0 GiB | 4.1 GiB |
-| [PyTorch](pytorch/), `--compile` | 25.3 | 3950 | 42.6 s | 3.9 GiB | 4.1 GiB |
+| | s/epoch | images/s | first epoch |
+| --- | --- | --- | --- |
+| [Flux + CUDA.jl](flux-cuda/) | 35.3 | 2830 | 67.3 s |
+| [Flux + Reactant](flux-reactant/) | 30.6 | 3270 | 101.5 s |
+| [PyTorch](pytorch/) | 28.9 | 3450 | 29.4 s |
+| [PyTorch](pytorch/), `--compile` | 25.3 | 3950 | 42.6 s |
 
 *s/epoch* averages epochs 2 and 3 (99,968 images per epoch, without evaluation), and *first epoch*
 includes compilation of the training step. The `torch.compile` run starts with empty Inductor and
-Triton caches. Memory includes the initial evaluation, training and final evaluation, measured
-in separate 1-epoch runs for Flux and in the timing runs for PyTorch. It is the most memory
-allocated at once (*in use*) and held by the allocator (*reserved*): CUDA's pool high-water marks,
+Triton caches.
+
+Memory was measured over the following run lengths, including the initial evaluation, training
+and final evaluation. The one-epoch Flux profiles were separate runs from the timing runs above.
+
+| | epochs measured | peak GPU memory in use | peak GPU memory reserved |
+| --- | --- | --- | --- |
+| [Flux + CUDA.jl](flux-cuda/) | 1 | 8.4 GiB | 8.7 GiB |
+| [Flux + Reactant](flux-reactant/) | 1 | 2.6 GiB | 5.2 GiB\* |
+| [Flux + Reactant](flux-reactant/) | 3 | 4.4 GiB | not recorded |
+| [PyTorch](pytorch/) | 3 | 4.0 GiB | 4.1 GiB |
+| [PyTorch](pytorch/), `--compile` | 3 | 3.9 GiB | 4.1 GiB |
+
+These are the most memory allocated at once (*in use*) and held by the allocator (*reserved*):
+CUDA's pool high-water marks,
 XLA's peak bytes in use and peak pool bytes, and PyTorch's `max_memory_allocated` and
 `max_memory_reserved`. `nvidia-smi` also includes the CUDA context.
 
@@ -100,10 +112,11 @@ See Reactant's
 - **All four use Float32 models**, with TF32 tensor cores enabled for cuDNN convolutions.
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
   program. It trains 1.15× faster than CUDA.jl and 6% slower than eager PyTorch in these runs.
-  MLDataDevices 1.18 frees the previous batch on Reactant, so input batches no longer accumulate
-  until a garbage collection. Over one epoch, peak memory in use falls from 5.6 GiB in the
-  previous measurement with MLDataDevices 1.17.10 to 2.6 GiB. The three-epoch run peaks at
-  4.4 GiB. Compilation adds about 71 s to the first training epoch; evaluation also compiles
+  MLDataDevices 1.18 frees the previous batch on Reactant. The one-epoch profile peaks at
+  2.6 GiB in use, compared with 5.6 GiB in the previous measurement with MLDataDevices 1.17.10.
+  The three-epoch run peaks at 4.4 GiB; the difference between these runs has not been investigated,
+  so the one-epoch result does not establish stable memory use across epochs.
+  Compilation adds about 71 s to the first training epoch; evaluation also compiles
   separate functions for full and partial batches.
 - **CUDA.jl** runs every operation of the forward and backward passes eagerly, with cuDNN
   convolutions and batch normalization. Flux 0.16.15 manages garbage collection inside
