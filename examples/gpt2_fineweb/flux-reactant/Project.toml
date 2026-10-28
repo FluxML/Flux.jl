@@ -4,7 +4,9 @@ Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
 HuggingFaceTokenizers = "a6888d44-1185-43bb-bd0f-7806f9976d18"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+MLDataDevices = "7e8f7934-dd98-4c1a-8fe8-92b47a384d40"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -13,14 +15,17 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [sources]
 Flux = {path = "../../.."}
+NNlib = {url = "https://github.com/FluxML/NNlib.jl", rev = "master"}
 
 [compat]
 ArgParse = "1"
-Flux = "0.16.13"
+Flux = "0.16.15"
 HuggingFaceDatasets = "0.4.4"
 HuggingFaceTokenizers = "0.1.1"
 JLD2 = "0.6"
+MLDataDevices = "1.18"
 MLUtils = "0.4.15"
+NNlib = "0.9.55"
 PythonCall = "0.9"
-Reactant = "0.2.295"
+Reactant = "0.2.301"
 julia = "1.12"

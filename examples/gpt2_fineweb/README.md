@@ -13,8 +13,8 @@ optimizer and schedule. The same training script comes in three versions, side b
 
 The two Flux versions share everything but their entry point: [`flux-cuda/train.jl`](flux-cuda/train.jl)
 includes the model, data pipeline, HellaSwag evaluation and training loop from
-[`flux-reactant/`](flux-reactant/), and only chooses the device, the precision of matrix
-multiplications and the memory management. The PyTorch port reimplements them with the same presets, initialization,
+[`flux-reactant/`](flux-reactant/), and only chooses the device and the precision of matrix
+multiplications. The PyTorch port reimplements them with the same presets, initialization,
 optimizer, schedule, evaluation and log format. The three read the same tokenized data from
 `data/`, which whichever runs first writes.
 
@@ -33,11 +33,12 @@ optimizer, schedule, evaluation and log format. The three read the same tokenize
   initialized as in GPT-2 (std 0.02, residual projections scaled by `1/√(2·n_layer)`).
 - **Training** — `AdamW` (β = (0.9, 0.95), weight decay 0.1 on matrices only), gradient clipping,
   linear warmup and cosine decay of the learning rate, and gradient accumulation to reach 2^19
-  tokens per optimizer step. By default, the model is in bfloat16 and the optimizer updates
-  `Float32` copies of the parameters.
+  tokens per optimizer step. By default, weights and activations are in bfloat16, LayerNorm
+  parameters stay in `Float32`, and the optimizer updates `Float32` copies of the parameters.
 - **Evaluation** — validation loss, text samples from the prompt *"Hello, I'm a language model,"*
   (top-k sampling) and, for FineWeb-Edu, [HellaSwag](https://rowanzellers.com/hellaswag)
-  accuracy, every 250 steps; checkpoints with the model and optimizer state to resume from.
+  accuracy, every 250 steps. The Julia scripts save checkpoints with the model and optimizer
+  state to resume from.
 
 Two presets:
 
@@ -59,41 +60,82 @@ $ uv sync
 $ uv run python train_gpt2.py --preset fineweb
 ```
 
-The three scripts take the same options (`--help` lists them), write `log/log.txt` and the
-checkpoints in their own folder, and print the same log lines. The first run with a preset
+The Julia environments use Flux from this checkout and NNlib from GitHub `master`. The latter
+includes the Reactant mixed precision fix in [NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872),
+which is not in the registered NNlib 0.9.55 release.
+
+The scripts share the preset, batch size, precision, learning-rate and evaluation options
+(`--help` lists them), write `log/log.txt` in their own folder, and print the same training log
+lines. The Julia versions also save resumable checkpoints. The first run with a preset
 streams and tokenizes its dataset into `data/<dataset>/`: ~1 min and 0.95 GB for TinyStories,
 ~30 min (28.5 GB streamed) and 20 GB for FineWeb-Edu. See each folder's README for the details.
 
 ## Performance
 
-GPT-2 124M (`--preset fineweb`, 2^19 tokens per step in micro-batches of 16), bfloat16, on an
-**RTX 5090 (32 GB)**, Julia 1.13, CUDA.jl 6.4, PyTorch 2.14.1 (cu130), steady-state steps:
+Measured on **28 October 2026**, on an **RTX 5090 (32 GB)**, driver 595.84. GPT-2 124M uses
+`--preset fineweb --batchsize 16 --precision bf16`: 32 micro-batches of 16 × 1024 tokens per
+optimizer step (2^19 tokens). Each run takes **eight optimizer steps**, with validation,
+sampling, HellaSwag and checkpoints disabled. Steady timings and rates use steps 2–8; the first
+step includes compilation, but excludes package loading and data preparation. These are short
+benchmarks, not full training runs.
+
+Both Julia environments use Julia 1.13.2 (32 threads), Flux 0.16.15, Optimisers 0.4.11,
+MLDataDevices 1.18 and NNlib master at
+[`8790de4`](https://github.com/FluxML/NNlib.jl/commit/8790de4ba6e5c4bf48f5392888dd8ceb6a799ca0).
+CUDA.jl and cuDNN.jl are 6.5.0, with cuDNN 9.27 and Zygote 0.7.15; Reactant is 0.2.301.
+PyTorch is 2.14.1+cu130, with cuDNN 9.24, `datasets` 5.1 and 16 CPU threads. Each compiled
+PyTorch run starts with separate empty Inductor and Triton caches.
 
 | | tokens/s | s/step | TFLOPS | first step |
 | --- | --- | --- | --- | --- |
-| [Flux + Reactant](flux-reactant/)\* | 111k | 4.7 | 95 | 723 s |
-| [Flux + CUDA.jl](flux-cuda/) | 135k | 3.9 | 115 | 72 s |
-| [PyTorch](pytorch/), `--attn math` | 67k | 7.8 | 58 | 8.0 s |
-| [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.9 | 92 | 20 s |
-| [PyTorch](pytorch/), `--attn flash` (the default) | 158k | 3.3 | 135 | 3.6 s |
-| [PyTorch](pytorch/), `--attn flash --compile` | 164k | 3.2 | 140 | 13 s |
+| [Flux + Reactant](flux-reactant/) | 131k | 4.01 | 111.7 | 636 s |
+| [Flux + CUDA.jl](flux-cuda/) | 167k | 3.13 | 143.1 | 53.1 s |
+| [PyTorch](pytorch/), `--attn math` | 67k | 7.78 | 57.7 | 8.0 s |
+| [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.90 | 91.6 | 18.6 s |
+| [PyTorch](pytorch/), `--attn flash` (the default) | 158k | 3.31 | 135.5 | 3.5 s |
+| [PyTorch](pytorch/), `--attn flash --compile` | 163k | 3.21 | 139.5 | 12.7 s |
 
-\* With Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295. Flux 0.16.14 keeps the LayerNorm
-parameters of a bfloat16 model in `Float32`, and under Reactant NNlib 0.9.55 then promotes the
-activations to `Float32`: the model trains at half the speed (56k tokens/s) until
-[NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872) is released.
+Allocator peaks from the **same eight-step runs**, including model/optimizer setup and the
+first step. GiB means 2^30 bytes. These are allocator counters, not total device memory as
+reported by `nvidia-smi`.
+
+| | peak memory in use | peak reserved |
+| --- | --- | --- |
+| Flux + Reactant | 18.9 GiB | 28.2 GiB |
+| Flux + CUDA.jl | 18.7 GiB | 18.7 GiB |
+| PyTorch, `--attn math` | 26.4 GiB | 27.6 GiB |
+| PyTorch, `--attn math --compile` | 25.5 GiB | 25.9 GiB |
+| PyTorch, `--attn flash` | 16.5 GiB | 16.7 GiB |
+| PyTorch, `--attn flash --compile` | 16.5 GiB | 16.8 GiB |
+
+Reactant preallocation was disabled with `XLA_REACTANT_GPU_PREALLOCATE=false`; the script
+otherwise reserves 90% of GPU memory. Its counters are `Reactant.XLA.allocatorstats()`'s
+`peak_bytes_in_use` and `peak_pool_bytes`. CUDA uses the memory pool's `USED_MEM_HIGH` and
+`RESERVED_MEM_HIGH`; PyTorch uses `max_memory_allocated()` and `max_memory_reserved()`.
+
+To reproduce the Julia timing run from either environment:
+
+```console
+$ XLA_REACTANT_GPU_PREALLOCATE=false julia --threads=32 --project=. train.jl --preset fineweb --steps 8 --eval-every 0 --hellaswag-every 0 --ckpt-every 0
+```
+
+For PyTorch, use `--preset fineweb --steps 8 --eval-every 0 --hellaswag-every 0` and each
+attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` and
+`TRITON_CACHE_DIR` to fresh directories for each compiled run, and `OMP_NUM_THREADS=16` and
+`MKL_NUM_THREADS=16` to match the CPU thread count.
 
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
   program, which fuses the elementwise operations and plans the memory of the whole step, but it
   has no fused attention yet: it materializes the attention matrix
   ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)). Its first step
-  includes compiling that program.
+  includes compiling that program. NNlib master keeps the activations in bfloat16 with
+  `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55.
 - **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
-  cross-entropy as fused kernels, and every other operation of the forward and backward passes as a
-  kernel of its own. Zygote keeps all the activations for the backward pass, and the script runs a
-  garbage collection after each micro-batch to free them before the next one; a micro-batch of 16
-  then peaks at 22 GB.
+  cross-entropy as fused kernels. Flux 0.16.15 paces garbage collections between micro-batches
+  and runs a full collection after the first step that compiles; no manual collections are needed.
 - **PyTorch** runs eagerly too, with flash attention by default; `--attn math` materializes the
-  attention matrix as Flux does under Reactant. `--compile` (`torch.compile`) fuses the model's
-  elementwise operations: with materialized attention it is then about as fast as Reactant, and with
-  flash attention it gains 4%. See [`pytorch/`](pytorch/).
+  attention matrix as Flux does under Reactant. `--compile` compiles the model, excluding the
+  loss and optimizer update. Its precision policy differs from Flux's: it keeps `Float32`
+  parameters, uses bfloat16 autocast, and casts logits to `Float32` for the loss. Flux uses
+  bfloat16 weights with `Float32` LayerNorm parameters and master weights, and accumulates the
+  loss in `Float32` without copying all the logits to that type. See [`pytorch/`](pytorch/).

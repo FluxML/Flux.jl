@@ -27,28 +27,21 @@ default wheels. The options mirror the Flux script's (`--batchsize`, `--steps`, 
 `--eval-every`, `--hellaswag-every`, `--precision {bf16,tf32,f32}`, `--peak-tflops`), plus `--attn`
 and `--compile` (`torch.compile`).
 
+Both ports require `datasets` 5.1 or later: earlier versions can skip the wrong documents in
+the FineWeb-Edu stream, overlapping the training and validation splits.
+
 ## Performance comparison
 
-GPT-2 124M (`--preset fineweb --batchsize 16`, gradient accumulation to 2^19 tokens per step) on an
-**RTX 5090**, Julia 1.13 / Flux 0.16 / Reactant 0.2.295 / CUDA.jl 6.4 vs PyTorch 2.14.1 (cu130),
-steady-state steps (see the [comparison](../README.md#performance) for the versions):
+The [shared comparison](../README.md#performance) records timings and allocator memory peaks
+for GPT-2 124M on the RTX 5090, using eight optimizer steps with micro-batches of 16 and gradient
+accumulation to 2^19 tokens per step.
 
-| | tokens/s | s/step | TFLOPS | first step |
-| --- | --- | --- | --- | --- |
-| Flux + Reactant, `--precision bf16` | 111k | 4.7 | 95 | 723 s |
-| Flux + CUDA.jl, `--precision bf16` | 135k | 3.9 | 115 | 72 s |
-| PyTorch, bf16 autocast, `--attn math` | 67k | 7.8 | 58 | 8.0 s |
-| PyTorch, bf16 autocast, `--attn math --compile` | 107k | 4.9 | 92 | 20 s |
-| PyTorch, bf16 autocast, `--attn flash` | 158k | 3.3 | 135 | 3.6 s |
-| PyTorch, bf16 autocast, `--attn flash --compile` | 164k | 3.2 | 140 | 13 s |
+`--attn math` materializes the attention matrix, as Flux does under Reactant
+([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)); `--attn flash` uses fused
+attention, as Flux does on CUDA.jl. PyTorch keeps the model parameters in `Float32` and uses
+bfloat16 autocast. Flux uses bfloat16 weights with `Float32` LayerNorm parameters and master
+weights, so the precision policies differ.
 
-Flux + Reactant materializes the attention matrix, as Reactant has no fused attention for traced
-arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)): with the same
-materialized attention, eager PyTorch is 1.7× slower than Flux and compiled PyTorch about as fast,
-but its default flash-attention kernel makes it 1.4× faster. Its first step includes compiling the
-whole training step with XLA. Flux + CUDA.jl runs cuDNN's flash attention, like PyTorch's default,
-at 85% of its eager speed and 82% of its compiled one.
-
-`--compile` compiles the model, not the loss. Its cache doesn't depend on `--attn`: after a compiled
-run with one `--attn`, a compiled run with the other reuses its graph, attention included. Point
-`TORCHINDUCTOR_CACHE_DIR` to an empty directory to compare them.
+`--compile` compiles the model, not the loss or optimizer update. Each compiled benchmark uses
+its own empty `TORCHINDUCTOR_CACHE_DIR` and `TRITON_CACHE_DIR` so the first step includes
+compilation for the selected attention backend.
