@@ -54,10 +54,10 @@ of 224 ms, on average).
   fused kernels, forward and backward, that accumulate in `Float32`. Every other operation is a
   kernel of its own.
 - **Memory.** Zygote keeps every intermediate array of the forward pass for the backward pass, and
-  CUDA.jl frees GPU memory only when Julia's garbage collector finalizes the arrays. The script runs
-  an incremental garbage collection after each micro-batch (`gc = true` in `train`), which frees the
-  micro-batch's arrays before the next one allocates: a micro-batch of 16 sequences of GPT-2 124M
-  then peaks at 22 GB. Without it, the memory pool fills up to 31 GB and CUDA.jl stalls on full
+  CUDA.jl frees GPU memory only when Julia's garbage collector finalizes the arrays. `Flux.trainstep!`
+  runs an incremental garbage collection after each micro-batch, which frees the micro-batch's arrays
+  before the next one allocates: a micro-batch of 16 sequences of GPT-2 124M then peaks at 22 GB.
+  Without it (`gc_interval = 0`), the memory pool fills up to 31 GB and CUDA.jl stalls on full
   collections.
 - **Compilation.** There is no XLA compilation: the first step takes ~1.2 minutes of Julia
   compilation, against ~3 to 12 minutes with Reactant.

@@ -59,11 +59,9 @@ end
 
 # Trains on device `dev`, logging to `log_dir`. `compile(f, args)` returns the function to call in
 # place of `f` on arguments like `args`, for the validation loss and the HellaSwag scoring:
-# `Reactant.compile` on Reactant, `f` itself to run eagerly. With `gc = true`, an incremental
-# garbage collection after each micro-batch frees the memory of the arrays it left behind. The
-# other keywords (`batchsize`, `steps`, `lr`, `eval_every`, `hellaswag_every`, `ckpt_every`)
+# `Reactant.compile` on Reactant, `f` itself to run eagerly. The other keywords (`batchsize`, `steps`, `lr`, `eval_every`, `hellaswag_every`, `ckpt_every`)
 # override the preset's values.
-function train(dev; log_dir, compile=(f, args) -> f, gc=false, preset="tinystories",
+function train(dev; log_dir, compile=(f, args) -> f, preset="tinystories",
                data_dir=joinpath(@__DIR__, "..", "data"), precision="bf16", resume=nothing,
                seed=0, peak_tflops=nothing, kws...)
     p = merge(PRESETS[preset], (; (k => v for (k, v) in kws if v !== nothing)...))
@@ -123,7 +121,6 @@ function train(dev; log_dir, compile=(f, args) -> f, gc=false, preset="tinystori
         for _ in 1:accum
             batch, pos = getbatch(train_data, pos, B)
             loss += Flux.trainstep!(lm_loss, model, dev(batch), opt_state)
-            gc && GC.gc(false)
         end
         loss /= accum
         dt = time() - t0

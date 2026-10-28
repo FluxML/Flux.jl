@@ -58,6 +58,7 @@ delete!(testsuite, "test_utils_distributed")
 delete!(testsuite, "ext_reactant/test_utils_reactant")
 delete!(testsuite, "test_common/normalization")
 delete!(testsuite, "test_common/gpu_recurrent")
+delete!(testsuite, "test_common/gpu_train")
 
 # --- Filter by env flags (remove disabled test groups) ---
 

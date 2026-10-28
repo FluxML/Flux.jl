@@ -577,16 +577,17 @@ function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
     iszero(x) && throw(ArgumentError(
         lazy"`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
 
+    # `dims = :` is stored as `1:ndims(x)`, so that `g` is an array, which the optimiser trains.
     d = if dims isa Colon
         1:ndims(x)
     elseif dims == -1
-        dims = ndims(x)
+        ndims(x)
     else
         dims
     end
 
-    g = sqrt.(sum(abs2, x; dims) .+ eps(eltype(x)))
-    WeightNorm(layer, g, which, dims)
+    g = sqrt.(sum(abs2, x; dims=d) .+ eps(eltype(x)))
+    WeightNorm(layer, g, which, d)
 end
 
 (w::WeightNorm)(x) = reparametrize(w)(x)
