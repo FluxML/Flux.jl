@@ -40,6 +40,23 @@
   @test outputsize(m, (10, 10, 3, 1)) == (10, 10, 19, 1)
 end
 
+@testset "embedding" begin
+  # The input size is that of the array of indices, not of the one-hot array
+  m = Embedding(100 => 8)
+  @test outputsize(m, (12,)) == size(m(rand(1:100, 12))) == (8, 12)
+  @test outputsize(m, (12, 4)) == size(m(rand(1:100, 12, 4))) == (8, 12, 4)
+  @test outputsize(m, (5, 6, 7)) == size(m(rand(1:100, 5, 6, 7))) == (8, 5, 6, 7)
+  @test outputsize(m, (12,); padbatch=true) == (8, 12, 1)
+
+  m = Embedding(100 => 8; padding_idx=1)
+  @test outputsize(m, (12, 4)) == size(m(rand(1:100, 12, 4))) == (8, 12, 4)
+
+  m = Chain(Embedding(100 => 8), Dense(8 => 3), x -> sum(x; dims=2))
+  @test outputsize(m, (12, 4)) == size(m(rand(1:100, 12, 4))) == (3, 1, 4)
+
+  @test_throws DimensionMismatch outputsize(Chain(Embedding(100 => 8), Dense(7 => 3)), (12,))
+end
+
 @testset "multiple inputs" begin
   m = Parallel(vcat, Dense(2 => 4, relu), Dense(3 => 6, relu))
   @test outputsize(m, (2,), (3,)) == (10,)
@@ -173,10 +190,12 @@ end
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
 
-  @test_broken begin  # outputsize fails on Embedding
-    m = @autosize (2, 3, 4, 5) Embedding(_ => 10)  # goes by first dim, not 2nd-last
-    @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
-  end
+  # Embedding's input is indices, so its vocabulary size can't be inferred:
+  @test_throws ArgumentError @autosize (2, 3) Embedding(_ => 10)
+  # but layers after it can be:
+  m = @autosize (12, 4) Chain(Embedding(100 => 8), Dense(_ => 2))
+  @test m[2].weight |> size == (2, 8)
+  @test rand(1:100, 12, 4) |> m |> size == (2, 12, 4)
 
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
