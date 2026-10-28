@@ -135,9 +135,8 @@ end
 
 # Trains on device `dev`. `compile(f, args)` returns the function to call in place of `f` on
 # arguments like `args`, for the evaluation: `Reactant.compile` on Reactant, `f` itself to run
-# eagerly. With `gc = true`, an incremental garbage collection after each training step and each
-# evaluation batch frees the memory of the arrays it left behind.
-function train(dev; compile=(f, args) -> f, gc=false, epochs=30, batchsize=128, lr=1e-3,
+# eagerly. Flux.trainstep! manages training GC; evaluation on CUDA still needs collections.
+function train(dev; compile=(f, args) -> f, eval_gc=false, epochs=30, batchsize=128, lr=1e-3,
                weight_decay=0.0, num_workers=4, seed=0, clip_norm=false)
     Random.seed!(seed)
 
@@ -168,7 +167,7 @@ function train(dev; compile=(f, args) -> f, gc=false, epochs=30, batchsize=128, 
             lsum += l * length(y)
             correct += stats.correct
             n += length(y)
-            gc && GC.gc(false)
+            eval_gc && GC.gc(false)
         end
         return lsum / n, correct / n
     end
@@ -180,7 +179,6 @@ function train(dev; compile=(f, args) -> f, gc=false, epochs=30, batchsize=128, 
     end
 
     log_eval(0)
-    step = 0
     for epoch in 1:epochs
         η = lr * (1 + cos(π * (epoch - 1) / epochs)) / 2   # cosine annealing towards 0
         Flux.adjust!(opt_state, η)
@@ -191,10 +189,6 @@ function train(dev; compile=(f, args) -> f, gc=false, epochs=30, batchsize=128, 
             lsum += l * length(y)
             correct += stats.correct
             n += length(y)
-            step += 1
-            # Compiling the first step takes long enough for its arrays to reach the old generation,
-            # which only a full collection frees.
-            gc && GC.gc(step == 1)
         end
         @printf("[train] epoch=%d lr=%.2e loss=%.4f acc=%.4f time=%.1fs img/s=%.0f\n",
                 epoch, η, lsum / n, correct / n, t, n / t)

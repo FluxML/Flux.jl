@@ -5,8 +5,7 @@ include("../training.jl")
 
 using CUDA, cuDNN
 
-# CUDA.jl frees GPU memory when the garbage collector finalizes the arrays, hence `gc = true`.
-main(; kws...) = train(gpu_device(; force=true); gc=true, kws...)
+main(; kws...) = train(gpu_device(; force=true); eval_gc=true, kws...)
 
 function (@main)(args)
     main(; parse_cli(args; description="Train a ResNet-18 on Tiny-ImageNet with Flux on CUDA.jl.")...)

@@ -15,6 +15,10 @@ The two Flux versions share the data pipeline, the model and the training loop i
 [`training.jl`](training.jl); their `train.jl` only choose the device. Each folder has its own
 environment: CUDA.jl and Reactant are not installed together.
 
+The environments use the Flux checkout containing this example and NNlib's GitHub `master`
+branch. The CUDA version requires CUDA.jl and cuDNN.jl 6.5; both versions require MLDataDevices
+1.18, whose device iterator frees the previous batch on Reactant as well as on CUDA.
+
 ## What it does
 
 - **Data** — [`zh-plus/tiny-imagenet`](https://huggingface.co/datasets/zh-plus/tiny-imagenet)
@@ -29,8 +33,9 @@ environment: CUDA.jl and Reactant are not installed together.
   linear head (11.27M params).
 - **Training** — `AdamW` with a cosine-annealed learning rate, cross-entropy on the integer class
   labels, and an epoch loop over `Flux.trainstep!`, which also returns the number of correct
-  predictions computed in the forward pass. Each epoch logs the training loss, accuracy, time and
-  throughput, and the validation loss and top-1 accuracy.
+  predictions computed in the forward pass and manages training garbage collection. The CUDA
+  version also runs an incremental collection after each evaluation batch. Each epoch logs the
+  training loss, accuracy, time and throughput, and the validation loss and top-1 accuracy.
 
 ## Running
 
@@ -64,7 +69,11 @@ Reactant also caps Python at 3.12.0, whose `multiprocess` prints an ignored `Att
 
 ## Performance
 
-Measured on an **RTX 5090 (32 GB)**, driver 595.84, batch size 128, 4 data-loading workers,
+The measurements below predate the update to CUDA/cuDNN 6.5, NNlib master, Flux 0.16.15 and
+MLDataDevices 1.18. In particular, they include Reactant's previous batch-memory retention, which
+MLDataDevices 1.18 fixes. They are retained as a baseline, not measurements of the current scripts.
+
+Measured on 27 October 2026 on an **RTX 5090 (32 GB)**, driver 595.84, batch size 128, 4 data-loading workers,
 3-epoch runs (`--epochs 3`). Julia 1.13.2, Flux 0.16.14, NNlib 0.9.55, Zygote 0.7.15, CUDA.jl
 6.4.2 with cuDNN 9.27, Reactant 0.2.300; PyTorch 2.14.1 (cu130) with cuDNN 9.24.
 
@@ -90,21 +99,22 @@ With `XLA_REACTANT_GPU_PREALLOCATE=false` it allocates on demand, at the same sp
 - **All four are limited by the GPU**, which is busy 94–97% of the time during training. Float32
   convolutions run on TF32 tensor cores by default in all of them.
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
-  program. In the steady state it trains 1.2× faster than CUDA.jl and 4% slower than eager
+  program. In these runs it trained 1.2× faster than CUDA.jl and 4% slower than eager
   PyTorch. XLA plans the buffers of the whole step ahead of time: on a synthetic batch, a step
   peaks at 2.6 GiB, as in PyTorch. Over a run, the batches moved to the GPU add up to 3 GiB more,
-  because they are freed only when Julia's garbage collector finalizes them: the device iterator
-  of MLDataDevices frees the previous batch on CUDA, but not on Reactant. Compiling the training
+  because they were freed only when Julia's garbage collector finalized them: MLDataDevices
+  1.17.10 did not free the previous batch on Reactant. Compiling the training
   step takes ~73 s (the first epoch minus a steady one), and the two evaluation functions (for the
   full and the last validation batch) take ~40 s more before the first evaluation.
 - **CUDA.jl** runs every operation of the forward and backward passes eagerly, with cuDNN
   convolutions and batch normalization. Zygote keeps all the intermediate arrays of the forward
   pass for the backward pass, and CUDA.jl frees GPU memory only when Julia's garbage collector
   finalizes the arrays: a step peaks at 8.4 GiB, 3× PyTorch's 2.6 GiB, since PyTorch frees each
-  tensor as soon as it is no longer needed. The script runs an incremental garbage collection
+  tensor as soon as it is no longer needed. The measured script ran an incremental garbage collection
   after each training step and each evaluation batch, and a full one after the first step; with
   the collections after the training steps only, the process held 21.6 GiB, at the same speed.
-  The first epoch includes ~40 s of Julia compilation.
+  Flux 0.16.15 now manages the training collections inside `trainstep!`, including the full
+  collection after a step that compiles. The first epoch included ~40 s of Julia compilation.
 - **PyTorch** reaches its steady speed in the first epoch; `torch.backends.cudnn.benchmark` times
   the convolution algorithms on the first batches. `--compile` (`torch.compile`) fuses the
   elementwise operations around the convolutions (batch normalization, ReLU, residual additions),
