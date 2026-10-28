@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Loss Functions · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../basics/">Basics</a></li><li><a class="tocitem" href="../recurrence/">Recurrence</a></li><li><a class="tocitem" href="../layers/">Model Reference</a></li><li class="is-active"><a class="tocitem" href>Loss Functions</a><ul class="internal"><li><a class="tocitem" href="#Losses-Reference"><span>Losses Reference</span></a></li></ul></li><li><a class="tocitem" href="../regularisation/">Regularisation</a></li><li><a class="tocitem" href="../advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../nnlib/">NNlib</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../../data/onehot/">One-Hot Encoding</a></li><li><a class="tocitem" href="../../data/dataloader/">DataLoader</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li></ul></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../ecosystem/">The Julia Ecosystem</a></li><li><a class="tocitem" href="../../utilities/">Utility Functions</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li><li><a class="tocitem" href="../../datasets/">Datasets</a></li><li><a class="tocitem" href="../../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Building Models</a></li><li class="is-active"><a href>Loss Functions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Loss Functions</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/losses.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Loss-Functions"><a class="docs-heading-anchor" href="#Loss-Functions">Loss Functions</a><a id="Loss-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Loss-Functions" title="Permalink"></a></h1><p>Flux provides a large number of common loss functions used for training machine learning models. They are grouped together in the <code>Flux.Losses</code> module.</p><p>Loss functions for supervised learning typically expect as inputs a target <code>y</code>, and a prediction <code>ŷ</code>. In Flux&#39;s convention, the order of the arguments is the following</p><pre><code class="language-julia">loss(ŷ, y)</code></pre><p>Most loss functions in Flux have an optional argument <code>agg</code>, denoting the type of aggregation performed over the batch:</p><pre><code class="language-julia">loss(ŷ, y)                         # defaults to `mean`
+loss(ŷ, y, agg=sum)                # use `sum` for reduction
+loss(ŷ, y, agg=x-&gt;sum(x, dims=2))  # partial reduction
+loss(ŷ, y, agg=x-&gt;mean(w .* x))    # weighted mean
+loss(ŷ, y, agg=identity)           # no aggregation.</code></pre><h2 id="Losses-Reference"><a class="docs-heading-anchor" href="#Losses-Reference">Losses Reference</a><a id="Losses-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#Losses-Reference" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.mae" href="#Flux.Losses.mae"><code>Flux.Losses.mae</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">mae(ŷ, y; agg = mean)</code></pre><p>Return the loss corresponding to mean absolute error:</p><pre><code class="language-none">agg(abs.(ŷ .- y))</code></pre><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y_model = [1.1, 1.9, 3.1];
+
+julia&gt; Flux.mae(y_model, 1:3)
+0.10000000000000009</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L6-L20">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.mse" href="#Flux.Losses.mse"><code>Flux.Losses.mse</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">mse(ŷ, y; agg = mean)</code></pre><p>Return the loss corresponding to mean square error:</p><pre><code class="language-none">agg((ŷ .- y) .^ 2)</code></pre><p>See also: <a href="#Flux.Losses.mae"><code>mae</code></a>, <a href="#Flux.Losses.msle"><code>msle</code></a>, <a href="#Flux.Losses.crossentropy"><code>crossentropy</code></a>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y_model = [1.1, 1.9, 3.1];
+
+julia&gt; y_true = 1:3;
+
+julia&gt; Flux.mse(y_model, y_true)
+0.010000000000000018</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L23-L41">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.msle" href="#Flux.Losses.msle"><code>Flux.Losses.msle</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">msle(ŷ, y; agg = mean, ϵ = eps(ŷ))</code></pre><p>The loss corresponding to mean squared logarithmic errors, calculated as</p><pre><code class="language-none">agg((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)) .^ 2)</code></pre><p>The <code>ϵ</code> term provides numerical stability. Penalizes an under-estimation more than an over-estimatation.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.msle(Float32[1.1, 2.2, 3.3], 1:3)
+0.009084041f0
+
+julia&gt; Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
+0.011100831f0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L44-L62">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.huber_loss" href="#Flux.Losses.huber_loss"><code>Flux.Losses.huber_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">huber_loss(ŷ, y; δ = 1, agg = mean)</code></pre><p>Return the mean of the <a href="https://en.wikipedia.org/wiki/Huber_loss">Huber loss</a> given the prediction <code>ŷ</code> and true values <code>y</code>.</p><pre><code class="language-none">             | 0.5 * |ŷ - y|^2,            for |ŷ - y| &lt;= δ
+Huber loss = |
+             |  δ * (|ŷ - y| - 0.5 * δ), otherwise</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L66-L75">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.label_smoothing" href="#Flux.Losses.label_smoothing"><code>Flux.Losses.label_smoothing</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">label_smoothing(y::Union{Number, AbstractArray}, α; dims::Int=1)</code></pre><p>Returns smoothed labels, meaning the confidence on label values are relaxed.</p><p>When <code>y</code> is given as one-hot vector or batch of one-hot, its calculated as</p><pre><code class="language-none">y .* (1 - α) .+ α / size(y, dims)</code></pre><p>when <code>y</code> is given as a number or batch of numbers for binary classification, its calculated as</p><pre><code class="language-none">y .* (1 - α) .+ α / 2</code></pre><p>in which case the labels are squeezed towards <code>0.5</code>.</p><p>α is a number in interval (0, 1) called the smoothing factor. Higher the value of α larger the smoothing of <code>y</code>.</p><p><code>dims</code> denotes the one-hot dimension, unless <code>dims=0</code> which denotes the application of label smoothing to binary distributions encoded in a single number.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
+2×6 Flux.OneHotArray{2,2,Array{UInt32,1}}:
+ 0  0  0  1  0  1
+ 1  1  1  0  1  0
+
+julia&gt; y_smoothed = Flux.label_smoothing(y, 0.2f0)
+2×6 Array{Float32,2}:
+ 0.1  0.1  0.1  0.9  0.1  0.9
+ 0.9  0.9  0.9  0.1  0.9  0.1
+
+julia&gt; y_sim = softmax(y .* log(2f0))
+2×6 Array{Float32,2}:
+ 0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
+ 0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
+
+julia&gt; y_dis = vcat(y_sim[2,:]&#39;, y_sim[1,:]&#39;)
+2×6 Array{Float32,2}:
+ 0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
+ 0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
+
+julia&gt; Flux.crossentropy(y_sim, y) &lt; Flux.crossentropy(y_sim, y_smoothed)
+true
+
+julia&gt; Flux.crossentropy(y_dis, y) &gt; Flux.crossentropy(y_dis, y_smoothed)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L84-L134">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.crossentropy" href="#Flux.Losses.crossentropy"><code>Flux.Losses.crossentropy</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">crossentropy(ŷ, y; dims = 1, ϵ = eps(ŷ), agg = mean)</code></pre><p>Return the cross entropy between the given probability distributions; calculated as</p><pre><code class="language-none">agg(-sum(y .* log.(ŷ .+ ϵ); dims))</code></pre><p>Cross entropy is typically used as a loss in multi-class classification, in which case the labels <code>y</code> are given in a one-hot format. <code>dims</code> specifies the dimension (or the dimensions) containing the class probabilities. The prediction <code>ŷ</code> is supposed to sum to one across <code>dims</code>, as would be the case with the output of a <a href="../nnlib/#NNlib.softmax"><code>softmax</code></a> operation.</p><p>For numerical stability, it is recommended to use <a href="#Flux.Losses.logitcrossentropy"><code>logitcrossentropy</code></a> rather than <code>softmax</code> followed by <code>crossentropy</code> .</p><p>Use <a href="#Flux.Losses.label_smoothing"><code>label_smoothing</code></a> to smooth the true labels as preprocessing before computing the loss.</p><p>See also: <a href="#Flux.Losses.logitcrossentropy"><code>logitcrossentropy</code></a>, <a href="#Flux.Losses.binarycrossentropy"><code>binarycrossentropy</code></a>, <a href="#Flux.Losses.logitbinarycrossentropy"><code>logitbinarycrossentropy</code></a>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
+3×5 Flux.OneHotArray{3,2,Array{UInt32,1}}:
+ 1  0  0  0  1
+ 0  1  0  1  0
+ 0  0  1  0  0
+
+julia&gt; y_model = softmax(reshape(-7:7, 3, 5) .* 1f0)
+3×5 Array{Float32,2}:
+ 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
+ 0.244728   0.244728   0.244728   0.244728   0.244728
+ 0.665241   0.665241   0.665241   0.665241   0.665241
+
+julia&gt; sum(y_model; dims=1)
+1×5 Array{Float32,2}:
+ 1.0  1.0  1.0  1.0  1.0
+
+julia&gt; Flux.crossentropy(y_model, y_label)
+1.6076053f0
+
+julia&gt; 5 * ans ≈ Flux.crossentropy(y_model, y_label; agg=sum)
+true
+
+julia&gt; y_smooth = Flux.label_smoothing(y_label, 0.15f0)
+3×5 Array{Float32,2}:
+ 0.9   0.05  0.05  0.05  0.9
+ 0.05  0.9   0.05  0.9   0.05
+ 0.05  0.05  0.9   0.05  0.05
+
+julia&gt; Flux.crossentropy(y_model, y_smooth)
+1.5776052f0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L149-L204">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.logitcrossentropy" href="#Flux.Losses.logitcrossentropy"><code>Flux.Losses.logitcrossentropy</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">logitcrossentropy(ŷ, y; dims = 1, agg = mean)</code></pre><p>Return the cross entropy calculated by</p><pre><code class="language-none">agg(-sum(y .* logsoftmax(ŷ; dims); dims))</code></pre><p>This is mathematically equivalent to <code>crossentropy(softmax(ŷ), y)</code>, but is more numerically stable than using functions <a href="#Flux.Losses.crossentropy"><code>crossentropy</code></a> and <a href="../nnlib/#NNlib.softmax"><code>softmax</code></a> separately.</p><p>See also: <a href="#Flux.Losses.binarycrossentropy"><code>binarycrossentropy</code></a>, <a href="#Flux.Losses.logitbinarycrossentropy"><code>logitbinarycrossentropy</code></a>, <a href="#Flux.Losses.label_smoothing"><code>label_smoothing</code></a>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y_label = Flux.onehotbatch(collect(&quot;abcabaa&quot;), &#39;a&#39;:&#39;c&#39;)
+3×7 Flux.OneHotArray{3,2,Array{UInt32,1}}:
+ 1  0  0  1  0  1  1
+ 0  1  0  0  1  0  0
+ 0  0  1  0  0  0  0
+
+julia&gt; y_model = reshape(vcat(-9:0, 0:9, 7.5f0), 3, 7)
+3×7 Array{Float32,2}:
+ -9.0  -6.0  -3.0  0.0  2.0  5.0  8.0
+ -8.0  -5.0  -2.0  0.0  3.0  6.0  9.0
+ -7.0  -4.0  -1.0  1.0  4.0  7.0  7.5
+
+julia&gt; Flux.logitcrossentropy(y_model, y_label)
+1.5791205f0
+
+julia&gt; Flux.crossentropy(softmax(y_model), y_label)
+1.5791197f0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L209-L242">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.binarycrossentropy" href="#Flux.Losses.binarycrossentropy"><code>Flux.Losses.binarycrossentropy</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">binarycrossentropy(ŷ, y; agg = mean, ϵ = eps(ŷ))</code></pre><p>Return the binary cross-entropy loss, computed as</p><pre><code class="language-none">agg(@.(-y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)))</code></pre><p>Where typically, the prediction <code>ŷ</code> is given by the output of a <a href="../nnlib/#NNlib.sigmoid"><code>sigmoid</code></a> activation. The <code>ϵ</code> term is included to avoid infinity. Using <a href="#Flux.Losses.logitbinarycrossentropy"><code>logitbinarycrossentropy</code></a> is recomended over <code>binarycrossentropy</code> for numerical stability.</p><p>Use <a href="#Flux.Losses.label_smoothing"><code>label_smoothing</code></a> to smooth the <code>y</code> value as preprocessing before computing the loss.</p><p>See also: <a href="#Flux.Losses.crossentropy"><code>crossentropy</code></a>, <a href="#Flux.Losses.logitcrossentropy"><code>logitcrossentropy</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; y_bin = Bool[1,0,1]
+3-element Array{Bool,1}:
+ 1
+ 0
+ 1
+
+julia&gt; y_prob = softmax(reshape(vcat(1:3, 3:5), 2, 3) .* 1f0)
+2×3 Array{Float32,2}:
+ 0.268941  0.5  0.268941
+ 0.731059  0.5  0.731059
+
+julia&gt; Flux.binarycrossentropy(y_prob[2,:], y_bin)
+0.43989f0
+
+julia&gt; all(p -&gt; 0&lt;p&lt;1, y_prob[2,:])  # else DomainError
+true
+
+julia&gt; y_hot = Flux.onehotbatch(y_bin, 0:1)
+2×3 Flux.OneHotArray{2,2,Array{UInt32,1}}:
+ 0  1  0
+ 1  0  1
+
+julia&gt; Flux.crossentropy(y_prob, y_hot)
+0.43989f0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L247-L290">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.logitbinarycrossentropy" href="#Flux.Losses.logitbinarycrossentropy"><code>Flux.Losses.logitbinarycrossentropy</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">logitbinarycrossentropy(ŷ, y; agg = mean)</code></pre><p>Mathematically equivalent to <a href="#Flux.Losses.binarycrossentropy"><code>binarycrossentropy(σ(ŷ), y)</code></a> but is more numerically stable.</p><p>See also: <a href="#Flux.Losses.crossentropy"><code>crossentropy</code></a>, <a href="#Flux.Losses.logitcrossentropy"><code>logitcrossentropy</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; y_bin = Bool[1,0,1];
+
+julia&gt; y_model = Float32[2, -1, pi]
+3-element Array{Float32,1}:
+  2.0
+ -1.0
+  3.1415927
+
+julia&gt; Flux.logitbinarycrossentropy(y_model, y_bin)
+0.160832f0
+
+julia&gt; Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
+0.16083185f0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L297-L321">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.kldivergence" href="#Flux.Losses.kldivergence"><code>Flux.Losses.kldivergence</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">kldivergence(ŷ, y; agg = mean, ϵ = eps(ŷ))</code></pre><p>Return the <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">Kullback-Leibler divergence</a> between the given probability distributions.</p><p>The KL divergence is a measure of how much one probability distribution is different from the other. It is always non-negative, and zero only when both the distributions are equal.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p1 = [1 0; 0 1]
+2×2 Array{Int64,2}:
+ 1  0
+ 0  1
+
+julia&gt; p2 = fill(0.5, 2, 2)
+2×2 Array{Float64,2}:
+ 0.5  0.5
+ 0.5  0.5
+
+julia&gt; Flux.kldivergence(p2, p1) ≈ log(2)
+true
+
+julia&gt; Flux.kldivergence(p2, p1; agg = sum) ≈ 2log(2)
+true
+
+julia&gt; Flux.kldivergence(p2, p2; ϵ = 0)  # about -2e-16 with the regulator
+0.0
+
+julia&gt; Flux.kldivergence(p1, p2; ϵ = 0)  # about 17.3 with the regulator
+Inf</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L329-L363">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.poisson_loss" href="#Flux.Losses.poisson_loss"><code>Flux.Losses.poisson_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">poisson_loss(ŷ, y)</code></pre><p><strong>Return how much the predicted distribution <code>ŷ</code> diverges from the expected Poisson</strong></p><p><strong>distribution <code>y</code>; calculated as <code>sum(ŷ .- y .* log.(ŷ)) / size(y, 2)</code>.</strong></p><p><a href="https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson">More information.</a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L370-L377">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.hinge_loss" href="#Flux.Losses.hinge_loss"><code>Flux.Losses.hinge_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">hinge_loss(ŷ, y; agg = mean)</code></pre><p>Return the <a href="https://en.wikipedia.org/wiki/Hinge_loss">hinge_loss loss</a> given the prediction <code>ŷ</code> and true labels <code>y</code> (containing 1 or -1); calculated as <code>sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)</code>.</p><p>See also: <a href="#Flux.Losses.squared_hinge_loss"><code>squared_hinge_loss</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L380-L388">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.squared_hinge_loss" href="#Flux.Losses.squared_hinge_loss"><code>Flux.Losses.squared_hinge_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">squared_hinge_loss(ŷ, y)</code></pre><p>Return the squared hinge_loss loss given the prediction <code>ŷ</code> and true labels <code>y</code> (containing 1 or -1); calculated as <code>sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)</code>.</p><p>See also: <a href="#Flux.Losses.hinge_loss"><code>hinge_loss</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L392-L399">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.dice_coeff_loss" href="#Flux.Losses.dice_coeff_loss"><code>Flux.Losses.dice_coeff_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">dice_coeff_loss(ŷ, y; smooth = 1)</code></pre><p>Return a loss based on the dice coefficient. Used in the <a href="https://arxiv.org/abs/1606.04797">V-Net</a> image segmentation architecture. Similar to the F1_score. Calculated as:</p><pre><code class="language-none">1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L403-L412">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.tversky_loss" href="#Flux.Losses.tversky_loss"><code>Flux.Losses.tversky_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">tversky_loss(ŷ, y; β = 0.7)</code></pre><p>Return the <a href="https://arxiv.org/abs/1706.05721">Tversky loss</a>. Used with imbalanced data to give more weight to false negatives. Larger β weigh recall more than precision (by placing more emphasis on false negatives) Calculated as:     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β<em>(1 .- y) .</em> ŷ + (1 - β)<em>y .</em> (1 .- ŷ)) + 1)</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L416-L424">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.binary_focal_loss" href="#Flux.Losses.binary_focal_loss"><code>Flux.Losses.binary_focal_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=eps(ŷ))</code></pre><p>Return the <a href="https://arxiv.org/pdf/1708.02002.pdf">binary<em>focal</em>loss</a> The input, &#39;ŷ&#39;, is expected to be normalized (i.e. <a href="../nnlib/#NNlib.softmax"><code>softmax</code></a> output).</p><p>For <code>γ == 0</code>, the loss is mathematically equivalent to <a href="#Flux.Losses.binarycrossentropy"><code>Losses.binarycrossentropy</code></a>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y = [0  1  0
+            1  0  1]
+2×3 Array{Int64,2}:
+ 0  1  0
+ 1  0  1
+
+julia&gt; ŷ = [0.268941  0.5  0.268941
+            0.731059  0.5  0.731059]
+2×3 Array{Float64,2}:
+ 0.268941  0.5  0.268941
+ 0.731059  0.5  0.731059
+
+julia&gt; Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
+true</code></pre><p>See also: <a href="#Flux.Losses.focal_loss"><code>Losses.focal_loss</code></a> for multi-class setting</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L432-L460">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Losses.focal_loss" href="#Flux.Losses.focal_loss"><code>Flux.Losses.focal_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=eps(ŷ))</code></pre><p>Return the <a href="https://arxiv.org/pdf/1708.02002.pdf">focal_loss</a> which can be used in classification tasks with highly imbalanced classes. It down-weights well-classified examples and focuses on hard examples. The input, &#39;ŷ&#39;, is expected to be normalized (i.e. <a href="../nnlib/#NNlib.softmax"><code>softmax</code></a> output).</p><p>The modulating factor, <code>γ</code>, controls the down-weighting strength. For <code>γ == 0</code>, the loss is mathematically equivalent to <a href="#Flux.Losses.crossentropy"><code>Losses.crossentropy</code></a>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; y = [1  0  0  0  1
+            0  1  0  1  0
+            0  0  1  0  0]
+3×5 Array{Int64,2}:
+ 1  0  0  0  1
+ 0  1  0  1  0
+ 0  0  1  0  0
+
+julia&gt; ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+3×5 Array{Float32,2}:
+ 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
+ 0.244728   0.244728   0.244728   0.244728   0.244728
+ 0.665241   0.665241   0.665241   0.665241   0.665241
+
+julia&gt; Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
+true</code></pre><p>See also: <a href="#Flux.Losses.binary_focal_loss"><code>Losses.binary_focal_loss</code></a> for binary (not one-hot) labels</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/e45461fe30fc137ab9512d56459efcd776418747/src/losses/functions.jl#L470-L503">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../layers/">« Model Reference</a><a class="docs-footer-nextpage" href="../regularisation/">Regularisation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 17 March 2021 23:43">Wednesday 17 March 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
