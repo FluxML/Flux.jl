@@ -10,35 +10,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     using Reactant
 end
 
-using Flux, HuggingFaceDatasets, JLD2, Statistics
-
-# Tokenized HellaSwag rows, 4 per example, right-padded to a common length `Tmax`: `x` and `y` are
-# the inputs and next-token targets, and `mask` selects the target positions inside the ending.
-function hellaswag_data(tok; split="validation", group=16, pad_multiple=32)
-    ds = load_dataset("Rowan/hellaswag"; split)
-    ctxs, endings = collect(ds["ctx"]), collect(ds["endings"])
-    labels = parse.(Int, collect(ds["label"])) .+ 1
-    rows = Vector{Int}[]
-    masks = Vector{Bool}[]
-    for (ctx, ends) in zip(ctxs, endings)
-        c = tokenize(tok, ctx)
-        for e in ends
-            ids = tokenize(tok, " " * e)
-            push!(rows, vcat(c, ids))
-            push!(masks, vcat(falses(length(c)), trues(length(ids))))
-        end
-    end
-    n = length(labels)
-    nex = cld(n, group) * group      # pad the example count to whole groups
-    Tmax = cld(maximum(length, rows), pad_multiple) * pad_multiple
-    tokens = fill(EOT, Tmax, 4nex)
-    mask = zeros(Float32, Tmax, 4nex)
-    for (j, (r, m)) in enumerate(zip(rows, masks))
-        tokens[1:length(r), j] .= r
-        mask[1:length(m), j] .= m
-    end
-    return (; x=tokens[1:end-1, :], y=tokens[2:end, :], mask=mask[2:end, :], labels, n, group)
-end
+using Flux, JLD2, Statistics
 
 # The summed next-token loss of each row over its masked positions.
 function ending_losses(model, x, y, mask)

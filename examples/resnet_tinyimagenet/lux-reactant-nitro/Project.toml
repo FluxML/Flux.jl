@@ -1,0 +1,17 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+ReactantNitro = "641982cc-88f5-4d80-bec4-e68c6a8af0a5"
+
+[compat]
+ArgParse = "1"
+HuggingFaceDatasets = "0.4.4"
+Lux = "1.31"
+MLUtils = "0.4.15"
+Optimisers = "0.4.9"
+ReactantNitro = "0.2.1"
+julia = "1.12"

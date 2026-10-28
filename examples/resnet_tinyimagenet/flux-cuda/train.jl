@@ -1,5 +1,5 @@
 # Train the ResNet-18 with Flux on CUDA.jl: each training step runs eagerly, differentiated by
-# Zygote. The data pipeline, model and training loop are in ../training.jl.
+# Zygote. The model and training loop are in ../training.jl, and the data pipeline in ../data.jl.
 
 include("../training.jl")
 

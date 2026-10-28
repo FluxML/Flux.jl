@@ -1,5 +1,5 @@
-# Train the ResNet-18 with Flux, compiling the training step with Reactant (XLA). The data
-# pipeline, model and training loop are in ../training.jl.
+# Train the ResNet-18 with Flux, compiling the training step with Reactant (XLA). The model and
+# training loop are in ../training.jl, and the data pipeline in ../data.jl.
 
 # Read when Reactant initializes: hides the INFO logs of XLA's autotuning.
 get!(ENV, "TF_CPP_MIN_LOG_LEVEL", "1")
