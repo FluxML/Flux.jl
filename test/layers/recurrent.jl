@@ -295,6 +295,18 @@ end
     x = rand(Float32, 3)
     h = randn(Float32, 5)
     test_gradients(r, x, h, loss = (m, x, h) -> mean(m(x, h)[1]))
+
+    # `Wh` holds only the reset and update gates, the candidate state uses `Wh_h̃` (#2806)
+    @test size(r.Wh) == (10, 5)
+    @test sum(length, Flux.trainables(r)) == 15 * 3 + 10 * 5 + 15 + 5 * 5
+    Wir, Wiz, Wih = r.Wi[1:5, :], r.Wi[6:10, :], r.Wi[11:15, :]
+    Whr, Whz = r.Wh[1:5, :], r.Wh[6:10, :]
+    br, bz, bh = r.b[1:5], r.b[6:10], r.b[11:15]
+    x, h = rand(Float32, 3, 4), randn(Float32, 5, 4)
+    rg = sigmoid.(Wir * x .+ Whr * h .+ br)
+    zg = sigmoid.(Wiz * x .+ Whz * h .+ bz)
+    h̃ = tanh.(Wih * x .+ r.Wh_h̃ * (rg .* h) .+ bh)
+    @test r(x, h)[1] ≈ (1 .- zg) .* h̃ .+ zg .* h
 end
 
 @testset "GRUv3" begin
