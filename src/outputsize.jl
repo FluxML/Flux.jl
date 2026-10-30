@@ -155,6 +155,11 @@ end
 (m::Embedding)(x::AbstractVector{Nil}) = fill(nil, size(m.weight, 1), length(x))
 (m::Embedding)(x::AbstractArray{Nil}) = fill(nil, size(m.weight, 1), size(x)...)
 
+# `EmbeddingBag` reduces over the first dimension of the indices, so the result is
+# `(out, size(x)[2:end]...)`, e.g. `(out,)` for one bag. A vector of bags, and the
+# `(data, at)` form, then work through the existing methods, which call this one.
+(m::EmbeddingBag)(x::AbstractArray{Nil}) = fill(nil, size(m.weight, 1), size(x)[2:end]...)
+
 for (fn, Dims) in ((:conv, DenseConvDims),)
   @eval begin
     function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
@@ -228,6 +233,7 @@ Limitations:
   will fail if `size(x,1) != size(x,2)`.
 * `Embedding(_ => out)` is an error, as its `in` is the vocabulary size, which the input size does not give.
   Layers after an `Embedding` are fine, e.g. `@autosize (12, 4) Chain(Embedding(100 => 8), Dense(_ => 2))`.
+  The same holds for `EmbeddingBag(_ => out)`.
 """
 macro autosize(size, model)
   Meta.isexpr(size, :tuple) || error("@autosize's first argument must be a tuple, the size of the input")
@@ -279,6 +285,8 @@ autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:Embedding}, x::AbstractArray) = throw(ArgumentError(
   "@autosize cannot infer the `_` in `Embedding(_ => out)`, as this is the vocabulary size, not a size of the input"))
+autosizefor(::Type{<:EmbeddingBag}, x::AbstractArray) = throw(ArgumentError(
+  "@autosize cannot infer the `_` in `EmbeddingBag(_ => out)`, as this is the vocabulary size, not a size of the input"))
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:Attention}, x::AbstractArray) = size(x, 1)
 

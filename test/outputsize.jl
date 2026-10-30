@@ -57,6 +57,26 @@ end
   @test_throws DimensionMismatch outputsize(Chain(Embedding(100 => 8), Dense(7 => 3)), (12,))
 end
 
+@testset "embedding bag" begin
+  # Each column of indices is one bag, reduced to one column of the output
+  m = EmbeddingBag(100 => 8)
+  @test outputsize(m, (5,)) == size(m(rand(1:100, 5))) == (8,)
+  @test outputsize(m, (5, 3)) == size(m(rand(1:100, 5, 3))) == (8, 3)
+  @test outputsize(m, (5, 3, 2)) == size(m(rand(1:100, 5, 3, 2))) == (8, 3, 2)
+  @test outputsize(m, (5,); padbatch=true) == (8, 1)
+  @test outputsize(EmbeddingBag(100 => 8, sum), (5, 3)) == (8, 3)
+
+  # A vector of bags, and the `(data, at)` form, go through the same method
+  nils(n) = fill(Flux.nil, n)
+  @test size(m([nils(3), nils(4)])) == size(m([rand(1:100, 3), rand(1:100, 4)])) == (8, 2)
+  @test size(m(nils(7), [1, 4])) == size(m(rand(1:100, 7), [1, 4])) == (8, 2)
+
+  m = Chain(EmbeddingBag(100 => 8), Dense(8 => 3))
+  @test outputsize(m, (5, 3)) == size(m(rand(1:100, 5, 3))) == (3, 3)
+
+  @test_throws DimensionMismatch outputsize(Chain(EmbeddingBag(100 => 8), Dense(7 => 3)), (5,))
+end
+
 @testset "multiple inputs" begin
   m = Parallel(vcat, Dense(2 => 4, relu), Dense(3 => 6, relu))
   @test outputsize(m, (2,), (3,)) == (10,)
@@ -196,6 +216,11 @@ end
   m = @autosize (12, 4) Chain(Embedding(100 => 8), Dense(_ => 2))
   @test m[2].weight |> size == (2, 8)
   @test rand(1:100, 12, 4) |> m |> size == (2, 12, 4)
+  # and the same for EmbeddingBag:
+  @test_throws ArgumentError("@autosize cannot infer the `_` in `EmbeddingBag(_ => out)`, as this is the vocabulary size, not a size of the input") @autosize (5, 3) EmbeddingBag(_ => 10)
+  m = @autosize (5, 3) Chain(EmbeddingBag(100 => 8), Dense(_ => 2))
+  @test m[2].weight |> size == (2, 8)
+  @test rand(1:100, 5, 3) |> m |> size == (2, 3)
 
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
