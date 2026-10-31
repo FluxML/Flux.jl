@@ -764,7 +764,7 @@ The forward pass computes
 \begin{aligned}
 r &= \sigma(W_{xi} x + W_{hi} h + b_i)\\
 z &= \sigma(W_{xz} x + W_{hz} h + b_z)\\
-h̃ &= \tanh(W_{xh} x + W_{hh̃} (r \odot W_{hh} h) + b_h)\\
+h̃ &= \tanh(W_{xh} x + W_{hh̃} (r \odot h) + b_h)\\
 h' &= (1 - z) \odot h̃ + z \odot h
 \end{aligned}
 ```
@@ -810,7 +810,8 @@ function GRUv3Cell(
   bias = true,
 )
   Wi = init_kernel(out * 3, in)
-  Wh = init_recurrent_kernel(out * 3, out)
+  # Only the reset and update gates use `Wh`, the candidate state uses `Wh_h̃`.
+  Wh = init_recurrent_kernel(out * 2, out)
   Wh_h̃ = init_recurrent_kernel(out, out)
   b = create_bias(Wi, bias, out * 3)
   return GRUv3Cell(Wi, Wh, b, Wh_h̃)
@@ -824,7 +825,7 @@ end
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
   gxs = _chunk1(m.Wi * x, Val(3))
-  ghs = _chunk1(m.Wh * h, Val(3))
+  ghs = _chunk1(m.Wh * h, Val(2))
   if m.b isa AbstractArray
     bs = _chunk1(m.b, Val(3))
   else # m.b == false
@@ -839,6 +840,17 @@ end
 
 Base.show(io::IO, m::GRUv3Cell) =
   print(io, "GRUv3Cell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 3, ")")
+
+# Before #2806, `Wh` had `3out` rows, the last `out` of which were unused.
+# Accept a state saved with that layout by dropping them.
+function loadmodel!(dst::GRUv3Cell, src; kw...)
+  out = size(dst.Wh, 2)
+  kids = Functors.children(src)
+  if kids isa NamedTuple && haskey(kids, :Wh) && kids.Wh isa AbstractMatrix && size(kids.Wh, 1) == 3out
+    src = merge(kids, (; Wh = kids.Wh[1:2out, :]))  # saved before the unused block was dropped
+  end
+  return invoke(loadmodel!, Tuple{Any,Any}, dst, src; kw...)
+end
 
 
 @doc raw"""
@@ -855,7 +867,7 @@ The forward pass computes
 \begin{aligned}
 r_t &= \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
 z_t &= \sigma(W_{xz} x_t + W_{hz} h_{t-1} + b_z)\\
-h̃_t &= \tanh(W_{xh} x_t + W_{hh̃} (r_t \odot  W_{hh} h_{t-1}) + b_h)\\
+h̃_t &= \tanh(W_{xh} x_t + W_{hh̃} (r_t \odot h_{t-1}) + b_h)\\
 h_t &= (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
 \end{aligned}
 ```
