@@ -588,6 +588,7 @@ function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
   _pool_size_check(a, a.out, x)
   insize = size(x)[1:end-2]
   outsize = a.out
+  _adaptive_pool_size_check(a, insize)
   stride = insize .÷ outsize
   k = insize .- (outsize .- 1) .* stride
   pad = 0
@@ -630,6 +631,7 @@ function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
   _pool_size_check(a, a.out, x)
   insize = size(x)[1:end-2]
   outsize = a.out
+  _adaptive_pool_size_check(a, insize)
   stride = insize .÷ outsize
   k = insize .- (outsize .- 1) .* stride
   pad = 0
@@ -844,4 +846,11 @@ function _pool_size_check(layer, tup::Tuple, x::AbstractArray)
     " expects ndims(input) == ", N, ", but got ", summary(x))))
 end
 ChainRulesCore.@non_differentiable _pool_size_check(::Any, ::Any)
+
+function _adaptive_pool_size_check(layer, insize::Tuple)
+  all(insize .>= layer.out) || throw(DimensionMismatch(LazyString("layer ", layer,
+    " needs an input at least as large as its output size ", layer.out,
+    " in each spatial dimension, but got spatial size ", insize)))
+end
+ChainRulesCore.@non_differentiable _adaptive_pool_size_check(::Any, ::Any)
 
