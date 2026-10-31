@@ -841,6 +841,17 @@ end
 Base.show(io::IO, m::GRUv3Cell) =
   print(io, "GRUv3Cell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 3, ")")
 
+# Before #2806, `Wh` had `3out` rows, the last `out` of which were unused.
+# Accept a state saved with that layout by dropping them.
+function loadmodel!(dst::GRUv3Cell, src; kw...)
+  out = size(dst.Wh, 2)
+  kids = Functors.children(src)
+  if kids isa NamedTuple && haskey(kids, :Wh) && kids.Wh isa AbstractMatrix && size(kids.Wh, 1) == 3out
+    src = merge(kids, (; Wh = kids.Wh[1:2out, :]))  # saved before the unused block was dropped
+  end
+  return invoke(loadmodel!, Tuple{Any,Any}, dst, src; kw...)
+end
+
 
 @doc raw"""
     GRUv3(in => out; return_state = false, init_kernel = glorot_uniform,

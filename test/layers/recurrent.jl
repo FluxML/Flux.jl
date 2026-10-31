@@ -307,6 +307,31 @@ end
     zg = sigmoid.(Wiz * x .+ Whz * h .+ bz)
     h̃ = tanh.(Wih * x .+ r.Wh_h̃ * (rg .* h) .+ bh)
     @test r(x, h)[1] ≈ (1 .- zg) .* h̃ .+ zg .* h
+
+    # A state saved with the old layout, with `3out` rows in `Wh`, still loads (#2806)
+    Wh3 = randn(Float32, 15, 5)
+    old = GRUv3Cell(randn(Float32, 15, 3), Wh3, randn(Float32, 15), randn(Float32, 5, 5))
+    new = Flux.loadmodel!(GRUv3Cell(3 => 5), Flux.state(old))
+    @test new.Wh == Wh3[1:10, :]
+    @test new.Wi == old.Wi && new.b == old.b && new.Wh_h̃ == old.Wh_h̃
+    Whr, Whz = Wh3[1:5, :], Wh3[6:10, :]
+    Wir, Wiz, Wih = old.Wi[1:5, :], old.Wi[6:10, :], old.Wi[11:15, :]
+    br, bz, bh = old.b[1:5], old.b[6:10], old.b[11:15]
+    rg = sigmoid.(Wir * x .+ Whr * h .+ br)
+    zg = sigmoid.(Wiz * x .+ Whz * h .+ bz)
+    h̃ = tanh.(Wih * x .+ old.Wh_h̃ * (rg .* h) .+ bh)
+    @test new(x, h)[1] ≈ (1 .- zg) .* h̃ .+ zg .* h
+    # also nested in a model, and real size mismatches still error
+    oldm = Chain(Dense(2 => 3), GRUv3(old), Dense(5 => 2))
+    newm = Flux.loadmodel!(Chain(Dense(2 => 3), GRUv3(3 => 5), Dense(5 => 2)), Flux.state(oldm))
+    refcell = GRUv3Cell(old.Wi, Wh3[1:10, :], old.b, old.Wh_h̃)
+    refm = Chain(oldm[1], GRUv3(refcell), oldm[3])
+    xs = rand(Float32, 2, 6, 4)
+    @test newm[2].cell.Wh == Wh3[1:10, :]
+    @test newm(xs) == refm(xs)
+    @test_throws DimensionMismatch Flux.loadmodel!(GRUv3Cell(3 => 5), Flux.state(GRUv3Cell(3 => 4)))
+    @test_throws DimensionMismatch Flux.loadmodel!(GRUv3Cell(3 => 5),
+        Flux.state(GRUv3Cell(randn(Float32, 15, 3), randn(Float32, 12, 5), randn(Float32, 15), randn(Float32, 5, 5))))
 end
 
 @testset "GRUv3" begin
