@@ -9,6 +9,11 @@
   @test ampy(y) == maxpool(y, PoolDims(y, (2, 4)))
   ampy = AdaptiveMeanPool((10, 5))
   @test ampy(y) == meanpool(y, PoolDims(y, (2, 4)))
+  # output larger than the input should give a clear error, not a DivideError
+  @test_throws DimensionMismatch AdaptiveMaxPool((5,))(rand(Float32, 3, 1, 1))
+  @test_throws DimensionMismatch AdaptiveMeanPool((5,))(rand(Float32, 3, 1, 1))
+  @test_throws DimensionMismatch AdaptiveMeanPool((2, 20))(x)
+  @test size(AdaptiveMeanPool((3,))(rand(Float32, 3, 1, 1))) == (3, 1, 1)
   gmp = GlobalMaxPool()
   @test size(gmp(x)) == (1, 1, 3, 2)
   gmp = GlobalMeanPool()
