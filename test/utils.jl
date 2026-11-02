@@ -158,6 +158,11 @@ end
     end
 
     @test eltype(Flux.sparse_init(3, 4; std=1.5, sparsity=0.5)) == Float32
+
+    # the positions of the zeros come from the given rng too
+    v = Flux.sparse_init(MersenneTwister(1), 20, 30; sparsity=0.5)
+    @test v == Flux.sparse_init(MersenneTwister(1), 20, 30; sparsity=0.5)
+    @test v == Flux.sparse_init(MersenneTwister(1); sparsity=0.5)(20, 30)
   end
 
   @testset "truncated_normal" begin

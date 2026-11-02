@@ -391,7 +391,7 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
   num_zeros = ceil(Integer, prop_zero * rows)
   sparse_array = randn(rng, Float32, dims...) .* Float32(std)
   sparse_array[1:num_zeros, :] .= 0f0
-  return mapslices(shuffle, sparse_array, dims=1)
+  return mapslices(col -> shuffle(rng, col), sparse_array, dims=1)
 end
 
 sparse_init(dims::Integer...; kwargs...) = sparse_init(default_rng(), dims...; kwargs...)
