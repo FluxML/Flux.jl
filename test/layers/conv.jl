@@ -348,6 +348,24 @@ end
   else
     @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
   end
+
+  # https://github.com/FluxML/Flux.jl/issues/2813
+  l = ltype(k, 1=>1, pad=samepad, stride = stride, dilation = 2)
+  if ltype == ConvTranspose
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
+  else
+    @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
+  end
+end
+
+@testset "ConvTranspose :same with stride and dilation, kernel $k" for k in 1:6, dilation in 1:3, stride in 1:3
+  # https://github.com/FluxML/Flux.jl/issues/2813
+  k_eff = k + (k - 1) * (dilation - 1)
+  k_eff >= stride || continue  # needs negative padding
+  x = rand(Float32, 7, 1, 1)
+  l = ConvTranspose((k,), 1=>1; pad=:same, stride, dilation)
+  @test size(l(x), 1) == 7 * stride
+  @test sum(l.pad) == k_eff - stride
 end
 
 @testset "$ltype SamePad windowsize $k" for ltype in (MeanPool, MaxPool), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
