@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `ConvTranspose` with `pad=:same` (or `SamePad()`) gives an output of `size(x, d) * stride` when both `stride` and `dilation` are larger than 1. It was too large, for example 17 instead of 16 for `ConvTranspose((3,), 1 => 1; pad=:same, stride=2, dilation=2)` on 8 inputs ([#2813](https://github.com/FluxML/Flux.jl/issues/2813)).
 - `AdaptiveMaxPool` and `AdaptiveMeanPool` throw a `DimensionMismatch` naming the layer when the input is smaller than the output size, instead of a `DivideError` ([#2809](https://github.com/FluxML/Flux.jl/issues/2809)).
 - `sparse_init(rng, rows, cols; sparsity)` places its zeros using `rng`, instead of the global RNG, so the same seeded `rng` gives the same matrix ([#2811](https://github.com/FluxML/Flux.jl/issues/2811)).
 - Add `lux-reactant-nitro/` versions of the GPT-2/FineWeb-Edu and ResNet-18/Tiny-ImageNet examples, which train Lux models with [ReactantNitro.jl](https://github.com/EnzymeAD/ReactantNitro.jl) for comparison with the Flux versions, and share their data pipelines with them ([#2803](https://github.com/FluxML/Flux.jl/pull/2803)).

@@ -386,7 +386,11 @@ function Base.show(io::IO, l::ConvTranspose)
 end
 
 function calc_padding(::Type{ConvTranspose}, ::Val{:same}, k::NTuple{N,T}, dilation, stride) where {N,T}
-  calc_padding(Conv, Val(:same), k .- stride .+ 1, dilation, stride)
+  # The output size is `(n - 1) * stride + k_eff - pad_amt`, which is `n * stride`
+  # when the total padding is `k_eff - stride`, with `k_eff` the dilated kernel size.
+  k_eff = @. k + (k - 1) * (dilation - 1)
+  pad_amt = @. k_eff - stride
+  return Tuple(mapfoldl(i -> [fld(i, 2), cld(i,2)], vcat, pad_amt))
 end
 
 """
