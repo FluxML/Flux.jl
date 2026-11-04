@@ -487,6 +487,19 @@ end
   @test_throws Exception GroupNorm(5, 5; active=:something_else)
 end
 
+@testset "norm layers with too few dimensions" begin
+  # channels are along ndims(x)-1, so a vector has none, and the error should say so
+  for (m, d, x) in ((BatchNorm(3), 2, rand(Float32, 3)),
+                    (InstanceNorm(3), 3, rand(Float32, 3)),
+                    (InstanceNorm(3), 3, rand(Float32, 3, 2)),
+                    (GroupNorm(4, 2), 3, rand(Float32, 4)),
+                    (GroupNorm(4, 2), 3, rand(Float32, 4, 2)))
+    @test_throws DimensionMismatch m(x)
+    msg = try m(x); "" catch e; sprint(showerror, e) end
+    @test occursin("ndims(input) >= $d", msg)
+  end
+end
+
 @testset "second derivatives" begin
   m1 = Dropout(0.5)
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)

@@ -298,8 +298,18 @@ end
 
 @layer BatchNorm trainable=(β,γ)
 
+# BatchNorm, InstanceNorm and GroupNorm keep channels along dimension `ndims(x)-1`.
+# Checking the number of dimensions first gives a sensible error for too few, such as
+# a vector, instead of `_size_check` asking for `ndims(input) >= 0`.
+function _norm_size_check(layer, x::AbstractArray, chs::Integer, mindims::Integer)
+  ndims(x) >= mindims || throw(DimensionMismatch(LazyString("layer ", layer,
+    " expects ndims(input) >= ", mindims, ", with channels along dimension ndims(input)-1, but got ", summary(x))))
+  _size_check(layer, x, ndims(x)-1 => chs)
+end
+ChainRulesCore.@non_differentiable _norm_size_check(::Any...)
+
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
-  _size_check(BN, x, N-1 => BN.chs)
+  _norm_size_check(BN, x, BN.chs, 2)
   training = _isactive(BN, x)
   if training === true
     m = prod(size(x)) ÷ size(x, N-1)
@@ -395,7 +405,7 @@ end
 @layer InstanceNorm trainable=(β,γ)
 
 function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
-  _size_check(l, x, N-1 => l.chs)
+  _norm_size_check(l, x, l.chs, 3)
   y = NNlib.instancenorm(l.γ, l.β, x, l.μ, l.σ², l.momentum;
                          eps=l.ϵ, training=_isactive(l, x), track_stats=l.track_stats)
   return l.λ.(y)
@@ -493,7 +503,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
 end
 
 function (gn::GroupNorm)(x::AbstractArray)
-  _size_check(gn, x, ndims(x)-1 => gn.chs)
+  _norm_size_check(gn, x, gn.chs, 3)
   return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, x, gn.G; eps=gn.ϵ))
 end
 
