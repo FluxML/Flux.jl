@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `binary_focal_loss` no longer throws a `DomainError` for a negative label with a prediction of exactly 1, such as a saturated `sigmoid` output. It added `eps` to `ŷ` before taking `1 - ŷ`, so the argument of `log` was `-eps`; now `eps` is added inside the `log`, as in `binarycrossentropy` ([#2818](https://github.com/FluxML/Flux.jl/issues/2818)).
 - `ConvTranspose` with `pad=:same` (or `SamePad()`) gives an output of `size(x, d) * stride` when both `stride` and `dilation` are larger than 1. It was too large, for example 17 instead of 16 for `ConvTranspose((3,), 1 => 1; pad=:same, stride=2, dilation=2)` on 8 inputs ([#2813](https://github.com/FluxML/Flux.jl/issues/2813)).
 - `AdaptiveMaxPool` and `AdaptiveMeanPool` throw a `DimensionMismatch` naming the layer when the input is smaller than the output size, instead of a `DivideError` ([#2809](https://github.com/FluxML/Flux.jl/issues/2809)).
 - `sparse_init(rng, rows, cols; sparsity)` places its zeros using `rng`, instead of the global RNG, so the same seeded `rng` gives the same matrix ([#2811](https://github.com/FluxML/Flux.jl/issues/2811)).

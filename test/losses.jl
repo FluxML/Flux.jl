@@ -302,6 +302,15 @@ end
     @test Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
     @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
     @test Flux.binary_focal_loss(ŷ, y; gamma=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
+
+    # predictions of exactly 0 or 1, e.g. from a saturated sigmoid (#2818)
+    ŷ2 = sigmoid.(Float32[20, -20, -3])
+    y2 = [0, 1, 1]
+    @test ŷ2[1] == 1 && ŷ2[2] < eps(Float32)
+    @test isfinite(Flux.binary_focal_loss(ŷ2, y2))
+    @test Flux.binary_focal_loss(ŷ2, y2; gamma=0) ≈ Flux.binarycrossentropy(ŷ2, y2)
+    @test Flux.binary_focal_loss([1.0, 0.0], [0, 1]; gamma=0) ≈ Flux.binarycrossentropy([1.0, 0.0], [0, 1])
+    @test all(isfinite, gradient(ŷ -> Flux.binary_focal_loss(ŷ, y2), ŷ2)[1])
 end
 
 @testset "focal_loss" begin

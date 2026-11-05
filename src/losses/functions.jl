@@ -627,9 +627,8 @@ function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ))
     ŷ, y = _upcast(ŷ), _upcast(y)
     γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
     _check_sizes(ŷ, y)
-    ŷϵ = ŷ .+ eps
-    p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
-    ce = .-log.(p_t)
+    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
+    ce = .-log.(p_t .+ eps)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
     agg(loss)
