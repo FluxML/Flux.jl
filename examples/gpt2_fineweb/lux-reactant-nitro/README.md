@@ -53,21 +53,22 @@ The options are those of the other versions (`--help` lists them), with these di
 
 The [shared comparison](../README.md#performance) records the GPT-2 124M timings and memory on the
 RTX 5090: 196k tokens/s in steady state, with a first step of 107 s that includes compilation.
-The runs below used Julia 1.13.2, Lux 1.31.5, ReactantNitro 0.2.1 and Reactant 0.2.301, with the
-attention matrix materialized by NNlib's `dot_product_attention`.
+The TinyStories run below used Julia 1.13.2, Lux 1.31.5, ReactantNitro 0.2.2 and Reactant 0.2.307,
+with flash attention.
 
-**`tinystories`** — 19 minutes in total with the default options: 7000 steps at 0.1375 s on
-average (~477k tokens/s), their compilation, and the 28 validations with samples. The validation
-loss goes 3.209 → 2.033 → 1.665 → **1.498** at steps 250, 1000, 3000 and 7000, as in the Flux
-version (3.21, 2.01, 1.67 and 1.488 at step 7232, with the schedule of 7232 steps), and the
-samples are fluent:
+**`tinystories`** — 19 minutes in total with the default options: 7000 steps at 0.136 s on
+average (~482k tokens/s), their compilation, and the 28 validations with samples. The validation
+loss goes 3.229 → 2.034 → 1.666 → **1.501** at steps 250, 1000, 3000 and 7000 (3.209, 2.033,
+1.665 and 1.498 with Reactant 0.2.301 and the attention matrix materialized), close to the Flux
+version (1.484 at step 7232, with the schedule of 7232 steps), and the samples are fluent:
 
-> Hello, I'm a language model, I'm a famous singer!" Tom asked, with a big smile on his face.
-> "That's wonderful, Tom!" Anna said, smiling back.
+> Hello, I'm a language model, a teddy bear. I love your jokes and my stories. Do you want to hear
+> one of my stories and have more fun?"
 
-The HellaSwag evaluation reproduces build-nanogpt's numbers for OpenAI's GPT-2 (124M) weights
-loaded into this model, without the vocabulary padding: acc = 0.2861, acc_norm = 0.2957
-(reference: 0.2859, 0.2955).
+The HellaSwag evaluation, with ReactantNitro 0.2.1, Reactant 0.2.301 and the attention matrix
+materialized by NNlib's `dot_product_attention`, reproduces build-nanogpt's numbers for OpenAI's
+GPT-2 (124M) weights loaded into this model, without the vocabulary padding: acc = 0.2861,
+acc_norm = 0.2957 (reference: 0.2859, 0.2955).
 
 ## Notes
 

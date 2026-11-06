@@ -166,8 +166,8 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). Its precision policy
   is PyTorch's: `Float32` parameters, of which the model sees a bfloat16 copy, but for the
   LayerNorm ones, with LayerNorm and the loss computed in `Float32`. The 30M-parameter
-  `tinystories` run trains to the same validation loss as the Flux version, see
-  [`lux-reactant-nitro/`](lux-reactant-nitro/#results).
+  `tinystories` run trains to a validation loss close to the Flux version's (1.501 after 7000
+  steps, against 1.484 after 7232), see [`lux-reactant-nitro/`](lux-reactant-nitro/#results).
 - **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
   cross-entropy as fused kernels. Flux 0.16.15 paces garbage collections between micro-batches
   and runs a full collection after the first step that compiles; no manual collections are needed.
