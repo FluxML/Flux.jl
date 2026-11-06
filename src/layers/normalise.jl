@@ -142,7 +142,9 @@ function (a::AlphaDropout)(x::AbstractArray{T}) where T
   A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
   B = T(-A * α′ * p)
 
-  noise = rand!(a.rng, similar(x))
+  # ChainRules ≥ 1.74.3 only marks `rand!` with a sampler argument as non-differentiable,
+  # which GPUArrays' `rand!(rng, A)` never reaches
+  noise = ChainRulesCore.@ignore_derivatives rand!(a.rng, similar(x))
   return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
