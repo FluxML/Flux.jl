@@ -5,6 +5,10 @@ include("../training.jl")
 
 using CUDA, cuDNN
 
+# Time the cuDNN plans of each new convolution shape and keep the fastest, like PyTorch's
+# `torch.backends.cudnn.benchmark`, instead of the first plan proposed by cuDNN's heuristics.
+cuDNN.autotune!(true)
+
 main(; kws...) = train(gpu_device(; force=true); eval_gc=true, kws...)
 
 function (@main)(args)
