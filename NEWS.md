@@ -4,7 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
-- The CUDA.jl version of the ResNet-18/Tiny-ImageNet example autotunes its cuDNN convolutions with `cuDNN.autotune!(true)`, from cuDNN.jl 6.5.2, which makes it train 1.12× faster, as fast as the Reactant version ([#PR](https://github.com/FluxML/Flux.jl/pull/PR)).
+- The CUDA.jl version of the ResNet-18/Tiny-ImageNet example autotunes its cuDNN convolutions with `cuDNN.autotune!(true)`, from cuDNN.jl 6.5.2, which makes it train 1.12× faster, as fast as the Reactant version ([#2823](https://github.com/FluxML/Flux.jl/pull/2823)).
 - Fix the gradient of `AlphaDropout` on GPU arrays, which threw an error with ChainRules 1.74.3 and later, as Zygote tried to differentiate through the generation of its random noise ([#2821](https://github.com/FluxML/Flux.jl/pull/2821)).
 - `ConvTranspose` with `pad=:same` (or `SamePad()`) gives an output of `size(x, d) * stride` when both `stride` and `dilation` are larger than 1. It was too large, for example 17 instead of 16 for `ConvTranspose((3,), 1 => 1; pad=:same, stride=2, dilation=2)` on 8 inputs ([#2813](https://github.com/FluxML/Flux.jl/issues/2813)).
 - `AdaptiveMaxPool` and `AdaptiveMeanPool` throw a `DimensionMismatch` naming the layer when the input is smaller than the output size, instead of a `DivideError` ([#2809](https://github.com/FluxML/Flux.jl/issues/2809)).
