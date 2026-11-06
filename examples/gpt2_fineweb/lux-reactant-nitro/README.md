@@ -52,8 +52,9 @@ The options are those of the other versions (`--help` lists them), with these di
 ## Results
 
 The [shared comparison](../README.md#performance) records the GPT-2 124M timings and memory on the
-RTX 5090: 138k tokens/s in steady state, with a first step of 98 s that includes compilation.
-The runs below used Julia 1.13.2, Lux 1.31.5, ReactantNitro 0.2.1 and Reactant 0.2.301.
+RTX 5090: 196k tokens/s in steady state, with a first step of 107 s that includes compilation.
+The runs below used Julia 1.13.2, Lux 1.31.5, ReactantNitro 0.2.1 and Reactant 0.2.301, with the
+attention matrix materialized by NNlib's `dot_product_attention`.
 
 **`tinystories`** — 19 minutes in total with the default options: 7000 steps at 0.1375 s on
 average (~477k tokens/s), their compilation, and the 28 validations with samples. The validation
@@ -71,10 +72,10 @@ loaded into this model, without the vocabulary padding: acc = 0.2861, acc_norm =
 ## Notes
 
 - **Model.** The layers are Lux's `Dense`, `Embedding` and `LayerNorm`, and the attention is a
-  Lux layer over NNlib's `dot_product_attention` with a causal mask, with the queries, keys and
-  values in one projection. Like the Flux version under Reactant, it materializes the
-  `(T, T, heads, batch)` attention matrix
-  ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)). The initialization is
+  Lux layer over NNlib's `scaled_dot_product_attention` with `is_causal = true`, with the queries,
+  keys and values in one projection. As in the Flux version, Reactant compiles it to cuDNN's
+  flash-attention kernels in bfloat16
+  ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)). The initialization is
   GPT-2's: N(0, 0.02) weights, zero biases, and the projections that feed the residual stream
   scaled by `1/√(2·n_layer)`.
 - **Precision.** Nitro has no mixed-precision support, so `--precision bf16` (the default) does it
