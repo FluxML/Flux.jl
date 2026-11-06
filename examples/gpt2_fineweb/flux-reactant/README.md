@@ -25,7 +25,7 @@ includes them.
 $ cd examples/gpt2_fineweb/flux-reactant
 $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-$ julia --project=. train.jl --preset tinystories   # ~22 min on an RTX 5090
+$ julia --project=. train.jl --preset tinystories   # ~21 min on an RTX 5090
 $ julia --project=. train.jl --preset fineweb
 $ julia --project=. train.jl --preset fineweb --resume log/checkpoint_05000.jld2
 $ julia --project=. hellaswag.jl log/checkpoint_19073.jld2
@@ -51,14 +51,16 @@ The TinyStories run below used Julia 1.13.2, Flux 0.16.15, NNlib master
 ([`deba175`](https://github.com/FluxML/NNlib.jl/commit/deba175a3de20e11e8cca82d36862cb89d97eeb3))
 and Reactant 0.2.307, with flash attention.
 
-**`tinystories`** — 22 minutes in total: 17 minutes of training (0.14 s per step, ~470k tokens/s)
-after 2.6 minutes of compilation, and the 29 validations with samples. The validation loss goes
-3.235 → 2.028 → 1.661 → **1.484** at steps 250, 1000, 3000 and 7232, compared with 3.21, 2.01, 1.67
-and 1.488 with Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295, which materialized the attention
-matrix (and 1.486 with `Float32` parameters in that environment), and the samples are fluent:
+**`tinystories`** — 21 minutes in total: 17 minutes of training (0.14 s per step, ~460k tokens/s)
+after 1.6 minutes of compilation, and the 29 validations with samples. The validation loss goes
+3.234 → 2.024 → 1.663 → **1.488** at steps 250, 1000, 3000 and 7232 (3.235, 2.028, 1.661 and 1.484
+with three projections in the attention, Flux's `Attention`, and 2.6 minutes of compilation),
+compared with 3.21, 2.01, 1.67 and 1.488 with Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295,
+which materialized the attention matrix (and 1.486 with `Float32` parameters in that
+environment), and the samples are fluent:
 
-> Hello, I'm a language model, my voice and my name is Lily. I can talk and laugh and make new
-> friends. I like to dance and make friends.
+> Hello, I'm a language model, and I can be your friend." The bird was happy to have a friend to
+> play with, and they played together all the time.
 
 The HellaSwag evaluation, with Flux 0.16.13 and Reactant 0.2.295, reproduces build-nanogpt's numbers for OpenAI's GPT-2 (124M) weights
 loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.2955).
@@ -73,10 +75,12 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
   matmul precision on NVIDIA GPUs (TF32-like), and `f32` is exact
   (`Reactant.with_config(; dot_general_precision = PrecisionConfig.HIGHEST)` around the training
   loop, as the setting is read when a step is compiled).
-- **Attention.** `Attention(...; is_causal=true)` calls NNlib's `scaled_dot_product_attention`,
-  which Reactant compiles to cuDNN's flash-attention kernels for bfloat16 inputs, in the forward
-  and the backward pass ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)):
-  the `(T, T, heads, batch)` attention matrix is never materialized.
+- **Attention.** The `CausalAttention` layer computes the queries, keys and values of all heads in
+  one projection, as in the Lux and PyTorch versions, and calls NNlib's
+  `scaled_dot_product_attention` with `is_causal = true`, which Reactant compiles to cuDNN's
+  flash-attention kernels for bfloat16 inputs, in the forward and the backward pass
+  ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)): the
+  `(T, T, heads, batch)` attention matrix is never materialized.
 - **Compilation.** The first training step includes tracing, XLA compilation and Julia compiling
   the function that calls the compiled step. Its compile time grows quadratically with the number
   of parameter and optimizer-state arrays

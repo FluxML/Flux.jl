@@ -60,7 +60,7 @@ with flash attention.
 average (~482k tokens/s), their compilation, and the 28 validations with samples. The validation
 loss goes 3.229 → 2.034 → 1.666 → **1.501** at steps 250, 1000, 3000 and 7000 (3.209, 2.033,
 1.665 and 1.498 with Reactant 0.2.301 and the attention matrix materialized), close to the Flux
-version (1.484 at step 7232, with the schedule of 7232 steps), and the samples are fluent:
+version (1.488 at step 7232, with the schedule of 7232 steps), and the samples are fluent:
 
 > Hello, I'm a language model, a teddy bear. I love your jokes and my stories. Do you want to hear
 > one of my stories and have more fun?"

@@ -2,7 +2,8 @@
 # head tied to the token embedding.
 
 using Flux, Random
-using MLUtils: sample_logits
+using NNlib: scaled_dot_product_attention
+using MLUtils: chunk, sample_logits
 
 # The two variants trained in this example. `vocab_size` pads GPT-2's 50257 tokens to a multiple of
 # 64 (faster matmuls); the padding tokens never occur in the data and are excluded when sampling.
@@ -10,6 +11,25 @@ const GPT2_SMALL = (; vocab_size=50304, block_size=1024, n_layer=12, n_head=12, 
 const GPT2_TINY  = (; vocab_size=50304, block_size=512,  n_layer=6,  n_head=6,  n_embd=384)
 
 const NTOKENS = 50257   # GPT-2's real vocabulary
+
+# Causal multi-head self-attention, with the queries, keys and values of all heads in one projection.
+struct CausalAttention{Q, P}
+    nheads::Int
+    qkv::Q
+    proj::P
+end
+
+Flux.@layer CausalAttention
+
+# Splitting with `chunk` rather than indexing is for Zygote: its pullback concatenates the three
+# gradients, where indexing would scatter each into a zero array. The copies are dense, as cuDNN's
+# attention requires. Reactant compiles both to the same program.
+function (m::CausalAttention)(x)
+    heads(a) = reshape(copy(a), :, m.nheads, size(a, 2), size(a, 3))   # (head_dim, nheads, T, B)
+    q, k, v = map(heads, chunk(m.qkv(x), 3; dims=1))
+    y = scaled_dot_product_attention(q, k, v; is_causal=true)
+    return m.proj(reshape(y, :, size(y, 3), size(y, 4)))
+end
 
 struct Block{L1, A, L2, M}
     ln1::L1
@@ -41,8 +61,8 @@ function GPT(cfg)
     init(dims...) = 0.02f0 .* randn32(dims...)
     resid_init(dims...) = init(dims...) ./ Float32(sqrt(2n_layer))
     blocks = map(1:n_layer) do _
-        attn = Attention(n_embd; nheads=n_head, bias=true, init, is_causal=true)
-        attn.out_proj.weight .= resid_init(size(attn.out_proj.weight)...)
+        attn = CausalAttention(n_head, Dense(n_embd => 3n_embd; init),
+                               Dense(n_embd => n_embd; init=resid_init))
         mlp = Chain(Dense(n_embd => 4n_embd, gelu_tanh; init),
                     Dense(4n_embd => n_embd; init=resid_init))
         Block(LayerNorm(n_embd), attn, LayerNorm(n_embd), mlp)
