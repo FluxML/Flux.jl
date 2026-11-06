@@ -25,7 +25,7 @@ includes them.
 $ cd examples/gpt2_fineweb/flux-reactant
 $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-$ julia --project=. train.jl --preset tinystories   # ~30 min on an RTX 5090
+$ julia --project=. train.jl --preset tinystories   # ~22 min on an RTX 5090
 $ julia --project=. train.jl --preset fineweb
 $ julia --project=. train.jl --preset fineweb --resume log/checkpoint_05000.jld2
 $ julia --project=. hellaswag.jl log/checkpoint_19073.jld2
@@ -47,17 +47,20 @@ The [shared comparison](../README.md#performance) records current GPT-2 124M tim
 measurements on the RTX 5090. NNlib master fixes the LayerNorm activation promotion that slowed
 down bfloat16 training with Flux 0.16.14 and NNlib 0.9.55.
 
-The full TinyStories run below used Julia 1.13, Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295;
-it has not been repeated with the current environment.
+The TinyStories run below used Julia 1.13.2, Flux 0.16.15, NNlib master
+([`deba175`](https://github.com/FluxML/NNlib.jl/commit/deba175a3de20e11e8cca82d36862cb89d97eeb3))
+and Reactant 0.2.307, with flash attention.
 
-**`tinystories`** — 22 minutes of training (0.18 s per step, ~365k tokens/s) after ~3 minutes of
-compilation. The validation loss goes 3.21 → 2.01 → 1.67 → **1.488** at steps 250, 1000, 3000 and
-7232 (1.486 with `Float32` parameters, which took 29 minutes), and the samples are fluent:
+**`tinystories`** — 22 minutes in total: 17 minutes of training (0.14 s per step, ~470k tokens/s)
+after 2.6 minutes of compilation, and the 29 validations with samples. The validation loss goes
+3.235 → 2.028 → 1.661 → **1.484** at steps 250, 1000, 3000 and 7232, compared with 3.21, 2.01, 1.67
+and 1.488 with Flux 0.16.13, NNlib 0.9.50 and Reactant 0.2.295, which materialized the attention
+matrix (and 1.486 with `Float32` parameters in that environment), and the samples are fluent:
 
-> Hello, I'm a language model, Ben. You can talk or sing or laugh. That is nice. Can you teach
-> me?" Anna said, "Yes, I can. I can…
+> Hello, I'm a language model, my voice and my name is Lily. I can talk and laugh and make new
+> friends. I like to dance and make friends.
 
-The HellaSwag evaluation reproduces build-nanogpt's numbers for OpenAI's GPT-2 (124M) weights
+The HellaSwag evaluation, with Flux 0.16.13 and Reactant 0.2.295, reproduces build-nanogpt's numbers for OpenAI's GPT-2 (124M) weights
 loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.2955).
 
 ## Notes
