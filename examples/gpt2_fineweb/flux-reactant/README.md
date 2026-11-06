@@ -70,11 +70,10 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
   matmul precision on NVIDIA GPUs (TF32-like), and `f32` is exact
   (`Reactant.with_config(; dot_general_precision = PrecisionConfig.HIGHEST)` around the training
   loop, as the setting is read when a step is compiled).
-- **Attention.** Under Reactant, attention goes through NNlib's standard implementation, which
-  materializes the `(T, T, heads, batch)` attention matrix: there is no fused (flash) attention
-  for traced arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)).
-  This bounds the micro-batch size and costs speed; the example uses `Attention(...; is_causal=true)`,
-  so it will benefit from a fused implementation without changes.
+- **Attention.** `Attention(...; is_causal=true)` calls NNlib's `scaled_dot_product_attention`,
+  which Reactant compiles to cuDNN's flash-attention kernels for bfloat16 inputs, in the forward
+  and the backward pass ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)):
+  the `(T, T, heads, batch)` attention matrix is never materialized.
 - **Compilation.** The first training step includes tracing, XLA compilation and Julia compiling
   the function that calls the compiled step. Its compile time grows quadratically with the number
   of parameter and optimizer-state arrays
