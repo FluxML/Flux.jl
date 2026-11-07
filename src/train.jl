@@ -434,9 +434,9 @@ uses Enzyme, the only backend supported there: any other `adtype`, such as `Auto
 
 `trainstep!` returns once the step is queued on the device, and the returned value — the loss, or
 `(loss, aux...)` — stays there, as Reactant numbers and arrays. Reading it, for example with
-`Float32(l)`, arithmetic, `isfinite` or printing, waits for the step to finish. Reading each loss
-after the call to `trainstep!` on the next batch lets the device run the step while the host
-prepares that batch: see [Reading the loss without waiting](@ref).
+`Float32(l)`, arithmetic, `isfinite` or printing, waits for the step to finish. Reading the loss
+only every few steps, for instance to log it, lets the device run the steps in between while the
+host prepares their batches: see [Reading the loss without waiting](@ref).
 
 # Example
 ```julia

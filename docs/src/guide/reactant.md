@@ -147,21 +147,18 @@ l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l is the loss, st
 
 ### Reading the loss without waiting
 
-`trainstep!` returns as soon as the step is queued on the device, and the loss it returns stays there. Reading it — with `Float32(l)`, arithmetic such as `total += l`, `isfinite(l)`, or printing — waits for the step to finish. A loop that reads each loss right away therefore waits for every step before it prepares the next batch, while the device sits idle. Read each loss after the call to `trainstep!` on the next batch instead, so that the device runs one step while the host prepares the next batch:
+`trainstep!` returns as soon as the step is queued on the device, and the loss it returns stays there. Reading it — with `Float32(l)`, arithmetic such as `total += l`, `isfinite(l)`, or printing — waits for the step to finish. A loop that reads every loss therefore waits for each step before it prepares the next batch, while the device sits idle. Read the loss only every `log_interval` steps instead, so that the device runs the steps in between while the host prepares their batches:
 
 ```julia
 train_loader = DataLoader((X, Y); batchsize=32) |> dev
-losses = Float32[]
-prev = nothing
-for (x, y) in train_loader
+log_interval = 10
+for (i, (x, y)) in enumerate(train_loader)
     l = Flux.trainstep!(loss, model, (x, y), opt_state)
-    prev === nothing || push!(losses, prev)   # waits for the previous step only
-    prev = l
+    i % log_interval == 0 && @info "step $i" loss=Float32(l)   # waits for this step
 end
-push!(losses, prev)
 ```
 
-This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while reading the loss late overlaps what remains on the main thread, such as moving each batch to the device, with the previous step. Reading the loss one step late, rather than at the end of the epoch, also keeps the host from running far ahead of the device, along with the batches it has moved there. [`train!`](@ref Flux.train!) already reads the loss this way.
+This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while what remains on the main thread, such as moving each batch to the device, overlaps with the device's steps. Between two reads the host can queue up to `log_interval` steps, and the device keeps the batch of each until it runs it. [`train!`](@ref Flux.train!) checks each loss once `data` has produced the next batch, so it overlaps loading with the device too.
 
 ## 3. The `train!` API
 
@@ -209,7 +206,7 @@ Flux.loadmodel!(opt_state, ckpt["opt_state"])
 - **Scalars in the batch.** A plain number in the batch, such as `λ` in `(x, y, λ)`, is compiled into the step as a constant, so each distinct value compiles a new step. Pass a varying scalar as a 0-dimensional array instead, `(x, y, fill(λ)) |> dev`, and read it with `λ[]` in the loss.
 - **Compilation is keyed on shape.** The first call for each distinct batch shape compiles; subsequent calls reuse the executable. Keeping batch sizes fixed (or accepting one extra compile for a smaller final batch) avoids repeated compilation.
 - **Watch the compile cache.** Flux caches one executable per distinct `(model, optimiser, loss, batch-shape)`. Values that are compiled into the step as constants are part of the cache key too, so switching a layer with `trainmode!`/`testmode!`, freezing parameters with `freeze!`/`thaw!`, passing the same array twice in a batch, or redefining the loss function compiles a new step instead of reusing a stale one. If you rebuild the model or optimiser every iteration, each iteration compiles a fresh step — Flux warns when the cache grows past a handful of entries. Entries are freed automatically when their model is garbage-collected.
-- **Reading results back.** `trainstep!` returns the loss on the device: read it with `Float32(l)` or `Reactant.to_number(l)`, preferably one step late (see [Reading the loss without waiting](@ref)). Move device arrays back with `cpu`, as for the results of a manually compiled function.
+- **Reading results back.** `trainstep!` returns the loss on the device: read it with `Float32(l)` or `Reactant.to_number(l)`, preferably only every few steps (see [Reading the loss without waiting](@ref)). Move device arrays back with `cpu`, as for the results of a manually compiled function.
 - **AD backend.** On a Reactant device training differentiates with Enzyme, the only supported backend: passing any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws an `ArgumentError`. `Duplicated` models are not supported here — pass the plain model that already lives on the device.
 
 !!! tip "Precision on GPU"
