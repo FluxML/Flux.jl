@@ -10,7 +10,7 @@ and the precision of matrix multiplications.
 | --- | --- |
 | [`train.jl`](train.jl) | the training script: runs the loop of [`../flux-reactant/training.jl`](../flux-reactant/training.jl) on CUDA |
 | [`hellaswag.jl`](hellaswag.jl) | HellaSwag accuracy of a saved checkpoint |
-| [`Project.toml`](Project.toml) | the environment: CUDA.jl and cuDNN.jl instead of Reactant |
+| [`Project.toml`](Project.toml) | the environment: CUDA.jl, cuDNN.jl and GPUArrays.jl instead of Reactant |
 
 ## Running
 
@@ -40,9 +40,12 @@ still to be done.
   and activations, `Float32` LayerNorm parameters and optimizer master weights, and a `Float32`
   loss. `tf32` runs `Float32` matrix multiplications on TF32 tensor cores
   (`CUDA.math_mode!(CUDA.FAST_MATH)`), and `f32` keeps them exact.
-- **Attention.** With cuDNN.jl loaded, the causal `Attention` layers of the bfloat16 model run
-  cuDNN's fused flash-attention kernels, forward and backward, so the `(T, T, heads, batch)`
-  attention matrix is never materialized. In `Float32` they use NNlib's fused kernel.
+- **Attention.** With cuDNN.jl loaded, the causal attention of the bfloat16 model runs cuDNN's
+  fused flash-attention kernels, forward and backward, so the `(T, T, heads, batch)` attention
+  matrix is never materialized. In `Float32` it uses NNlib's fused kernel. The environment requires
+  GPUArrays 12.2, which copies the queries, keys and values out of their joint projection 9× faster
+  than 12.1 ([GPUArrays.jl#839](https://github.com/JuliaGPU/GPUArrays.jl/pull/839)), with which
+  the attention's forward and backward pass take 1.7× as long.
 - **Fused kernels.** LayerNorm (`NNlib.layernorm`) and the cross-entropy over the logits run as
   fused kernels, forward and backward, that accumulate in `Float32`.
 - **Memory.** Zygote keeps every intermediate array of the forward pass for the backward pass, and
