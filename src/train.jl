@@ -281,9 +281,10 @@ For this reason `train!` is not highly extensible.
 It adds only a few features to the loop above:
 
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point. The update for that
-  batch is skipped, so the parameters and `opt_state` keep their values from before it, also on a
-  Reactant device. The loss is checked once `data` has produced the next batch, before its step,
-  so that on a Reactant device the step runs while `data` prepares the next batch.
+  batch is skipped, so the parameters and `opt_state` keep their values from before it. On a
+  Reactant device, the loss of each step is checked once the next step is queued, so that the check
+  doesn't keep the device waiting: training then stops one batch later, after the update for that
+  next batch.
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
@@ -323,12 +324,11 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
     adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
     cache = caching_allocator && !on_reactant ? GPUArrays.AllocCache() : nothing
 
-    # The loss of each step is checked once `data` has produced the next batch, just before that
-    # batch's step. On a Reactant device, reading the loss waits for its step to finish, so this lets
-    # the device run the step while `data` prepares the next batch.
+    # On a Reactant device, reading the loss waits for its step to finish. So the loss of each step is
+    # checked once the next step is queued, which keeps the device busy while the host waits, and
+    # also keeps the host from queueing steps (and their batches) far ahead of the device.
     prev = nothing
     @withprogress for (i, batch) in enumerate(data)
-        prev === nothing || _check_loss(prev...)
         # A `Tuple` batch is spliced into the loss (`loss(model, batch...)`), anything else is passed
         # as-is (`loss(model, batch)`) — the wrapping `trainstep!` would otherwise do. We call the
         # internal `_paced_step` directly so the resolved backend/Reactant flag are reused instead of
@@ -352,7 +352,12 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
 
         # `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard
         # on the scalar.
-        prev = (_loss_scalar(l), i)
+        if on_reactant
+            prev === nothing || _check_loss(prev...)
+            prev = (_loss_scalar(l), i)
+        else
+            _check_loss(_loss_scalar(l), i)
+        end
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
@@ -362,7 +367,7 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
 end
 
 # `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a non-finite loss
-# (inside the compiled step on a Reactant device), so the model is intact when we stop.
+# (inside the compiled step on a Reactant device), so the model stays finite when we stop.
 function _check_loss(l, i)
     isfinite(l) && return nothing
     l isa Real || (l = convert(AbstractFloat, l))   # a Reactant number, read back for the message

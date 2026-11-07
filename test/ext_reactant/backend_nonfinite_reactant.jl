@@ -61,10 +61,13 @@ _host_leaves(x) = [l isa Number ? Reactant.to_number(l) : Array(l)
         @test !isfinite(v[1])
         @test _host_leaves((model, opt)) == before
 
-        # `train!` checks each loss before the next step is queued, and the last one after the loop.
-        @test_throws DomainError Flux.train!(loss, model, [b, (x, y)], opt)
-        @test _host_leaves((model, opt)) == before
+        # `train!` checks the last loss after the loop...
         @test_throws DomainError Flux.train!(loss, model, [b], opt)
+        @test _host_leaves((model, opt)) == before
+        # ...and every other one once the next step is queued, which has then updated the model.
+        @test_throws DomainError Flux.train!(loss, model, [b, (x, y), (x, y)], opt)
+        Flux.trainstep!(loss, ref, (x, y), opt_ref)
+        before = _host_leaves((ref, opt_ref))
         @test _host_leaves((model, opt)) == before
     end
 

@@ -158,7 +158,7 @@ for (i, (x, y)) in enumerate(train_loader)
 end
 ```
 
-This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while what remains on the main thread, such as moving each batch to the device, overlaps with the device's steps. Between two reads the host can queue up to `log_interval` steps, and the device keeps the batch of each until it runs it. [`train!`](@ref Flux.train!) checks each loss once `data` has produced the next batch, so it overlaps loading with the device too.
+This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while what remains on the main thread, such as moving each batch to the device, overlaps with the device's steps. Between two reads the host can queue up to `log_interval` steps, and the device keeps the batch of each until it runs it. [`train!`](@ref Flux.train!) checks each loss once the next step is queued, so its check doesn't keep the device waiting.
 
 ## 3. The `train!` API
 
@@ -182,7 +182,7 @@ data = [(X[:, i:i+15], Y[:, i:i+15]) |> dev for i in 1:16:128]
 Flux.train!(loss, model, data, opt_state)
 ```
 
-`train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. As in eager mode, the compiled step skips the update when the loss is non-finite, so the parameters and optimiser state keep their values from before that batch. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
+`train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. As in eager mode, the compiled step skips the update when the loss is non-finite, so the parameters and optimiser state never take a non-finite update. Unlike in eager mode, `train!` checks each loss only once the next step is queued, so it stops one batch later, after the update for that next batch. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
 
 ### Resuming training from a checkpoint
 
