@@ -91,6 +91,27 @@ end
   @test outputsize(m, (2,7), (3,7)) == (13, 7)
 end
 
+@testset "tuple-valued outputs" begin
+  # PairwiseFusion returns a tuple of each layer's output
+  m = PairwiseFusion(+, Dense(10 => 5), Dense(5 => 3))
+  @test outputsize(m, (10,), (5,)) == size.(m(randn(Float32, 10), randn(Float32, 5))) == ((5,), (3,))
+  @test outputsize(m, (10, 4), (5, 4)) == ((5, 4), (3, 4))
+  @test outputsize(m, (10,), (5,); padbatch=true) == ((5, 1), (3, 1))
+
+  # Recurrent cells return (output, state); LSTMCell nests the state as (h, c)
+  @test outputsize(RNNCell(3 => 5), (3,)) == ((5,), (5,))
+  @test outputsize(RNNCell(3 => 5), (3, 4)) == ((5, 4), (5, 4))
+  @test outputsize(LSTMCell(3 => 5), (3,)) == ((5,), ((5,), (5,)))
+  @test outputsize(LSTMCell(3 => 5), (3, 4)) == ((5, 4), ((5, 4), (5, 4)))
+  @test outputsize(GRUCell(3 => 5), (3, 4)) == ((5, 4), (5, 4))
+
+  m = LSTM(3 => 5; return_state = true)
+  x = randn(Float32, 3, 7, 2)
+  y = m(x)
+  @test outputsize(m, (3, 7, 2)) == (size(y[1]), size.(y[2])) == ((5, 7, 2), ((5, 2), (5, 2)))
+  @test outputsize(RNN(3 => 5; return_state = true), (3, 7))[1] == (5, 7)
+end
+
 @testset "activations" begin
   @testset for f in [celu, elu, gelu, hardsigmoid, hardtanh,
                      leakyrelu, lisht, logcosh, logσ, mish,
