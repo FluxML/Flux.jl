@@ -1,0 +1,250 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Model Templates · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li><a class="toctext" href="basics.html">
+Model Building Basics
+              </a></li><li class="current"><a class="toctext" href="templates.html">
+Model Templates
+              </a><ul class="internal"><li><a class="toctext" href="#Models-in-templates-1">
+Models in templates
+                  </a></li><li><a class="toctext" href="#Constructors-1">
+Constructors
+                  </a></li><li><a class="toctext" href="#Supported-syntax-1">
+Supported syntax
+                  </a></li></ul></li><li><a class="toctext" href="recurrent.html">
+Recurrence
+              </a></li><li><a class="toctext" href="debugging.html">
+Debugging
+              </a></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li><a class="toctext" href="../apis/batching.html">
+Batching
+              </a></li><li><a class="toctext" href="../apis/backends.html">
+Backends
+              </a></li><li><a class="toctext" href="../apis/storage.html">
+Storing Models
+              </a></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Logistic Regression
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Building Models
+            </li><li><a href="templates.html">
+Model Templates
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1c317eeefec910170cc72a4fe09ac54e187b3624/docs/src/models/templates.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Model-Templates-1" id="Model-Templates-1">
+Model Templates
+        </a></h1><p><em>
+... Calculating Tax Expenses ...
+        </em></p><p>
+So how does the 
+<code>Affine</code>
+ template work? We don't want to duplicate the code above whenever we need more than one affine layer:
+      </p><pre><code class="language-julia">W₁, b₁ = randn(...)
+affine₁(x) = W₁*x + b₁
+W₂, b₂ = randn(...)
+affine₂(x) = W₂*x + b₂
+model = Chain(affine₁, affine₂)</code></pre><p>
+Here's one way we could solve this: just keep the parameters in a Julia type, and define how that type acts as a function:
+      </p><pre><code class="language-julia">type MyAffine
+  W
+  b
+end
+
+# Use the `MyAffine` layer as a model
+(l::MyAffine)(x) = l.W * x + l.b
+
+# Convenience constructor
+MyAffine(in::Integer, out::Integer) =
+  MyAffine(randn(out, in), randn(out))
+
+model = Chain(MyAffine(5, 5), MyAffine(5, 5))
+
+model(x1) # [-1.54458,0.492025,0.88687,1.93834,-4.70062]</code></pre><p>
+This is much better: we can now make as many affine layers as we want. This is a very common pattern, so to make it more convenient we can use the 
+<code>@net</code>
+ macro:
+      </p><pre><code class="language-julia">@net type MyAffine
+  W
+  b
+  x -&gt; x * W + b
+end</code></pre><p>
+The function provided, 
+<code>x -&gt; x * W + b</code>
+, will be used when 
+<code>MyAffine</code>
+ is used as a model; it's just a shorter way of defining the 
+<code>(::MyAffine)(x)</code>
+ method above. (You may notice that 
+<code>W</code>
+ and 
+<code>x</code>
+ have swapped order in the model; this is due to the way batching works, which will be covered in more detail later on.)
+      </p><p>
+However, 
+<code>@net</code>
+ does not simply save us some keystrokes; it's the secret sauce that makes everything else in Flux go. For example, it analyses the code for the forward function so that it can differentiate it or convert it to a TensorFlow graph.
+      </p><p>
+The above code is almost exactly how 
+<code>Affine</code>
+ is defined in Flux itself! There's no difference between "library-level" and "user-level" models, so making your code reusable doesn't involve a lot of extra complexity. Moreover, much more complex models than 
+<code>Affine</code>
+ are equally simple to define.
+      </p><h2><a class="nav-anchor" href="#Models-in-templates-1" id="Models-in-templates-1">
+Models in templates
+        </a></h2><p><code>@net</code>
+ models can contain sub-models as well as just array parameters:
+      </p><pre><code class="language-julia">@net type TLP
+  first
+  second
+  function (x)
+    l1 = σ(first(x))
+    l2 = softmax(second(l1))
+  end
+end</code></pre><p>
+Just as above, this is roughly equivalent to writing:
+      </p><pre><code class="language-julia">type TLP
+  first
+  second
+end
+
+function (self::TLP)(x)
+  l1 = σ(self.first(x))
+  l2 = softmax(self.second(l1))
+end</code></pre><p>
+Clearly, the 
+<code>first</code>
+ and 
+<code>second</code>
+ parameters are not arrays here, but should be models themselves, and produce a result when called with an input array 
+<code>x</code>
+. The 
+<code>Affine</code>
+ layer fits the bill, so we can instantiate 
+<code>TLP</code>
+ with two of them:
+      </p><pre><code class="language-julia">model = TLP(Affine(10, 20),
+            Affine(20, 15))
+x1 = rand(20)
+model(x1) # [0.057852,0.0409741,0.0609625,0.0575354 ...</code></pre><p>
+You may recognise this as being equivalent to
+      </p><pre><code class="language-julia">Chain(
+  Affine(10, 20), σ
+  Affine(20, 15), softmax)</code></pre><p>
+given that it's just a sequence of calls. For simple networks 
+<code>Chain</code>
+ is completely fine, although the 
+<code>@net</code>
+ version is more powerful as we can (for example) reuse the output 
+<code>l1</code>
+ more than once.
+      </p><h2><a class="nav-anchor" href="#Constructors-1" id="Constructors-1">
+Constructors
+        </a></h2><p><code>Affine</code>
+ has two array parameters, 
+<code>W</code>
+ and 
+<code>b</code>
+. Just like any other Julia type, it's easy to instantiate an 
+<code>Affine</code>
+ layer with parameters of our choosing:
+      </p><pre><code class="language-julia">a = Affine(rand(10, 20), rand(20))</code></pre><p>
+However, for convenience and to avoid errors, we'd probably rather specify the input and output dimension instead:
+      </p><pre><code class="language-julia">a = Affine(10, 20)</code></pre><p>
+This is easy to implement using the usual Julia syntax for constructors:
+      </p><pre><code class="language-julia">Affine(in::Integer, out::Integer) =
+  Affine(randn(in, out), randn(1, out))</code></pre><p>
+In practice, these constructors tend to take the parameter initialisation function as an argument so that it's more easily customisable, and use 
+<code>Flux.initn</code>
+ by default (which is equivalent to 
+<code>randn(...)/100</code>
+). So 
+<code>Affine</code>
+'s constructor really looks like this:
+      </p><pre><code class="language-julia">Affine(in::Integer, out::Integer; init = initn) =
+  Affine(init(in, out), init(1, out))</code></pre><h2><a class="nav-anchor" href="#Supported-syntax-1" id="Supported-syntax-1">
+Supported syntax
+        </a></h2><p>
+The syntax used to define a forward pass like 
+<code>x -&gt; x*W + b</code>
+ behaves exactly like Julia code for the most part. However, it's important to remember that it's defining a dataflow graph, not a general Julia expression. In practice this means that anything side-effectful, or things like control flow and 
+<code>println</code>
+s, won't work as expected. In future we'll continue to expand support for Julia syntax and features.
+      </p><footer><hr/><a class="previous" href="basics.html"><span class="direction">
+Previous
+          </span><span class="title">
+Model Building Basics
+          </span></a><a class="next" href="recurrent.html"><span class="direction">
+Next
+          </span><span class="title">
+Recurrence
+          </span></a></footer></article></body></HTML>

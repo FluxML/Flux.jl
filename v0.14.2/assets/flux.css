@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css?family=Lato:400,400i');
+
+body {
+  font-family: Lato, "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+
+nav.toc {
+  padding-top: 0;
+  background: rgb(240, 240, 240);
+  line-height: 2em;
+  cursor: default;
+  user-select: none;
+}
+
+h1+h2 {
+  margin-top: 0;
+}
+
+/* Green banner in ToC */
+nav.toc > h1 {
+  margin-top: 0;
+  padding-top: 0.4em;
+  padding-bottom: 0.5em;
+  border-bottom: 5px solid white;
+  box-shadow: 0px -2px 5px rgb(60,60,60);
+  margin-bottom: 0.5em;
+  background: rgb(60, 150, 60);
+
+  font-style: italic;
+  font-weight: normal;
+  font-size: 50pt;
+  text-transform: lowercase;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  color: white;
+}
+
+/* Reduce ToC font size */
+.toctext {
+  font-size: 10pt;
+}
+
+/* Fade out non-clickable ToC headers */
+nav.toc ul span.toctext {
+  color: rgb(180, 180, 180);
+}
+
+nav.toc ul .toctext {
+  color: rgb(100, 100, 100);
+}
+
+nav.toc ul a.toctext:hover {
+  color: inherit;
+  background: rgb(220, 220, 220);
+  cursor: default;
+}
+
+nav.toc li.current > .toctext {
+  background: linear-gradient(90deg, rgb(245,245,245) 0%, white 90%);
+  font-weight: normal;
+}
+
+nav.toc ul.internal li.toplevel {
+  font-weight: normal;
+}
+
+/* Content */
+
+article { max-width: none; }
+
+article > p, article > ul {
+  max-width: 45em;
+}
+
+/* Links */
+a, a:visited { color: rgb(0, 120, 0); }
+article p a { border-bottom: 1px solid rgb(200, 230, 200); }
+a:hover, a:visited:hover { color: rgb(0, 80, 0); }
+
+/* Article Links */
+article p a { border-bottom: 1px solid rgb(200, 230, 200); }
+article p a:hover, article a:visited:hover { color: rgb(0, 120, 0); }
+article p a:hover { border-bottom: 1px solid rgb(150, 200, 150); }
+
+/* Doctstrings */
+article section.docstring {
+  padding: 0.5em 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+/* Code */
+
+article pre, article p > code {
+  background: rgb(245, 250, 245);
+}
+
+article pre {
+  border: none;
+  max-width: none;
+  padding: 1em;
+  border-radius: 10px 0px 0px 10px;
+}
+
+.hljs-comment {
+  font-style: italic;
+}
+
+.hljs-number {
+  color: rgb(0, 150, 150);
+}
