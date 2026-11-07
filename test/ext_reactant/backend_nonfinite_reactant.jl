@@ -20,7 +20,7 @@
     @test length(ext.COMPILE_CACHE) == ncache
     @test Array(model[1].weight) == w0
 
-    @test Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt) isa Real
+    @test Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt) isa Reactant.AbstractConcreteNumber
 end
 
 # Host copies of every array and number in `x`, e.g. a model with its optimiser state.
@@ -61,7 +61,10 @@ _host_leaves(x) = [l isa Number ? Reactant.to_number(l) : Array(l)
         @test !isfinite(v[1])
         @test _host_leaves((model, opt)) == before
 
+        # `train!` checks each loss before the next step is queued, and the last one after the loop.
         @test_throws DomainError Flux.train!(loss, model, [b, (x, y)], opt)
+        @test _host_leaves((model, opt)) == before
+        @test_throws DomainError Flux.train!(loss, model, [b], opt)
         @test _host_leaves((model, opt)) == before
     end
 

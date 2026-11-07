@@ -80,6 +80,9 @@ function loss_fn(model, x, y)
     return Flux.logitcrossentropy(ŷ, y), (; correct = sum(Flux.onecold(ŷ) .== y))
 end
 
+# Adds the results of a training step on `m` images to the running totals.
+tally((lsum, correct, n), (l, stats), m) = (lsum + l * m, correct + stats.correct, n + m)
+
 # Trains on device `dev`. `compile(f, args)` returns the function to call in place of `f` on
 # arguments like `args`, for the evaluation: `Reactant.compile` on Reactant, `f` itself to run
 # eagerly. Flux.trainstep! manages training GC; evaluation on CUDA still needs collections.
@@ -130,13 +133,18 @@ function train(dev; compile=(f, args) -> f, eval_gc=false, epochs=30, batchsize=
         η = lr * (1 + cos(π * (epoch - 1) / epochs)) / 2   # cosine annealing towards 0
         Flux.adjust!(opt_state, η)
         trainmode!(model)
-        lsum, correct, n = 0.0, 0, 0
-        t = @elapsed for (x, y) in train_loader
-            l, stats = Flux.trainstep!(loss_fn, model, (x, y), opt_state)
-            lsum += l * length(y)
-            correct += stats.correct
-            n += length(y)
+        totals, prev = (0.0, 0, 0), nothing
+        t = @elapsed begin
+            for (x, y) in train_loader
+                # On Reactant, the results stay on the device, and reading them waits for their
+                # step: add each step's once the next one is queued, so loading overlaps the step.
+                out = (Flux.trainstep!(loss_fn, model, (x, y), opt_state), length(y))
+                prev === nothing || (totals = tally(totals, prev...))
+                prev = out
+            end
+            totals = tally(totals, prev...)
         end
+        lsum, correct, n = totals
         @printf("[train] epoch=%d lr=%.2e loss=%.4f acc=%.4f time=%.1fs img/s=%.0f\n",
                 epoch, η, lsum / n, correct / n, t, n / t)
         log_eval(epoch)

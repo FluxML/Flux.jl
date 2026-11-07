@@ -53,15 +53,15 @@ end
     l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
     w0 = model.layers[1].weight |> cpu
 
-    # `trainstep!` returns just the host-scalar loss, mutating model/opt in place.
+    # `trainstep!` returns just the loss, on the device, mutating model/opt in place.
     l = Flux.trainstep!(loss, model, (x, y), opt)
-    @test l isa Real && isfinite(l)
+    @test l isa Reactant.AbstractConcreteNumber{Float32} && isfinite(l)
     @test l ≈ l0                               # measured before the update
     @test !(w0 ≈ model.layers[1].weight |> cpu)            # parameters updated in place
 
     # `trainstep_withgradient!` also returns the on-device gradient.
     l2, g = Flux.trainstep_withgradient!(loss, model, (x, y), opt)
-    @test l2 isa Real && isfinite(l2)
+    @test l2 isa Reactant.AbstractConcreteNumber{Float32} && isfinite(l2)
     @test Flux.get_device_type(g) <: Flux.ReactantDevice   # gradient stays on the device
 
     # Looping trainstep! keeps reducing the loss (reuses the cached executable).
@@ -89,7 +89,7 @@ end
     l0 = Reactant.to_number(Reactant.@jit lossnt(model, nt))
     # Exercise both compiled variants (loss-only and with-gradient) with the structured batch.
     l, g = Flux.trainstep_withgradient!(lossnt, model, (nt,), opt)
-    @test l isa Real && isfinite(l)
+    @test l isa Reactant.AbstractConcreteNumber && isfinite(l)
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
     for _ in 1:20
         Flux.trainstep!(lossnt, model, (nt,), opt)
@@ -112,14 +112,14 @@ end
 
     v = Flux.trainstep!(auxloss, model, (x, y), opt)
     @test v isa Tuple                                              # full value returned
-    @test v[1] isa Real && isfinite(v[1])                         # scalar loss read to host
+    @test v[1] isa Reactant.AbstractConcreteNumber && isfinite(v[1])   # scalar loss, on the device
     @test v[1] ≈ l0                                               # measured before the update
-    @test v[2].sumsq isa Real && isfinite(v[2].sumsq)             # aux read back to the host too
+    @test v[2].sumsq isa Reactant.AbstractConcreteNumber && isfinite(v[2].sumsq)   # aux too
 
-    # with-gradient variant: same value shape (also host-read), gradient stays on the device
+    # with-gradient variant: same value shape, gradient stays on the device too
     v2, g = Flux.trainstep_withgradient!(auxloss, model, (x, y), opt)
-    @test v2 isa Tuple && v2[1] isa Real && isfinite(v2[1])
-    @test v2[2].sumsq isa Real
+    @test v2 isa Tuple && v2[1] isa Reactant.AbstractConcreteNumber && isfinite(v2[1])
+    @test v2[2].sumsq isa Reactant.AbstractConcreteNumber
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
 
     # differentiating `first∘loss`, training with the aux loss still reduces the loss

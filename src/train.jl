@@ -282,7 +282,8 @@ It adds only a few features to the loop above:
 
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point. The update for that
   batch is skipped, so the parameters and `opt_state` keep their values from before it, also on a
-  Reactant device.
+  Reactant device. The loss is checked once `data` has produced the next batch, before its step,
+  so that on a Reactant device the step runs while `data` prepares the next batch.
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
@@ -322,7 +323,12 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
     adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
     cache = caching_allocator && !on_reactant ? GPUArrays.AllocCache() : nothing
 
+    # The loss of each step is checked once `data` has produced the next batch, just before that
+    # batch's step. On a Reactant device, reading the loss waits for its step to finish, so this lets
+    # the device run the step while `data` prepares the next batch.
+    prev = nothing
     @withprogress for (i, batch) in enumerate(data)
+        prev === nothing || _check_loss(prev...)
         # A `Tuple` batch is spliced into the loss (`loss(model, batch...)`), anything else is passed
         # as-is (`loss(model, batch)`) — the wrapping `trainstep!` would otherwise do. We call the
         # internal `_paced_step` directly so the resolved backend/Reactant flag are reused instead of
@@ -344,17 +350,23 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
             end
         end
 
-        # `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a
-        # non-finite loss (inside the compiled step on a Reactant device), so the model is intact here
-        # when we stop. `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary
-        # outputs — guard on the scalar.
-        ls = _loss_scalar(l)
-        isfinite(ls) || throw(DomainError(lazy"Loss is $ls on data item $i, stopping training"))
+        # `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard
+        # on the scalar.
+        prev = (_loss_scalar(l), i)
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
     isnothing(cache) || GPUArrays.unsafe_free!(cache)
+    prev === nothing || _check_loss(prev...)
     return nothing
+end
+
+# `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a non-finite loss
+# (inside the compiled step on a Reactant device), so the model is intact when we stop.
+function _check_loss(l, i)
+    isfinite(l) && return nothing
+    l isa Real || (l = convert(AbstractFloat, l))   # a Reactant number, read back for the message
+    throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
 end
 
 # No `adtype` given: pass the `nothing` sentinel so `_resolve_backend` picks the device-aware default
@@ -416,10 +428,15 @@ trained in alternation, as in a GAN, don't each collect.
 
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, reverse pass and optimiser update) is compiled into a single XLA executable, cached and
-reused across calls with the same model, optimiser, loss, backend and batch shape. The returned
-value — the loss, or `(loss, aux...)` — is read back to the host. Differentiation uses Enzyme, the
-only backend supported there: any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws
-an `ArgumentError`.
+reused across calls with the same model, optimiser, loss, backend and batch shape. Differentiation
+uses Enzyme, the only backend supported there: any other `adtype`, such as `AutoZygote()` or
+`AutoMooncake()`, throws an `ArgumentError`.
+
+`trainstep!` returns once the step is queued on the device, and the returned value — the loss, or
+`(loss, aux...)` — stays there, as Reactant numbers and arrays. Reading it, for example with
+`Float32(l)`, arithmetic, `isfinite` or printing, waits for the step to finish. Reading each loss
+after the call to `trainstep!` on the next batch lets the device run the step while the host
+prepares that batch: see [Reading the loss without waiting](@ref).
 
 # Example
 ```julia
@@ -473,8 +490,8 @@ to the model. Everything else is identical: `model` and `opt_state` are updated 
 first returned value is whatever the loss returned — the scalar loss, or `(loss, aux...)` when the
 loss returns auxiliary outputs (see [`trainstep!`](@ref Flux.trainstep!)).
 
-On a Reactant device the returned value (the loss, or `(loss, aux...)`) is read back to the host,
-while the returned `grad` stays on the device. Returning the gradient makes it an output of the
+On a Reactant device the returned value (the loss, or `(loss, aux...)`) and `grad` stay on the
+device, as for `trainstep!`. Returning the gradient makes it an output of the
 compiled step, which raises peak memory relative to `trainstep!`; prefer `trainstep!` when the
 gradient is not needed.
 """

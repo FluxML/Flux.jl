@@ -118,12 +118,14 @@ function train(dev; log_dir, compile=(f, args) -> f, preset="tinystories",
         t0 = time()
         lr = learning_rate(step, p)
         Flux.adjust!(opt_state, lr)
-        loss = 0.0
+        # The losses stay on the device, and reading one waits for its step: read them all once
+        # every micro-batch is queued, so that loading a batch overlaps the previous steps.
+        losses = []
         for _ in 1:accum
             batch, pos = getbatch(train_data, pos, B)
-            loss += Flux.trainstep!(lm_loss, model, dev(batch), opt_state)
+            push!(losses, Flux.trainstep!(lm_loss, model, dev(batch), opt_state))
         end
-        loss /= accum
+        loss = sum(Float64, losses) / accum
         dt = time() - t0
         tps = p.total_batch / dt
         tflops = flops * tps / 1e12

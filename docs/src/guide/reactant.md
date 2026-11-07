@@ -123,12 +123,12 @@ opt_state = Flux.setup(Adam(1f-2), model)
 
 trainmode!(model)
 for epoch in 1:100
-    l = Flux.trainstep!(loss, model, (x, y), opt_state)   # returns the host-side loss scalar
-    @info "epoch $epoch" loss=l
+    l = Flux.trainstep!(loss, model, (x, y), opt_state)   # the loss, on the device
+    @info "epoch $epoch" loss=Float32(l)
 end
 ```
 
-The batch is passed as a tuple `(x, y)` and spliced into the loss as `loss(model, x, y)`. The returned loss is read back to the host as an ordinary number.
+The batch is passed as a tuple `(x, y)` and spliced into the loss as `loss(model, x, y)`. The returned loss stays on the device as a Reactant number: reading it, as `Float32(l)` does here, waits for the step to finish (see [Reading the loss without waiting](@ref)).
 
 Use [`trainstep_withgradient!`](@ref Flux.Train.trainstep_withgradient!) if you also need the gradient — it returns `(loss, grad)`, with the gradient left on the device. (Returning the gradient makes it an output of the compiled step and raises peak memory, so prefer `trainstep!` when you don't need it.)
 
@@ -142,8 +142,26 @@ function loss(m, x, y)
     Flux.mse(ŷ, y), (; acc = mean(onecold(ŷ) .== onecold(y)))
 end
 
-l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l is the loss, stats.acc the accuracy, both on the host
+l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l is the loss, stats.acc the accuracy, both on the device
 ```
+
+### Reading the loss without waiting
+
+`trainstep!` returns as soon as the step is queued on the device, and the loss it returns stays there. Reading it — with `Float32(l)`, arithmetic such as `total += l`, `isfinite(l)`, or printing — waits for the step to finish. A loop that reads each loss right away therefore waits for every step before it prepares the next batch, while the device sits idle. Read each loss after the call to `trainstep!` on the next batch instead, so that the device runs one step while the host prepares the next batch:
+
+```julia
+train_loader = DataLoader((X, Y); batchsize=32) |> dev
+losses = Float32[]
+prev = nothing
+for (x, y) in train_loader
+    l = Flux.trainstep!(loss, model, (x, y), opt_state)
+    prev === nothing || push!(losses, prev)   # waits for the previous step only
+    prev = l
+end
+push!(losses, prev)
+```
+
+This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. Reading the loss one step late, rather than at the end of the epoch, also keeps the host from running far ahead of the device, along with the batches it has moved there. [`train!`](@ref Flux.train!) already reads the loss this way.
 
 ## 3. The `train!` API
 
@@ -191,7 +209,7 @@ Flux.loadmodel!(opt_state, ckpt["opt_state"])
 - **Scalars in the batch.** A plain number in the batch, such as `λ` in `(x, y, λ)`, is compiled into the step as a constant, so each distinct value compiles a new step. Pass a varying scalar as a 0-dimensional array instead, `(x, y, fill(λ)) |> dev`, and read it with `λ[]` in the loss.
 - **Compilation is keyed on shape.** The first call for each distinct batch shape compiles; subsequent calls reuse the executable. Keeping batch sizes fixed (or accepting one extra compile for a smaller final batch) avoids repeated compilation.
 - **Watch the compile cache.** Flux caches one executable per distinct `(model, optimiser, loss, batch-shape)`. Values that are compiled into the step as constants are part of the cache key too, so switching a layer with `trainmode!`/`testmode!`, freezing parameters with `freeze!`/`thaw!`, passing the same array twice in a batch, or redefining the loss function compiles a new step instead of reusing a stale one. If you rebuild the model or optimiser every iteration, each iteration compiles a fresh step — Flux warns when the cache grows past a handful of entries. Entries are freed automatically when their model is garbage-collected.
-- **Reading results back.** `trainstep!`/`train!` return host-side numbers already. For a manually compiled function, move device arrays back with `cpu` (or `Reactant.to_number` for a scalar).
+- **Reading results back.** `trainstep!` returns the loss on the device: read it with `Float32(l)` or `Reactant.to_number(l)`, preferably one step late (see [Reading the loss without waiting](@ref)). Move device arrays back with `cpu`, as for the results of a manually compiled function.
 - **AD backend.** On a Reactant device training differentiates with Enzyme, the only supported backend: passing any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws an `ArgumentError`. `Duplicated` models are not supported here — pass the plain model that already lives on the device.
 
 !!! tip "Precision on GPU"
