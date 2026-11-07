@@ -161,7 +161,7 @@ end
 push!(losses, prev)
 ```
 
-This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. Reading the loss one step late, rather than at the end of the epoch, also keeps the host from running far ahead of the device, along with the batches it has moved there. [`train!`](@ref Flux.train!) already reads the loss this way.
+This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while reading the loss late overlaps what remains on the main thread, such as moving each batch to the device, with the previous step. Reading the loss one step late, rather than at the end of the epoch, also keeps the host from running far ahead of the device, along with the batches it has moved there. [`train!`](@ref Flux.train!) already reads the loss this way.
 
 ## 3. The `train!` API
 
