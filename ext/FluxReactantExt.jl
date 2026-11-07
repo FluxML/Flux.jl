@@ -60,9 +60,7 @@ end
 # steps where some parameter completes its accumulation, and on the others only accumulates.
 function _reactant_update!(opt_state, model, v, g)
     l = _reactant_loss_scalar(v)
-    grads = IdDict{Optimisers.Leaf, Any}()
-    Optimisers._grads!(grads, opt_state, model, g)
-    done = _accumulation_done(grads)
+    done = _accumulation_done(opt_state, model, g)
     if done === nothing
         Reactant.@trace track_numbers=false if isfinite(l)
             Optimisers.update!(opt_state, model, g)
@@ -72,11 +70,19 @@ function _reactant_update!(opt_state, model, v, g)
             Reactant.@trace track_numbers=false if done
                 Optimisers.update!(opt_state, model, g)
             else
-                _accumulate!(grads)
+                _accumulate!(opt_state, model, g)
             end
         end
     end
     return nothing
+end
+
+# Each parameter's leaf of the optimiser state with its gradient, as `update!` pairs them. Built
+# where it is used: a traced conditional can't capture an `IdDict` in its branches.
+function _leaf_grads(opt_state, model, g)
+    grads = IdDict{Optimisers.Leaf, Any}()
+    Optimisers._grads!(grads, opt_state, model, g)
+    return grads
 end
 
 # Optimisers' `ReactantOptimiser`, which `setup` wraps around each rule for a Reactant model.
@@ -100,9 +106,9 @@ end
 
 # Whether some parameter completes its accumulation on this step, as a traced `Bool`, or `nothing` if
 # not every rule starts with `AccumGrad`. The counters of frozen parameters stop, and so can differ.
-function _accumulation_done(grads)
+function _accumulation_done(opt_state, model, g)
     done = nothing
-    for ℓ in keys(grads)
+    for ℓ in keys(_leaf_grads(opt_state, model, g))
         ℓ.frozen && continue
         acc = _accumgrad(ℓ.rule, ℓ.state)
         acc === nothing && return nothing
@@ -114,8 +120,8 @@ end
 
 # On a step that completes no accumulation, the update changes only the state of `AccumGrad`: the
 # rules after it keep theirs, and the parameters (and `MixedPrecision`'s copy) are left as they are.
-function _accumulate!(grads)
-    for (ℓ, dxs) in grads
+function _accumulate!(opt_state, model, g)
+    for (ℓ, dxs) in _leaf_grads(opt_state, model, g)
         ℓ.frozen || (ℓ.state = _accumulate(ℓ.rule, ℓ.state, first(dxs)))
     end
     return nothing
