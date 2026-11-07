@@ -6,10 +6,50 @@
         Adam(0.01f0), AdamW(0.01f0, (0.9f0, 0.999f0), 0.1f0), AMSGrad(0.01f0), RAdam(0.01f0),
         OptimiserChain(ClipGrad(0.05f0), ClipNorm(0.5f0), WeightDecay(0.1f0), Adam(0.01f0)),
         OptimiserChain(AccumGrad(3), Adam(0.01f0)),
+        OptimiserChain(AccumGrad(2), ClipNorm(0.5f0), AdamW(0.01f0, (0.9f0, 0.999f0), 0.1f0)),
+        MixedPrecision(Float64, OptimiserChain(AccumGrad(3), Adam(0.01f0))),
     ]
     for rule in rules
         @testset "$rule" begin
             @test reactant_trajectory_error(rule) < 1e-5
+        end
+    end
+end
+
+# The compiled step only accumulates while every rule starts with `AccumGrad` and none completes:
+# check the cases where the counters drift apart (a frozen layer) and where a rule doesn't accumulate.
+@testset "Reactant AccumGrad with frozen layers and mixed rules" begin
+    dev = MLDataDevices.reactant_device(force = true)
+    loss(m, x, y) = Flux.mse(m(x), y)
+    model0 = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
+    batches = [(randn(Float32, 4, 16), randn(Float32, 2, 16)) for _ in 1:9]
+    accum = OptimiserChain(AccumGrad(3), Adam(0.01f0))
+
+    # The first layer is frozen for the first two steps, so it completes its accumulation two steps
+    # after the second layer.
+    frozen(m) = Flux.setup(accum, m)
+    function frozen_hook(opt, k)
+        k == 1 && Flux.freeze!(opt.layers[1])
+        k == 3 && Flux.thaw!(opt.layers[1])
+    end
+    # Only the first layer accumulates its gradients.
+    mixed(m) = (; layers = (Flux.setup(accum, m).layers[1], Flux.setup(Adam(0.01f0), m.layers[2])))
+
+    @testset "$name" for (name, setup, hook) in (("frozen layer", frozen, frozen_hook),
+                                                 ("mixed rules", mixed, (opt, k) -> nothing))
+        eager, re = deepcopy(model0), deepcopy(model0) |> dev
+        opt_eager, opt_re = setup(eager), setup(re)
+        reactant_full_precision() do
+            for (k, b) in enumerate(batches)
+                hook(opt_eager, k)
+                hook(opt_re, k)
+                l_eager = Flux.trainstep!(loss, eager, b, opt_eager)
+                l_re = Flux.trainstep!(loss, re, b |> dev, opt_re)
+                @test l_re ≈ l_eager rtol=1e-5
+            end
+        end
+        for (p, q) in zip(Flux.trainables(re |> cpu_device()), Flux.trainables(eager))
+            @test p ≈ q rtol=1e-5
         end
     end
 end

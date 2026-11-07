@@ -78,3 +78,26 @@ _host_leaves(x) = [l isa Number ? Reactant.to_number(l) : Array(l)
     end
     @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < Flux.mse(model0(X), Y)
 end
+
+# With `AccumGrad`, a non-finite loss is skipped both on a step that only accumulates and on one that
+# completes the accumulation: neither the accumulated gradient nor the counter moves.
+@testset "non-finite loss skips the accumulation on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    loss(m, a, b) = Flux.mse(m(a), b)
+    model0 = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    bad = (fill(NaN32, 4, 16) |> dev, y)
+    rule = OptimiserChain(AccumGrad(2), Adam(1f-2))
+
+    model, ref = deepcopy(model0) |> dev, deepcopy(model0) |> dev
+    opt, opt_ref = Flux.setup(rule, model), Flux.setup(rule, ref)
+    for k in 1:5
+        before = _host_leaves((model, opt))
+        @test !isfinite(Flux.trainstep!(loss, model, bad, opt))
+        @test _host_leaves((model, opt)) == before
+        @test Flux.trainstep!(loss, model, (x, y), opt) ≈ Flux.trainstep!(loss, ref, (x, y), opt_ref)
+    end
+    for (a, b) in zip(_host_leaves((model, opt)), _host_leaves((ref, opt_ref)))
+        @test a ≈ b
+    end
+end

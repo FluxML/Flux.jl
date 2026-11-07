@@ -53,12 +53,79 @@ end
 # A traced conditional keeps the update in place; selecting between old and new values instead makes
 # XLA copy the optimiser state every step. `track_numbers=false` keeps plain fields such as
 # `Leaf.frozen::Bool` untraced.
+#
+# Under tracing `AccumGrad` can't return `nothing` on a step that only accumulates, so Optimisers
+# runs the rules after it anyway and selects their old state back: the whole optimiser runs on every
+# step. When every rule starts with `AccumGrad`, a second conditional runs the update only on the
+# steps where some parameter completes its accumulation, and on the others only accumulates.
 function _reactant_update!(opt_state, model, v, g)
     l = _reactant_loss_scalar(v)
-    Reactant.@trace track_numbers=false if isfinite(l)
-        Optimisers.update!(opt_state, model, g)
+    grads = IdDict{Optimisers.Leaf, Any}()
+    Optimisers._grads!(grads, opt_state, model, g)
+    done = _accumulation_done(grads)
+    if done === nothing
+        Reactant.@trace track_numbers=false if isfinite(l)
+            Optimisers.update!(opt_state, model, g)
+        end
+    else
+        Reactant.@trace track_numbers=false if isfinite(l)
+            Reactant.@trace track_numbers=false if done
+                Optimisers.update!(opt_state, model, g)
+            else
+                _accumulate!(grads)
+            end
+        end
     end
     return nothing
+end
+
+# Optimisers' `ReactantOptimiser`, which `setup` wraps around each rule for a Reactant model.
+function _reactant_optimiser_type()
+    ext = Base.get_extension(Optimisers, :OptimisersReactantMLDataDevicesExt)
+    return ext === nothing || !isdefined(ext, :ReactantOptimiser) ? Union{} : ext.ReactantOptimiser
+end
+
+_unwrap_rule(rule) = rule isa _reactant_optimiser_type() ? _unwrap_rule(rule.opt) : rule
+
+# The `AccumGrad` a rule starts with and its state `(accumulated, counter)`, or `nothing`. A rule
+# starts with `AccumGrad` if it is one, or an `OptimiserChain` or `MixedPrecision` whose first rule
+# does.
+function _accumgrad(rule, state)
+    r = _unwrap_rule(rule)
+    r isa Optimisers.AccumGrad && return r, state
+    r isa Optimisers.MixedPrecision && return _accumgrad(r.rule, state[2])
+    r isa Optimisers.OptimiserChain && !isempty(r.opts) && return _accumgrad(first(r.opts), first(state))
+    return nothing
+end
+
+# Whether some parameter completes its accumulation on this step, as a traced `Bool`, or `nothing` if
+# not every rule starts with `AccumGrad`. The counters of frozen parameters stop, and so can differ.
+function _accumulation_done(grads)
+    done = nothing
+    for ℓ in keys(grads)
+        ℓ.frozen && continue
+        acc = _accumgrad(ℓ.rule, ℓ.state)
+        acc === nothing && return nothing
+        r, (_, counter) = acc
+        done = done === nothing ? counter == r.n : done | (counter == r.n)
+    end
+    return done isa Reactant.TracedRNumber{Bool} ? done : nothing
+end
+
+# On a step that completes no accumulation, the update changes only the state of `AccumGrad`: the
+# rules after it keep theirs, and the parameters (and `MixedPrecision`'s copy) are left as they are.
+function _accumulate!(grads)
+    for (ℓ, dxs) in grads
+        ℓ.frozen || (ℓ.state = _accumulate(ℓ.rule, ℓ.state, first(dxs)))
+    end
+    return nothing
+end
+
+function _accumulate(rule, state, dx)
+    r = _unwrap_rule(rule)
+    r isa Optimisers.AccumGrad && return first(Optimisers.apply!(r, state, nothing, dx))
+    r isa Optimisers.MixedPrecision && return (state[1], _accumulate(r.rule, state[2], dx))
+    return (_accumulate(first(r.opts), first(state), dx), Base.tail(state)...)
 end
 
 function _reactant_step!(loss, adtype, model, data::Tuple, opt_state)
@@ -189,10 +256,10 @@ end
 # RAdam's step counter never advances.
 # Checked only when compiling, as the rule type is part of the cache key.
 function _check_opt_state(opt_state)
-    ext = Base.get_extension(Optimisers, :OptimisersReactantMLDataDevicesExt)
-    (ext === nothing || !isdefined(ext, :ReactantOptimiser)) && return nothing
+    R = _reactant_optimiser_type()
+    R === Union{} && return nothing
     for ℓ in Functors.fleaves(opt_state; exclude = x -> x isa Optimisers.Leaf)
-        ℓ isa Optimisers.Leaf && !(ℓ.rule isa ext.ReactantOptimiser) && throw(ArgumentError(
+        ℓ isa Optimisers.Leaf && !(ℓ.rule isa R) && throw(ArgumentError(
             "The optimiser state was not set up for this Reactant model (found rule $(ℓ.rule)). \
              Call `opt_state = Flux.setup(rule, model)` after moving the model to the device; to \
              resume from a saved optimiser state, then load it with \
