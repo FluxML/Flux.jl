@@ -74,8 +74,9 @@ _gather_labels(ŷ::AbstractArray, y::AbstractArray, dims::Integer) =
   _gather(ŷ, _label_indices(ŷ, y, dims))
 
 # `x[idx]` for linear indices `idx`. Unlike that of `getindex`, the gradient of `NNlib.gather` stays
-# on the GPU. Overloaded for traced arrays in FluxReactantExt.
-_gather(x::AbstractArray, idx::AbstractArray) = NNlib.gather(vec(x), idx)
+# on the GPU. `_label_indices` checked the labels, so `gather` skips its own check, which on a GPU
+# waits for the result. Overloaded for traced arrays in FluxReactantExt.
+_gather(x::AbstractArray, idx::AbstractArray) = NNlib.gather(vec(x), idx; checkbounds = false)
 
 # Linear indices into `ŷ`, viewed as a `prod(size(ŷ)[1:dims-1]) × size(ŷ, dims) × :` array,
 # with the size of the entries that `_gather_labels` picks.

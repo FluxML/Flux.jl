@@ -316,7 +316,9 @@ function ChainRulesCore.rrule(::typeof(_logitce), ŷ::AbstractArray, y::Abstrac
     # On the CPU, this broadcast vectorizes with `lse` and `Δ` in one array, and without
     # comparing the classes to the labels.
     dŷ = _logitce_grad.(T, ŷ, lseΔ, false)
-    dŷ[idx] .= _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
+    # `idx` comes from the checked labels, so the view skips the check of `dŷ[idx]`, which
+    # on a GPU reads its result back to the host.
+    Base.unsafe_view(vec(dŷ), idx) .= _logitce_grad.(T, ŷy, reshape(lseΔ, size(idx)), true)
     return NoTangent(), dŷ, NoTangent(), NoTangent()
   end
   return reshape(lse, size(ŷy)) .- ŷy, _logitce_back
