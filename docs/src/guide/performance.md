@@ -2,6 +2,7 @@
 
 All the usual [Julia performance tips apply](https://docs.julialang.org/en/v1/manual/performance-tips/).
 As always [profiling your code](https://docs.julialang.org/en/v1/manual/profile/#Profiling-1) is generally a useful way of finding bottlenecks.
+For a training loop on a GPU, see [Profiling a Training Loop](@ref man-profiling).
 Below follow some Flux specific tips/reminders.
 
 ## Don't use more precision than you need

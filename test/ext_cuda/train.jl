@@ -17,3 +17,17 @@ gpu_trainstep_gc_testsuite(gpu_device(force=true))
   end
   @test CUDA.used_memory() - used < 3 * step
 end
+
+@testset "train! and trainstep! mark NVTX ranges" begin
+  model = Dense(4 => 2) |> gpu
+  opt = Flux.setup(Adam(), model)
+  data = [(CUDA.randn(Float32, 4, 8), CUDA.randn(Float32, 2, 8))]
+  loss(m, x, y) = Flux.mse(m(x), y)
+  steps() = (Flux.train!(loss, model, data, opt; gc_interval = 1);
+             Flux.trainstep_withgradient!(loss, model, data[1], opt; gc_interval = 0))
+  steps()
+  res = CUDA.@profile steps()
+  names = Set(skipmissing(res.nvtx.name[isequal.(res.nvtx.domain, "Flux")]))
+  @test names == Set(["data", "trainstep!", "trainstep_withgradient!", "forward", "backward",
+                      "update", "incremental GC"])
+end
