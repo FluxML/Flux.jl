@@ -147,6 +147,12 @@ AutoGCPacer() = AutoGCPacer(0.0, 0.0, 1, 0, GC_COUNT[])
 
 function maybe_gc!(pacer::AutoGCPacer, dt::Real, types::Tuple)
     count_step!(pacer)
+    # A step that compiles is left out of `t_step`: the 10 s of compiling an MLP took 75 steps of
+    # 1 ms to fade below `GC_HIDE_S`, with a collection after each of them.
+    if _new_step_types!(types)
+        run_gc!(pacer, true)   # untimed: `t_gc` is the cost of an incremental GC
+        return nothing
+    end
     spike = pacer.t_step > 0.0 && dt > 3 * pacer.t_step
     pacer.t_step = pacer.t_step == 0.0 ? dt : 0.9 * pacer.t_step + 0.1 * dt
     base = if pacer.t_step >= GC_HIDE_S               # compute-bound: GC hides → every step
@@ -157,9 +163,7 @@ function maybe_gc!(pacer::AutoGCPacer, dt::Real, types::Tuple)
         clamp(round(Int, pacer.t_gc / (GC_OVERHEAD * pacer.t_step)), 1, 4096)
     end
     pacer.interval = spike ? max(1, pacer.interval ÷ 2) : clamp(pacer.interval + 1, 1, base)
-    if _new_step_types!(types)
-        run_gc!(pacer, true)   # untimed: `t_gc` is the cost of an incremental GC
-    elseif pacer.since >= pacer.interval
+    if pacer.since >= pacer.interval
         g0 = time_ns()
         run_gc!(pacer, false)
         gdt = (time_ns() - g0) / 1e9
