@@ -41,6 +41,7 @@ FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
+NVTX = "5da4648a-3479-48b8-97b9-01cb529c0a1f"
 Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 
 [extensions]
@@ -51,6 +52,7 @@ FluxFiniteDifferencesExt = "FiniteDifferences"
 FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
 FluxMooncakeExt = "Mooncake"
+FluxNVTXExt = "NVTX"
 FluxReactantExt = "Reactant"
 
 [compat]
@@ -75,6 +77,7 @@ MacroTools = "0.5"
 Mooncake = "0.5.1"
 NCCL = "0.1.1, 1.0"
 NNlib = "0.9.53"
+NVTX = "1"
 OneHotArrays = "0.2.4"
 Optimisers = "0.4.10"
 PrecompileTools = "1.2"
