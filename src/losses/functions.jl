@@ -603,7 +603,13 @@ end
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
-For `gamma = 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
+For hard labels `y ∈ {0, 1}`, `gamma = 0` gives the binary cross-entropy loss.
+The stabilizing `eps` is added inside the logarithm, as in
+[`Losses.binarycrossentropy`](@ref).
+
+For `0 < gamma < 1`, the derivative of the modulating factor is singular at
+`p_t = 1`; a saturated, correctly classified prediction can therefore have a
+`NaN` gradient. Use `gamma ≥ 1` when finite gradients at that endpoint are required.
 
 See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
@@ -629,9 +635,8 @@ function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ))
     ŷ, y = _upcast(ŷ), _upcast(y)
     γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
     _check_sizes(ŷ, y)
-    ŷϵ = ŷ .+ eps
-    p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
-    ce = .-log.(p_t)
+    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
+    ce = .-log.(p_t .+ eps)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
     agg(loss)
