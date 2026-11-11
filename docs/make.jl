@@ -40,6 +40,7 @@ makedocs(
             "Compiling with Reactant" => "guide/reactant.md",
             "Saving & Loading" => "guide/saving.md",
             "Performance Tips" => "guide/performance.md",
+            "Mixed Precision" => "guide/mixed-precision.md",
             "Profiling" => "guide/profiling.md",
         ],
         "Ecosystem" => "ecosystem.md",
