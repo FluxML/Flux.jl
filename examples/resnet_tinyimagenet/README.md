@@ -18,9 +18,11 @@ The two Flux versions share the model and the training loop in [`training.jl`](t
 its own `train.jl`. Each folder has its own environment: CUDA.jl and Reactant are not installed
 together.
 
-The Flux environments use the Flux checkout containing this example and NNlib's GitHub `master`
-branch; the Lux one uses registered releases only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.301). The CUDA version requires CUDA.jl 6.5 and cuDNN.jl 6.5.2, which autotunes convolutions; both versions require MLDataDevices
-1.18, whose device iterator frees the previous batch on Reactant as well as on CUDA.
+The Flux environments use the Flux checkout containing this example and NNlib 0.9.59; the Lux one
+uses registered releases only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.301). The CUDA version
+takes CUDA.jl and cuDNN.jl from CUDA.jl's GitHub `main` branch, as autotuning convolutions is not in
+a cuDNN.jl release yet; both versions require MLDataDevices 1.18, whose device iterator frees the
+previous batch on Reactant as well as on CUDA.
 
 ## What it does
 
