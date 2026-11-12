@@ -87,14 +87,14 @@ Flux + Reactant used Flux 0.16.15, NNlib master
 ([`b184469`](https://github.com/FluxML/NNlib.jl/commit/b18446979d1b7b8dc03288f64f441b1c3b55d9b2))
 and Reactant 0.2.301. Flux + CUDA.jl used Flux master
 ([`520788b`](https://github.com/FluxML/Flux.jl/commit/520788b44946473fcf27ca32f7899bd757591527)),
-NNlib 0.9.59, Zygote 0.7.17, and CUDA.jl and cuDNN.jl main
+NNlib 0.9.59, Zygote 0.7.18, and CUDA.jl and cuDNN.jl main
 ([`3d6a352`](https://github.com/JuliaGPU/CUDA.jl/commit/3d6a3523d01d0e8c227e5cea499d27a3ea04c342))
 with cuDNN 9.28. PyTorch 2.14.1 (cu130) with cuDNN 9.24. The Lux version ran on Julia 1.13.2
 with `--threads=1,0`, Lux 1.31.5, ReactantNitro 0.2.1, Optimisers 0.4.11 and Reactant 0.2.301.
 
 | | s/epoch | images/s | first epoch |
 | --- | --- | --- | --- |
-| [Flux + CUDA.jl](flux-cuda/) | 30.2 | 3320 | 62.0 s |
+| [Flux + CUDA.jl](flux-cuda/) | 30.1 | 3320 | 63.0 s |
 | [Flux + Reactant](flux-reactant/) | 30.6 | 3270 | 101.5 s |
 | [Lux + ReactantNitro](lux-reactant-nitro/) | 28.5 | 3510 | 58.1 s |
 | [PyTorch](pytorch/) | 28.9 | 3450 | 29.4 s |
@@ -109,7 +109,7 @@ and final evaluation. The one-epoch profiles were separate runs from the timing 
 
 | | epochs measured | peak GPU memory in use | peak GPU memory reserved |
 | --- | --- | --- | --- |
-| [Flux + CUDA.jl](flux-cuda/) | 3 | 8.4 GiB | 9.6 GiB |
+| [Flux + CUDA.jl](flux-cuda/) | 3 | 8.4 GiB | 9.4 GiB |
 | [Flux + Reactant](flux-reactant/) | 1 | 2.6 GiB | 5.2 GiB\* |
 | [Flux + Reactant](flux-reactant/) | 3 | 4.4 GiB | not recorded |
 | [Lux + ReactantNitro](lux-reactant-nitro/) | 1 | 2.9 GiB | 5.5 GiB\* |
@@ -128,7 +128,7 @@ See Reactant's
 
 - **All five use Float32 models**, with TF32 tensor cores enabled for cuDNN convolutions.
 - **Reactant** compiles the forward pass, the backward pass and the optimizer update into one XLA
-  program. It trains 1.5% slower than CUDA.jl and 6% slower than eager PyTorch in these runs.
+  program. It trains 2% slower than CUDA.jl and 6% slower than eager PyTorch in these runs.
   MLDataDevices 1.18 frees the previous batch on Reactant. The one-epoch profile peaks at
   2.6 GiB in use, compared with 5.6 GiB in the previous measurement with MLDataDevices 1.17.10.
   The three-epoch run peaks at 4.4 GiB; the difference between these runs has not been investigated,
@@ -150,20 +150,20 @@ See Reactant's
   convolutions and batch normalization. With `cuDNN.autotune!(true)`, the first call of each
   convolution shape times the plans that cuDNN supports and keeps the fastest, as
   `torch.backends.cudnn.benchmark` does, instead of the first plan proposed by cuDNN's
-  heuristics. This makes training 1.13× faster (34.1 s per epoch without it, in the same
-  environment), and raises the peak memory reserved from 8.6 to 9.6 GiB, while the peak in use
+  heuristics. This makes training 1.14× faster (34.2 s per epoch without it, in the same
+  environment), and raises the peak memory reserved from 8.7 to 9.4 GiB, while the peak in use
   stays at 8.4 GiB: CUDA.jl's memory pool keeps the workspaces that autotuning allocates (up to
   1.6 GiB, for the largest candidate of a shape), and the fastest plans need larger workspaces.
   Flux 0.16.15 manages garbage collection inside
   `trainstep!`, including a full collection after a step that compiles; the script only adds
-  incremental collections during evaluation. The first training epoch takes about 32 s longer
+  incremental collections during evaluation. The first training epoch takes about 33 s longer
   than a steady one, including Julia compilation and autotuning.
 - **PyTorch** reaches its steady speed in the first epoch; `torch.backends.cudnn.benchmark` times
   the convolution algorithms on the first batches. `--compile` (`torch.compile`) fuses the
   elementwise operations around the convolutions (batch normalization, ReLU, residual additions),
   which makes it 1.14× faster than eager PyTorch, for ~17 s of compilation.
 
-After 3 epochs, validation accuracy is 34.2% with CUDA.jl, 34.6% with Reactant, 34.8% with Lux and
+After 3 epochs, validation accuracy is 34.1% with CUDA.jl, 34.6% with Reactant, 34.8% with Lux and
 ReactantNitro, 31.0% with eager PyTorch and 31.4% with compiled PyTorch (single runs). The defaults
 initialize weights differently: `glorot_uniform` in Flux and Lux, and in PyTorch a `kaiming_uniform` that makes the weights of most 3×3
 convolutions ~1.7× smaller. See the [PyTorch port's notes](pytorch/README.md#notes-on-faithfulness)

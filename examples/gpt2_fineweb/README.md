@@ -79,9 +79,9 @@ streams and tokenizes its dataset into `data/<dataset>/`: ~1 min and 0.95 GB for
 
 ## Performance
 
-Measured on **28 October 2026** on an **RTX 5090 (32 GB)** with driver 595.84, except for the
-Reactant versions, measured again with flash attention: Lux + ReactantNitro on **6 November 2026**
-(Reactant 0.2.307), and Flux + Reactant on **12 November 2026** (Reactant 0.2.308, driver 595.99).
+Measured on **28 October 2026** on an **RTX 5090 (32 GB)** with driver 595.84, except for
+Lux + ReactantNitro, measured again with flash attention on **6 November 2026** (Reactant 0.2.307),
+and the two Flux versions, measured again on **12 November 2026** with driver 595.99.
 GPT-2 124M uses
 `--preset fineweb --batchsize 16 --precision bf16`: 32 micro-batches of 16 × 1024 tokens per
 optimizer step (2^19 tokens). Each run takes **eight optimizer steps**, with validation,
@@ -89,15 +89,13 @@ sampling, HellaSwag and checkpoints disabled. Steady timings and rates use steps
 step includes compilation, but excludes package loading and data preparation. These are short
 benchmarks, not full training runs.
 
-Both Flux environments use Julia 1.13.2 (32 threads), Optimisers 0.4.11 and MLDataDevices 1.18.
-The CUDA.jl one uses Flux 0.16.15, NNlib master at
-[`8790de4`](https://github.com/FluxML/NNlib.jl/commit/8790de4ba6e5c4bf48f5392888dd8ceb6a799ca0),
-CUDA.jl and cuDNN.jl 6.5.0, GPUArrays 12.2.0, cuDNN 9.28 and Zygote 0.7.15; the Reactant one uses
-Flux master at
+Both Flux environments use Julia 1.13.2 (32 threads), Flux master at
 [`520788b`](https://github.com/FluxML/Flux.jl/commit/520788b44946473fcf27ca32f7899bd757591527),
-which includes [#2825](https://github.com/FluxML/Flux.jl/pull/2825), NNlib 0.9.59 and Reactant
-0.2.308. The Lux environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.5,
-ReactantNitro 0.2.2, Optimisers 0.4.11, NNlib 0.9.58 and Reactant 0.2.307.
+which includes [#2825](https://github.com/FluxML/Flux.jl/pull/2825), NNlib 0.9.59,
+Optimisers 0.4.11 and MLDataDevices 1.18. The CUDA.jl one uses CUDA.jl and cuDNN.jl 6.5.1,
+GPUArrays 12.2.0, cuDNN 9.28 and Zygote 0.7.18; the Reactant one uses Reactant 0.2.308.
+The Lux environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.5, ReactantNitro 0.2.2,
+Optimisers 0.4.11, NNlib 0.9.58 and Reactant 0.2.307.
 PyTorch is 2.14.1+cu130, with cuDNN 9.24, `datasets` 5.1 and 16 CPU threads. Each compiled
 PyTorch run starts with separate empty Inductor and Triton caches.
 
@@ -105,7 +103,7 @@ PyTorch run starts with separate empty Inductor and Triton caches.
 | --- | --- | --- | --- | --- |
 | [Flux + Reactant](flux-reactant/) | 186k | 2.82 | 158.9 | 399 s |
 | [Lux + ReactantNitro](lux-reactant-nitro/) | 196k | 2.68 | 167.3 | 106.8 s |
-| [Flux + CUDA.jl](flux-cuda/) | 168k | 3.13 | 143.6 | 52.4 s |
+| [Flux + CUDA.jl](flux-cuda/) | 171k | 3.07 | 146.2 | 45.7 s |
 | [PyTorch](pytorch/), `--attn math` | 67k | 7.78 | 57.7 | 8.0 s |
 | [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.90 | 91.6 | 18.6 s |
 | [PyTorch](pytorch/), `--attn flash` (the default) | 158k | 3.31 | 135.5 | 3.5 s |
@@ -157,7 +155,7 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   compiles to cuDNN's flash-attention kernels for bfloat16 inputs, in the forward and the backward
   pass ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)). With Reactant
   0.2.301, which materialized the attention matrix, Flux trained at 131k tokens/s with 18.9 GiB
-  in use: it is now 1.42× faster with half the memory, 11% faster than CUDA.jl and 14% faster than
+  in use: it is now 1.42× faster with half the memory, 9% faster than CUDA.jl and 14% faster than
   compiled PyTorch with flash attention. Its first step includes compiling that program, which
   took 636 s with Reactant 0.2.301, and 787 s with Reactant 0.2.307 when the model computed the
   queries, keys and values with three projections (Flux's `Attention`) instead of one. The compile
