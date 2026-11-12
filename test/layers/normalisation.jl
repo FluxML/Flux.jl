@@ -487,6 +487,38 @@ end
   @test_throws Exception GroupNorm(5, 5; active=:something_else)
 end
 
+@testset "norm layers with too few dimensions" begin
+  # channels are along ndims(x)-1, so a vector has none, and the error should say so
+  for (m, d, x) in ((BatchNorm(3), 2, rand(Float32, 3)),
+                    (InstanceNorm(3), 3, rand(Float32, 3)),
+                    (InstanceNorm(3), 3, rand(Float32, 3, 2)),
+                    (GroupNorm(4, 2), 3, rand(Float32, 4)),
+                    (GroupNorm(4, 2), 3, rand(Float32, 4, 2)))
+    @test_throws DimensionMismatch m(x)
+    msg = try m(x); "" catch e; sprint(showerror, e) end
+    @test occursin("ndims(input) >= $d", msg)
+  end
+end
+
+@testset "normalisation dimension checks in outputsize" begin
+  @test_throws DimensionMismatch outputsize(BatchNorm(3), (3,))
+  @test_throws DimensionMismatch outputsize(InstanceNorm(3), (3, 2))
+  @test_throws DimensionMismatch outputsize(GroupNorm(4, 2), (4, 2))
+
+  @test_throws DimensionMismatch Zygote.gradient(x -> sum(BatchNorm(3)(x)), rand(Float32, 3))
+
+  # Each layer accepts its minimum number of dimensions.
+  xbn = rand(Float32, 3, 2)
+  xin = rand(Float32, 2, 3, 2)
+  xgn = rand(Float32, 2, 4, 2)
+  @test size(BatchNorm(3)(xbn)) == size(xbn)
+  @test size(InstanceNorm(3)(xin)) == size(xin)
+  @test size(GroupNorm(4, 2)(xgn)) == size(xgn)
+  @test outputsize(BatchNorm(3), size(xbn)) == size(xbn)
+  @test outputsize(InstanceNorm(3), size(xin)) == size(xin)
+  @test outputsize(GroupNorm(4, 2), size(xgn)) == size(xgn)
+end
+
 @testset "second derivatives" begin
   m1 = Dropout(0.5)
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
