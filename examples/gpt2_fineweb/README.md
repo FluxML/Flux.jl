@@ -79,9 +79,8 @@ streams and tokenizes its dataset into `data/<dataset>/`: ~1 min and 0.95 GB for
 
 ## Performance
 
-Measured on **28 October 2026** on an **RTX 5090 (32 GB)** with driver 595.84, except for
-Lux + ReactantNitro, measured again with flash attention on **6 November 2026** (Reactant 0.2.307),
-and the two Flux versions, measured again on **12 November 2026** with driver 595.99.
+Measured on **28 October 2026** on an **RTX 5090 (32 GB)** with driver 595.84, except for the
+three Julia versions, measured again on **12 November 2026** with driver 595.99.
 GPT-2 124M uses
 `--preset fineweb --batchsize 16 --precision bf16`: 32 micro-batches of 16 × 1024 tokens per
 optimizer step (2^19 tokens). Each run takes **eight optimizer steps**, with validation,
@@ -94,15 +93,15 @@ Both Flux environments use Julia 1.13.2 (32 threads), Flux master at
 which includes [#2825](https://github.com/FluxML/Flux.jl/pull/2825), NNlib 0.9.59,
 Optimisers 0.4.11 and MLDataDevices 1.18. The CUDA.jl one uses CUDA.jl and cuDNN.jl 6.5.1,
 GPUArrays 12.2.0, cuDNN 9.28 and Zygote 0.7.18; the Reactant one uses Reactant 0.2.308.
-The Lux environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.5, ReactantNitro 0.2.2,
-Optimisers 0.4.11, NNlib 0.9.58 and Reactant 0.2.307.
+The Lux environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.6, ReactantNitro 0.2.2,
+Optimisers 0.4.11, NNlib 0.9.59 and Reactant 0.2.308.
 PyTorch is 2.14.1+cu130, with cuDNN 9.24, `datasets` 5.1 and 16 CPU threads. Each compiled
 PyTorch run starts with separate empty Inductor and Triton caches.
 
 | | tokens/s | s/step | TFLOPS | first step |
 | --- | --- | --- | --- | --- |
 | [Flux + Reactant](flux-reactant/) | 186k | 2.82 | 158.9 | 399 s |
-| [Lux + ReactantNitro](lux-reactant-nitro/) | 196k | 2.68 | 167.3 | 106.8 s |
+| [Lux + ReactantNitro](lux-reactant-nitro/) | 198k | 2.64 | 169.7 | 116.4 s |
 | [Flux + CUDA.jl](flux-cuda/) | 171k | 3.07 | 146.2 | 45.7 s |
 | [PyTorch](pytorch/), `--attn math` | 67k | 7.78 | 57.7 | 8.0 s |
 | [PyTorch](pytorch/), `--attn math --compile` | 107k | 4.90 | 91.6 | 18.6 s |
@@ -127,8 +126,8 @@ Reactant preallocation was disabled with `XLA_REACTANT_GPU_PREALLOCATE=false`; t
 otherwise reserve 90% of GPU memory. Its counters are `Reactant.XLA.allocatorstats()`'s
 `peak_bytes_in_use` and `peak_pool_bytes`. CUDA uses the memory pool's `USED_MEM_HIGH` and
 `RESERVED_MEM_HIGH`; PyTorch uses `max_memory_allocated()` and `max_memory_reserved()`.
-A second run of the Lux version gave the same steady speed (within 0.3%) and peak in use, and a
-first step of 101 s. Both Reactant versions reserve 16.0 GiB because the host runs ahead of the
+A second run of the Lux version gave the same steady speed (within 0.5%) and peak in use, and a
+first step of 99 s. Both Reactant versions reserve 16.0 GiB because the host runs ahead of the
 device: Flux + Reactant reserves 12.0 GiB when it reads each loss back as soon as its micro-batch
 is queued (see below).
 
@@ -166,23 +165,24 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
 - **Lux + ReactantNitro** compiles the same program through Nitro, which owns the loop,
   accumulating the gradients of the 32 micro-batches and updating the parameters with the
   optimizer. Its model calls `scaled_dot_product_attention` with `is_causal = true` too, and
-  reaches 196k tokens/s, 5% above Flux + Reactant, compared with 141k tokens/s and 20.1 GiB in
+  reaches 198k tokens/s, 6% above Flux + Reactant, compared with 141k tokens/s and 20.1 GiB in
   use with the attention matrix materialized (NNlib's deprecated `dot_product_attention` with a
-  causal mask, on the same Reactant). Its first step takes 107 s, compared with 399 s; why has not
-  been investigated, but Nitro flattens the parameters and the optimizer state into one buffer per
-  parameter group, which keeps the optimizer program from growing with the number of arrays
-  ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). Its precision policy
-  is PyTorch's: `Float32` parameters, of which the model sees a bfloat16 copy, but for the
-  LayerNorm ones, with LayerNorm and the loss computed in `Float32`. The 30M-parameter
+  causal mask, with Reactant 0.2.307). Its first step takes 99–116 s, compared with 399 s; why
+  has not been investigated, but Nitro flattens the parameters and the optimizer state into one
+  buffer per parameter group, which keeps the optimizer program from growing with the number of
+  arrays ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). Its
+  precision policy is PyTorch's: `Float32` parameters, of which the model sees a bfloat16 copy,
+  but for the LayerNorm ones, with LayerNorm and the loss computed in `Float32`. The 30M-parameter
   `tinystories` run trains to a validation loss close to the Flux version's (1.501 after 7000
   steps, against 1.488 after 7232), see [`lux-reactant-nitro/`](lux-reactant-nitro/#results).
 - **Flux + Reactant against Lux + ReactantNitro.** Flux's compiled forward and backward passes,
-  accumulating the gradient, take 82.6 ms per micro-batch, against 83.8 ms for a 32nd of Lux's
-  whole step: the 0.14 s per step that Flux loses are spent around them. Under tracing,
+  accumulating the gradient, take 82.6 ms per micro-batch, as long as a 32nd of Lux's whole
+  step: the 0.18 s per step that Flux loses are spent around them. Under tracing,
   `AccumGrad` cannot skip the rules after it, so Flux's step runs the whole optimizer on every
   micro-batch and selects the old state back on the 31 that only accumulate: 4.9 ms each, where
   Nitro runs a separate optimizer program once per step, 0.11 s per step in all. On synthetic
-  batches, a step that only accumulates on those micro-batches runs at Lux's 196k tokens/s. Since
+  batches, a step that only accumulates on those micro-batches runs at 196k tokens/s, against
+  Lux's 198k. Since
   [#2825](https://github.com/FluxML/Flux.jl/pull/2825), `trainstep!` returns the loss on the
   device, and the training loop reads the 32 losses once every micro-batch of the step is queued,
   so that loading a batch overlaps the micro-batches before it, as Nitro does. Reading each loss

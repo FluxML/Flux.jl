@@ -52,7 +52,7 @@ The options are those of the other versions (`--help` lists them), with these di
 ## Results
 
 The [shared comparison](../README.md#performance) records the GPT-2 124M timings and memory on the
-RTX 5090: 196k tokens/s in steady state, with a first step of 107 s that includes compilation.
+RTX 5090: 198k tokens/s in steady state, with a first step of 99–116 s that includes compilation.
 The TinyStories run below used Julia 1.13.2, Lux 1.31.5, ReactantNitro 0.2.2 and Reactant 0.2.307,
 with flash attention.
 
