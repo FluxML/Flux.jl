@@ -18,10 +18,18 @@ using PrecompileTools: @setup_workload, @compile_workload
             update!(opt_state, model, grads[1])
             withgradient(m -> mse(m(input), yf), model)
             train!((m, x, y) -> logitcrossentropy(m(x), y), model, [(input, y)], opt_state)
+            # The printing code in show.jl is compiled once for all models, and all IO types:
+            for io in (IOContext(IOBuffer(), :color => true), IOBuffer())
+                show(io, MIME"text/plain"(), model)
+                show(IOContext(io, :typeinfo => Any), MIME"text/plain"(), model)
+            end
         end
         # The GC pacers' registries hold `WeakRef`s and `objectid` hashes, which would mean nothing
         # once the package image is loaded.
         empty!(Train.STEP_PACERS)
         empty!(Train.STEP_TYPES)
+        # Likewise, this cache is only valid in the world age it was made:
+        empty!(_SHOW_METHODS)
+        _SHOW_METHODS_WORLD[] = typemax(UInt)
     end
 end
