@@ -40,7 +40,8 @@ back to the default wheels.
 - **Data layout**: HuggingFace `datasets` with `.with_format("torch")` hands an Image column back
   as an NCHW uint8 tensor already, so no permute is needed (the Julia "julia" format instead yields
   CWHN and permutes to WHCN).
-- **Train metrics** are accumulated on the GPU and read back once per epoch, whereas `Flux.trainstep!`
-  returns the loss and the number of correct predictions to the host at every step.
+- **Train metrics** are accumulated on the GPU and read back once per epoch, whereas the Flux
+  versions read the loss and the number of correct predictions back at every step, on Reactant
+  once the next step is queued.
 - `torch.backends.cudnn.benchmark = True` lets cuDNN time several convolution algorithms on the first
   batches and pick the fastest.

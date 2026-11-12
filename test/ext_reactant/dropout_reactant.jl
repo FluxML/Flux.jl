@@ -2,7 +2,7 @@
 function dropout_outputs(model, x; nsteps = 3)
     loss(m, a) = (y = m(a); (sum(abs2, y), y))
     opt = Flux.setup(Descent(0f0), model)
-    return [Flux.trainstep!(loss, model, (x,), opt)[2] for _ in 1:nsteps]
+    return [Array(Flux.trainstep!(loss, model, (x,), opt)[2]) for _ in 1:nsteps]
 end
 
 dropout_masks(model, x; kws...) = [iszero.(y) for y in dropout_outputs(model, x; kws...)]

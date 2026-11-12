@@ -29,7 +29,7 @@ end
             # and β₂ = 0.999 rounds to 1 in BFloat16.
             opt = Flux.setup(Descent(0.1f0), model)
             l0 = Flux.trainstep!(loss, model, (x, y), opt)
-            @test l0 isa Float32  # losses upcast low-precision inputs
+            @test Reactant.to_number(l0) isa Float32  # losses upcast low-precision inputs
             @test l0 ≈ l32 rtol=2e-2
             l = l0
             for _ in 1:20
@@ -56,7 +56,7 @@ end
     for _ in 1:3
         l_eager = Flux.trainstep!(loss, eager, (X, Y), opt_eager)
         l = Flux.trainstep!(loss, model, (x, y), opt)
-        @test l isa Float64
+        @test Reactant.to_number(l) isa Float64
         # far below Float32 resolution: the step really runs in Float64
         @test l ≈ l_eager rtol=1e-12
     end

@@ -5,6 +5,7 @@ using Optimisers: Optimisers
 using Functors: fmap, fmapstructure, children
 using ..Flux: Flux
 using GPUArrays: GPUArrays
+using Zygote: Zygote
 
 using ProgressLogging: @progress, @withprogress, @logprogress
 using EnzymeCore: Duplicated
@@ -19,6 +20,24 @@ export setup, train!, trainstep!, trainstep_withgradient!
 # is missing.
 function _reactant_trainstep! end
 function _reactant_trainstep_withgradient! end
+
+# ---------------------------------------------------------------------------
+# Profiler ranges: `@_range name ex` marks the time spent in `ex` as an NVTX range in the "Flux"
+# domain, for `CUDA.@profile` or Nsight Systems. FluxNVTXExt sets `RANGES` and defines
+# `_range_start` and `_range_end`. They are called through `invokelatest`, so that the compiled
+# callers don't infer them, and aren't invalidated when the extension loads. Without NVTX.jl
+# loaded, a range costs a load of `RANGES`.
+# ---------------------------------------------------------------------------
+const RANGES = Ref(false)
+function _range_start end
+function _range_end end
+
+macro _range(name, ex)
+    quote
+        r = RANGES[] ? Base.invokelatest(_range_start, $(esc(name))) : nothing
+        $(Expr(:tryfinally, esc(ex), :(r === nothing || Base.invokelatest(_range_end, r))))
+    end
+end
 
 # ---------------------------------------------------------------------------
 # Paced garbage collection for `train!` and `trainstep!`.
@@ -56,7 +75,7 @@ function count_step!(pacer::GCPacer)
 end
 
 function run_gc!(pacer::GCPacer, full::Bool)
-    GC.gc(full)
+    @_range (full ? "full GC" : "incremental GC") GC.gc(full)
     pacer.seen = Threads.atomic_add!(GC_COUNT, 1) + 1
     pacer.since = 0
     return nothing
@@ -128,6 +147,12 @@ AutoGCPacer() = AutoGCPacer(0.0, 0.0, 1, 0, GC_COUNT[])
 
 function maybe_gc!(pacer::AutoGCPacer, dt::Real, types::Tuple)
     count_step!(pacer)
+    # A step that compiles is left out of `t_step`: the 10 s of compiling an MLP took 75 steps of
+    # 1 ms to fade below `GC_HIDE_S`, with a collection after each of them.
+    if _new_step_types!(types)
+        run_gc!(pacer, true)   # untimed: `t_gc` is the cost of an incremental GC
+        return nothing
+    end
     spike = pacer.t_step > 0.0 && dt > 3 * pacer.t_step
     pacer.t_step = pacer.t_step == 0.0 ? dt : 0.9 * pacer.t_step + 0.1 * dt
     base = if pacer.t_step >= GC_HIDE_S               # compute-bound: GC hides → every step
@@ -138,9 +163,7 @@ function maybe_gc!(pacer::AutoGCPacer, dt::Real, types::Tuple)
         clamp(round(Int, pacer.t_gc / (GC_OVERHEAD * pacer.t_step)), 1, 4096)
     end
     pacer.interval = spike ? max(1, pacer.interval ÷ 2) : clamp(pacer.interval + 1, 1, base)
-    if _new_step_types!(types)
-        run_gc!(pacer, true)   # untimed: `t_gc` is the cost of an incremental GC
-    elseif pacer.since >= pacer.interval
+    if pacer.since >= pacer.interval
         g0 = time_ns()
         run_gc!(pacer, false)
         gdt = (time_ns() - g0) / 1e9
@@ -281,8 +304,10 @@ For this reason `train!` is not highly extensible.
 It adds only a few features to the loop above:
 
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point. The update for that
-  batch is skipped, so the parameters and `opt_state` keep their values from before it, also on a
-  Reactant device.
+  batch is skipped, so the parameters and `opt_state` keep their values from before it. On a
+  Reactant device, the loss of each step is checked once the next step is queued, so that the check
+  doesn't keep the device waiting: training then stops one batch later, after the update for that
+  next batch.
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
@@ -322,7 +347,16 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
     adtype, on_reactant, param, devtype = _resolve_backend(model, adtype)
     cache = caching_allocator && !on_reactant ? GPUArrays.AllocCache() : nothing
 
-    @withprogress for (i, batch) in enumerate(data)
+    # On a Reactant device, reading the loss waits for its step to finish. So the loss of each step is
+    # checked once the next step is queued, which keeps the device busy while the host waits, and
+    # also keeps the host from queueing steps (and their batches) far ahead of the device.
+    prev = nothing
+    # Iterated by hand to show the time spent fetching each batch in a profiler.
+    i = 0
+    next = @_range "data" iterate(data)
+    @withprogress while next !== nothing
+        batch, state = next
+        i += 1
         # A `Tuple` batch is spliced into the loss (`loss(model, batch...)`), anything else is passed
         # as-is (`loss(model, batch)`) — the wrapping `trainstep!` would otherwise do. We call the
         # internal `_paced_step` directly so the resolved backend/Reactant flag are reused instead of
@@ -344,17 +378,29 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
             end
         end
 
-        # `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a
-        # non-finite loss (inside the compiled step on a Reactant device), so the model is intact here
-        # when we stop. `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary
-        # outputs — guard on the scalar.
-        ls = _loss_scalar(l)
-        isfinite(ls) || throw(DomainError(lazy"Loss is $ls on data item $i, stopping training"))
+        # `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard
+        # on the scalar.
+        if on_reactant
+            prev === nothing || _check_loss(prev...)
+            prev = (_loss_scalar(l), i)
+        else
+            _check_loss(_loss_scalar(l), i)
+        end
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
+        next = @_range "data" iterate(data, state)
     end
     isnothing(cache) || GPUArrays.unsafe_free!(cache)
+    prev === nothing || _check_loss(prev...)
     return nothing
+end
+
+# `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a non-finite loss
+# (inside the compiled step on a Reactant device), so the model stays finite when we stop.
+function _check_loss(l, i)
+    isfinite(l) && return nothing
+    l isa Real || (l = convert(AbstractFloat, l))   # a Reactant number, read back for the message
+    throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
 end
 
 # No `adtype` given: pass the `nothing` sentinel so `_resolve_backend` picks the device-aware default
@@ -412,14 +458,25 @@ the GPU memory in use close to what one step needs, with the same keyword `gc_in
 calls. Each model has its own count of steps, which restarts after any collection, so models
 trained in alternation, as in a GAN, don't each collect.
 
+## Profiling
+
+On NVIDIA GPUs, `trainstep!` marks the gradient (with Zygote, the forward and backward passes), the
+update and the garbage collection with NVTX ranges, which `CUDA.@profile` and Nsight Systems show
+(see [Profiling a Training Loop](@ref man-profiling)).
+
 ## Reactant
 
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, reverse pass and optimiser update) is compiled into a single XLA executable, cached and
-reused across calls with the same model, optimiser, loss, backend and batch shape. The returned
-value — the loss, or `(loss, aux...)` — is read back to the host. Differentiation uses Enzyme, the
-only backend supported there: any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws
-an `ArgumentError`.
+reused across calls with the same model, optimiser, loss, backend and batch shape. Differentiation
+uses Enzyme, the only backend supported there: any other `adtype`, such as `AutoZygote()` or
+`AutoMooncake()`, throws an `ArgumentError`.
+
+`trainstep!` returns once the step is queued on the device, and the returned value — the loss, or
+`(loss, aux...)` — stays there, as Reactant numbers and arrays. Reading it, for example with
+`Float32(l)`, arithmetic, `isfinite` or printing, waits for the step to finish. Reading the loss
+only every few steps, for instance to log it, lets the device run the steps in between while the
+host prepares their batches: see [Reading the loss without waiting](@ref).
 
 # Example
 ```julia
@@ -451,11 +508,13 @@ end
 # Runs `step!` (`_trainstep!` or `_trainstep_withgradient!`), followed by the model's paced GC.
 function _paced_step(step!, loss, adtype, on_reactant, param, devtype, model, batch, opt_state,
                      gc_interval)
-    pacer = _step_pacer(param, devtype, gc_interval)
-    t0 = time_ns()
-    r = step!(loss, adtype, on_reactant, model, batch, opt_state)
-    maybe_gc!(pacer, (time_ns() - t0) / 1e9, _step_types(loss, adtype, model, batch, opt_state))
-    return r
+    @_range _range_name(step!) begin
+        pacer = _step_pacer(param, devtype, gc_interval)
+        t0 = time_ns()
+        r = step!(loss, adtype, on_reactant, model, batch, opt_state)
+        maybe_gc!(pacer, (time_ns() - t0) / 1e9, _step_types(loss, adtype, model, batch, opt_state))
+        r
+    end
 end
 
 # Single step with the backend already resolved (shared by `trainstep!` and the `train!` loop).
@@ -465,6 +524,8 @@ function _trainstep!(loss, adtype::AbstractADType, on_reactant::Bool, model, bat
     return l
 end
 
+_range_name(::typeof(_trainstep!)) = "trainstep!"
+
 """
     trainstep_withgradient!(loss, [adtype,] model, batch, opt_state; gc_interval = :auto) -> loss, grad
 
@@ -473,8 +534,8 @@ to the model. Everything else is identical: `model` and `opt_state` are updated 
 first returned value is whatever the loss returned — the scalar loss, or `(loss, aux...)` when the
 loss returns auxiliary outputs (see [`trainstep!`](@ref Flux.trainstep!)).
 
-On a Reactant device the returned value (the loss, or `(loss, aux...)`) is read back to the host,
-while the returned `grad` stays on the device. Returning the gradient makes it an output of the
+On a Reactant device the returned value (the loss, or `(loss, aux...)`) and `grad` stay on the
+device, as for `trainstep!`. Returning the gradient makes it an output of the
 compiled step, which raises peak memory relative to `trainstep!`; prefer `trainstep!` when the
 gradient is not needed.
 """
@@ -497,15 +558,31 @@ function _trainstep_withgradient!(loss, adtype::AbstractADType, on_reactant::Boo
     return _eager_step!(loss, adtype, model, batch, opt_state)
 end
 
+_range_name(::typeof(_trainstep_withgradient!)) = "trainstep_withgradient!"
+
 # Eager (Zygote/Enzyme) single step, shared by both entry points; returns `(val, grad)` where `val`
 # is whatever the loss returned (a scalar, or a Tuple/NamedTuple `(loss, aux...)` — see
 # `_loss_scalar`). The update is skipped on a non-finite loss so the model is left uncorrupted, and
 # the returned value lets the caller (e.g. `train!`) decide how to react.
 function _eager_step!(loss, adtype, model, batch::Tuple, opt_state)
-    v, gs = Flux.withgradient(m -> loss(m, batch...), adtype, model)
-    isfinite(_loss_scalar(v)) && _update!(opt_state, model, gs[1])
+    v, gs = _withgradient(m -> loss(m, batch...), adtype, model)
+    isfinite(_loss_scalar(v)) && @_range "update" _update!(opt_state, model, gs[1])
     return v, gs[1]
 end
+
+_withgradient(f, adtype, model) = @_range "gradient" Flux.withgradient(f, adtype, model)
+
+# `Zygote.withgradient`, with the forward and backward passes in separate ranges.
+function _withgradient(f, ::AutoZygote, model)
+    y, back = @_range "forward" Zygote.pullback(f, model)
+    grad = @_range "backward" Zygote._project_all((model,), Zygote.unthunk_tangent(back(_seed(y))))
+    return (val = y, grad = grad)
+end
+
+# The cotangent of the loss: that of the first element only for auxiliary outputs.
+_seed(y::Tuple) = (Zygote.sensitivity(first(y)), map(_ -> nothing, Base.tail(y))...)
+_seed(y::NamedTuple) = NamedTuple{keys(y)}(_seed(Tuple(y)))
+_seed(y) = Zygote.sensitivity(y)
 
 # The scalar loss out of a `trainstep!`/`withgradient` value. When the loss returns auxiliary
 # outputs (a Tuple or NamedTuple whose first element is the loss) the whole thing is returned to the

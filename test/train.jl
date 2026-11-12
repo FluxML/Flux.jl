@@ -212,12 +212,15 @@ end
     T.maybe_gc!(fixed, 0.0, types)   # no longer new
     @test T.GC_COUNT[] == n + 1
 
-    # The full GC isn't timed: `t_gc` is the cost of an incremental one.
+    # The full GC isn't timed: `t_gc` is the cost of an incremental one. Nor is the step, which
+    # mostly compiled.
     auto = T.AutoGCPacer()
-    T.maybe_gc!(auto, 0.0, newtypes())
+    T.maybe_gc!(auto, 10.0, newtypes())
     @test auto.t_gc == 0
-    T.maybe_gc!(auto, 0.0, seen)
+    @test auto.t_step == 0
+    T.maybe_gc!(auto, 1e-3, seen)
     @test auto.t_gc > 0
+    @test auto.t_step == 1e-3
 
     # `train!` records the types of its steps.
     m = Dense(2 => 1)

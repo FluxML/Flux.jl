@@ -1,6 +1,6 @@
 module FluxReactantExt
 
-using Flux: Flux, Train, cpu
+using Flux: Flux, Train
 using Optimisers: Optimisers
 using Functors: Functors, fmapstructure, isleaf
 using ADTypes: AutoEnzyme
@@ -226,19 +226,19 @@ _require_device_batch(batch) =
          the model's device first, e.g. `data = [(x, y) |> reactant_device() for (x, y) in data]`."))
 
 # Reactant/XLA implementations of a single step, dispatched to from the ReactantDevice branch of
-# `trainstep!` / `trainstep_withgradient!` (src/train.jl);
+# `trainstep!` / `trainstep_withgradient!` (src/train.jl). The returned values stay on the device:
+# reading one back waits for the step to finish, which would keep the host from preparing the next
+# batch meanwhile (#2801).
 function Train._reactant_trainstep!(loss, adtype, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, adtype, model, batch, opt_state, false)
-    l = step(loss, adtype, model, batch, opt_state)
-    return cpu(l)
+    return step(loss, adtype, model, batch, opt_state)
 end
 
 function Train._reactant_trainstep_withgradient!(loss, adtype, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, adtype, model, batch, opt_state, true)
-    l, g = step(loss, adtype, model, batch, opt_state)
-    return cpu(l), g
+    return step(loss, adtype, model, batch, opt_state)
 end
 
 end # module

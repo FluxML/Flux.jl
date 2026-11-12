@@ -302,6 +302,23 @@ end
     @test Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
     @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
     @test Flux.binary_focal_loss(ŷ, y; gamma=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
+
+    # predictions of exactly 0 or 1, e.g. from a saturated sigmoid (#2818)
+    ŷ2 = sigmoid.(Float32[20, -20, -3])
+    y2 = [0, 1, 1]
+    @test ŷ2[1] == 1 && ŷ2[2] < eps(Float32)
+    @test isfinite(Flux.binary_focal_loss(ŷ2, y2))
+    @test Flux.binary_focal_loss(ŷ2, y2; gamma=0) ≈ Flux.binarycrossentropy(ŷ2, y2)
+    @test Flux.binary_focal_loss([1.0, 0.0], [0, 1]; gamma=0) ≈ Flux.binarycrossentropy([1.0, 0.0], [0, 1])
+    @test all(isfinite, gradient(ŷ -> Flux.binary_focal_loss(ŷ, y2), ŷ2)[1])
+    # A non-integer gamma is well-defined for a saturated, correct prediction when gamma > 1.
+    ŷsat = Float32[1, 0]
+    ysat = Float32[1, 0]
+    loss_sat = Flux.binary_focal_loss(ŷsat, ysat; gamma=1.5)
+    grad_sat = gradient(ŷ -> Flux.binary_focal_loss(ŷ, ysat; gamma=1.5), ŷsat)[1]
+    @test isfinite(loss_sat) && isapprox(loss_sat, 0; atol=eps(Float32))
+    @test all(isfinite, grad_sat) && all(iszero, grad_sat)
+
 end
 
 @testset "focal_loss" begin

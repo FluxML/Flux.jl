@@ -49,6 +49,7 @@ end
   @test loss(gpu(x), gpu(y)) ≈ loss(x, y)
   @test cpu(loss(gpu(x), gpu(y); agg = identity)) ≈ loss(x, y; agg = identity)
   @test loss(gpu(x), gpu(onehotbatch(y, 1:5))) ≈ loss(x, y)
+  @test cpu(gradient(x -> loss(x, gpu(onehotbatch(y, 1:5))), gpu(x))[1]) ≈ gradient(x -> loss(x, y), x)[1]
   @test_throws ArgumentError loss(gpu(x), gpu([0; y[2:end]]))
   test_gradients(loss, x, y, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 

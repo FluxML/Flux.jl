@@ -53,7 +53,9 @@ using .NilNumber: Nil, nil
     outputsize(m, inputsize::Tuple; padbatch=false)
 
 Calculate the size of the output from model `m`, given the size of the input.
-Obeys `outputsize(m, size(x)) == size(m(x))` for valid input `x`.
+Obeys `outputsize(m, size(x)) == size(m(x))` for valid input `x` that returns an array.
+When `m(x)` is a (possibly nested) `Tuple` of arrays, as from [`PairwiseFusion`](@ref)
+or a recurrent cell, the result is the same nested `Tuple` of sizes.
 
 Keyword `padbatch=true` is equivalent to using `(inputsize..., 1)`, and
 returns the final size including this extra batch dimension.
@@ -89,6 +91,12 @@ julia> outputsize([Dense(10 => 4), Dense(4 => 2)], (10, 1)) # Vector of layers b
 
 julia> outputsize(Embedding(100 => 8), (12, 4))  # size of the array of indices
 (8, 12, 4)
+
+julia> outputsize(PairwiseFusion(+, Dense(10 => 5), Dense(5 => 3)), (10,), (5,))
+((5,), (3,))
+
+julia> outputsize(LSTMCell(3 => 5), (3, 4))
+((5, 4), ((5, 4), (5, 4)))
 ```
 
 For an [`Embedding`](@ref), `inputsizes` is the size of the array of vocabulary indices,
@@ -96,8 +104,11 @@ not of the corresponding one-hot array, which has one more dimension.
 """
 function outputsize(m, inputsizes::Tuple...; padbatch=false)
   x = nil_input(padbatch, inputsizes...)
-  return size(m(x))
+  return _size_or_sizes(m(x))
 end
+
+_size_or_sizes(y) = size(y)
+_size_or_sizes(y::Tuple) = map(_size_or_sizes, y)
 
 nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s...,1)) : fill(nil, s)
 nil_input(pad::Bool, multi::Tuple{Vararg{Integer}}...) = nil_input.(pad, multi)
@@ -141,8 +152,9 @@ outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chai
 ## bypass statistics in normalization layers
 
 for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
+  mindims = layer === :BatchNorm ? 2 : 3
   @eval function (l::$layer)(x::AbstractArray{Nil,N}) where N
-    _size_check(l, x, N-1 => l.chs)
+    _norm_size_check(l, x, l.chs, $mindims)
     x
   end
 end
