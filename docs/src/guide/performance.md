@@ -14,6 +14,8 @@ not because the operations are faster, but because the memory usage is halved.
 Which means allocations occur much faster.
 And you use less memory.
 
+On a GPU you can go further and train in 16 bits, see [Mixed Precision Training](@ref man-mixed-precision).
+
 ## Preserve inputs' types
 
 Not only should your activation and loss functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
