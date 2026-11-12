@@ -7,5 +7,4 @@ the right direction since it can be hard to change later.]
 ### PR Checklist
 
 - [ ] Tests are added
-- [ ] Entry in NEWS.md
 - [ ] Documentation, if applicable
