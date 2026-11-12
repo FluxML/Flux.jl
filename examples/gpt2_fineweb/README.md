@@ -67,10 +67,9 @@ $ uv sync
 $ uv run python train_gpt2.py --preset fineweb
 ```
 
-The Flux environments use Flux from this checkout and NNlib from GitHub `master`. The latter
-includes the Reactant mixed precision fix in [NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872),
-which is not in the registered NNlib 0.9.55 release. The Lux environment uses registered releases
-only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.307).
+The Flux environments use Flux from this checkout and NNlib 0.9.59, which includes the Reactant
+mixed precision fix of NNlib 0.9.56 ([NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872)).
+The Lux environment uses registered releases only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.307).
 
 The scripts share the preset, batch size, precision, learning-rate and evaluation options
 (`--help` lists them), write `log/log.txt` in their own folder, and print the same training log
@@ -179,12 +178,15 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   whole step: the 0.28 s per step that Flux loses are spent around them. Under tracing,
   `AccumGrad` cannot skip the rules after it, so Flux's step runs the whole optimizer on every
   micro-batch and selects the old state back on the 31 that only accumulate: 4.9 ms each, where
-  Nitro runs a separate optimizer program once per step, 0.11 s per step in all. And `trainstep!`
-  reads each loss back to the host before the next micro-batch is loaded and dispatched, while
-  Nitro reads it one micro-batch late, so that the device never waits
+  Nitro runs a separate optimizer program once per step, 0.11 s per step in all. And in these
+  measurements `trainstep!` read each loss back to the host before the next micro-batch was loaded
+  and dispatched, while Nitro reads it one micro-batch late, so that the device never waits
   ([#2801](https://github.com/FluxML/Flux.jl/issues/2801)): 0.07 s per step, and 0.11 s more for
   reading the batches from the dataset. On synthetic batches, a step that only accumulates on
-  those micro-batches and defers the readback runs at Lux's 196k tokens/s.
+  those micro-batches and defers the readback runs at Lux's 196k tokens/s. Since
+  [#2825](https://github.com/FluxML/Flux.jl/pull/2825), `trainstep!` returns the loss on the
+  device, and the training loop reads the 32 losses once every micro-batch of the step is queued,
+  so that loading a batch overlaps the previous ones; the timings above predate that change.
 - **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
   cross-entropy as fused kernels. Flux 0.16.15 paces garbage collections between micro-batches
   and runs a full collection after the first step that compiles; no manual collections are needed.
