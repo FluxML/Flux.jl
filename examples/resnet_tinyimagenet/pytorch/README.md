@@ -31,7 +31,7 @@ back to the default wheels.
 - **Initialization** follows each framework's defaults: Flux's `Conv` and `Dense` use
   `glorot_uniform` weights and zero biases, PyTorch's `Conv2d` and `Linear` use
   `kaiming_uniform(a=√5)`, whose weights in most 3×3 convolutions are ~1.7× smaller. In the
-  three-epoch runs, PyTorch reaches 30.4–31.4% validation accuracy and Flux 34.1–35.3%.
+  three-epoch runs, PyTorch reaches 30.4–31.4% validation accuracy and Flux 33.2–35.3%.
   Use `nn.init.xavier_uniform_` weights and zero biases to match Flux's initialization.
 - **Augmentation** runs on the GPU and is vectorized over the batch (one crop offset + flip decision
   per batch) rather than per image as in the Julia `augment`, which runs on the CPU in the
