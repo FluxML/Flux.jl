@@ -67,8 +67,9 @@ $ uv sync
 $ uv run python train_gpt2.py --preset fineweb
 ```
 
-The Flux environments use Flux from this checkout and NNlib 0.9.59, which includes the Reactant
-mixed precision fix of NNlib 0.9.56 ([NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872)).
+The Flux environments use Flux from this checkout and NNlib 0.9.59 (0.9.60 with Reactant), which
+include the Reactant mixed precision fix of NNlib 0.9.56
+([NNlib.jl#872](https://github.com/FluxML/NNlib.jl/pull/872)).
 The Lux environment uses registered releases only (Lux 1.31, ReactantNitro 0.2, Reactant 0.2.307).
 
 The scripts share the preset, batch size, precision, learning-rate and evaluation options
@@ -90,9 +91,10 @@ benchmarks, not full training runs.
 
 Both Flux environments use Julia 1.13.2 (32 threads), Flux master at
 [`520788b`](https://github.com/FluxML/Flux.jl/commit/520788b44946473fcf27ca32f7899bd757591527),
-which includes [#2825](https://github.com/FluxML/Flux.jl/pull/2825), NNlib 0.9.59,
-Optimisers 0.4.11 and MLDataDevices 1.18. The CUDA.jl one uses CUDA.jl and cuDNN.jl 6.5.1,
-GPUArrays 12.2.0, cuDNN 9.28 and Zygote 0.7.18; the Reactant one uses Reactant 0.2.308.
+which includes [#2825](https://github.com/FluxML/Flux.jl/pull/2825), Optimisers 0.4.11 and
+MLDataDevices 1.18. The CUDA.jl one uses NNlib 0.9.59, CUDA.jl and cuDNN.jl 6.5.1,
+GPUArrays 12.2.0, cuDNN 9.28 and Zygote 0.7.18; the Reactant one uses NNlib 0.9.60 and
+Reactant 0.2.308.
 The Lux environment uses Julia 1.13.2 with `--threads=1,0`, Lux 1.31.6, ReactantNitro 0.2.2,
 Optimisers 0.4.11, NNlib 0.9.59 and Reactant 0.2.308.
 PyTorch is 2.14.1+cu130, with cuDNN 9.24, `datasets` 5.1 and 16 CPU threads. Each compiled
@@ -100,7 +102,7 @@ PyTorch run starts with separate empty Inductor and Triton caches.
 
 | | tokens/s | s/step | TFLOPS | first step |
 | --- | --- | --- | --- | --- |
-| [Flux + Reactant](flux-reactant/) | 186k | 2.82 | 158.9 | 399 s |
+| [Flux + Reactant](flux-reactant/) | 190k | 2.76 | 162.4 | 400 s |
 | [Lux + ReactantNitro](lux-reactant-nitro/) | 198k | 2.64 | 169.7 | 116.4 s |
 | [Flux + CUDA.jl](flux-cuda/) | 171k | 3.07 | 146.2 | 45.7 s |
 | [PyTorch](pytorch/), `--attn math` | 67k | 7.78 | 57.7 | 8.0 s |
@@ -154,20 +156,24 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   compiles to cuDNN's flash-attention kernels for bfloat16 inputs, in the forward and the backward
   pass ([Reactant.jl#3615](https://github.com/EnzymeAD/Reactant.jl/pull/3615)). With Reactant
   0.2.301, which materialized the attention matrix, Flux trained at 131k tokens/s with 18.9 GiB
-  in use: it is now 1.42× faster with half the memory, 9% faster than CUDA.jl and 14% faster than
+  in use: it is now 1.45× faster with half the memory, 11% faster than CUDA.jl and 17% faster than
   compiled PyTorch with flash attention. Its first step includes compiling that program, which
   took 636 s with Reactant 0.2.301, and 787 s with Reactant 0.2.307 when the model computed the
   queries, keys and values with three projections (Flux's `Attention`) instead of one. The compile
   time grows quadratically with the number of arrays
   ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)), and there were 196
   parameter arrays instead of 148, each with its optimizer state. Since NNlib 0.9.56, the activations stay in
-  bfloat16 with `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55.
+  bfloat16 with `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55. NNlib 0.9.60
+  computes LayerNorm's variance about a detached copy of the mean under Reactant, which drops a
+  zero gradient term from the backward pass
+  ([NNlib.jl#920](https://github.com/FluxML/NNlib.jl/pull/920)): with NNlib 0.9.59, Flux trained
+  at 186k tokens/s.
 - **Lux + ReactantNitro** compiles the same program through Nitro, which owns the loop,
   accumulating the gradients of the 32 micro-batches and updating the parameters with the
   optimizer. Its model calls `scaled_dot_product_attention` with `is_causal = true` too, and
-  reaches 198k tokens/s, 6% above Flux + Reactant, compared with 141k tokens/s and 20.1 GiB in
+  reaches 198k tokens/s, 4% above Flux + Reactant, compared with 141k tokens/s and 20.1 GiB in
   use with the attention matrix materialized (NNlib's deprecated `dot_product_attention` with a
-  causal mask, with Reactant 0.2.307). Its first step takes 99–116 s, compared with 399 s; why
+  causal mask, with Reactant 0.2.307). Its first step takes 99–116 s, compared with 400 s; why
   has not been investigated, but Nitro flattens the parameters and the optimizer state into one
   buffer per parameter group, which keeps the optimizer program from growing with the number of
   arrays ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). Its
@@ -175,20 +181,20 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   but for the LayerNorm ones, with LayerNorm and the loss computed in `Float32`. The 30M-parameter
   `tinystories` run trains to a validation loss close to the Flux version's (1.501 after 7000
   steps, against 1.488 after 7232), see [`lux-reactant-nitro/`](lux-reactant-nitro/#results).
-- **Flux + Reactant against Lux + ReactantNitro.** Flux's compiled forward and backward passes,
-  accumulating the gradient, take 82.6 ms per micro-batch, as long as a 32nd of Lux's whole
-  step: the 0.18 s per step that Flux loses are spent around them. Under tracing,
-  `AccumGrad` cannot skip the rules after it, so Flux's step runs the whole optimizer on every
-  micro-batch and selects the old state back on the 31 that only accumulate: 4.9 ms each, where
-  Nitro runs a separate optimizer program once per step, 0.11 s per step in all. On synthetic
-  batches, a step that only accumulates on those micro-batches runs at 196k tokens/s, against
-  Lux's 198k. Since
+- **Flux + Reactant against Lux + ReactantNitro.** Flux's step takes 0.12 s longer than Lux's,
+  and `AccumGrad` accounts for 0.11 s of it: under tracing, it cannot skip the rules after it, so
+  Flux's step runs the whole optimizer on every micro-batch and selects the old state back on the
+  31 that only accumulate, 4.9 ms each, where Nitro runs a separate optimizer program once per
+  step. Before NNlib 0.9.60, Flux's compiled forward and backward passes, accumulating the
+  gradient, already took 82.6 ms per micro-batch, a 32nd of Lux's step, and on synthetic batches
+  a step that only accumulates on those micro-batches ran at 196k tokens/s. Since
   [#2825](https://github.com/FluxML/Flux.jl/pull/2825), `trainstep!` returns the loss on the
   device, and the training loop reads the 32 losses once every micro-batch of the step is queued,
-  so that loading a batch overlaps the micro-batches before it, as Nitro does. Reading each loss
-  back as soon as its micro-batch is queued, as `trainstep!` did before
-  ([#2801](https://github.com/FluxML/Flux.jl/issues/2801)), the same run takes 2.97 s per step
-  (176k tokens/s), as fast as with Reactant 0.2.307 and NNlib master on 6 November.
+  so that loading a batch overlaps the micro-batches before it, as Nitro does. With NNlib 0.9.59,
+  reading each loss back as soon as its micro-batch is queued, as `trainstep!` did before
+  ([#2801](https://github.com/FluxML/Flux.jl/issues/2801)), made the same run take 2.97 s per
+  step (176k tokens/s) instead of 2.82 s, as fast as with Reactant 0.2.307 and NNlib master on
+  6 November.
 - **CUDA.jl** runs the attention as cuDNN's flash-attention kernels, LayerNorm and the
   cross-entropy as fused kernels. Flux 0.16.15 paces garbage collections between micro-batches
   and runs a full collection after the first step that compiles; no manual collections are needed.
