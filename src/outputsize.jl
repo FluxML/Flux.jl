@@ -152,8 +152,9 @@ outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chai
 ## bypass statistics in normalization layers
 
 for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
+  mindims = layer === :BatchNorm ? 2 : 3
   @eval function (l::$layer)(x::AbstractArray{Nil,N}) where N
-    _size_check(l, x, N-1 => l.chs)
+    _norm_size_check(l, x, l.chs, $mindims)
     x
   end
 end
