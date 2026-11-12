@@ -4,9 +4,9 @@ This file provides guidance to all AI code assistants when working with code in 
 
 ## Changelog (NEWS.md)
 
-Every user-facing change must be recorded in [NEWS.md](NEWS.md), as part of the same PR that makes the change. Keep it current.
+Do **not** edit [NEWS.md](NEWS.md) in regular PRs: entries in concurrent PRs conflict with each other as they get merged. Updating it is a maintenance job done right before tagging a release, from the PRs merged since the previous one.
 
-- Add new entries under the `## Unreleased` heading at the top of the file. When a version is tagged, rename that heading to `## vX.Y.Z (D Month YYYY)` and open a fresh `## Unreleased` section above it.
+- When preparing a release, add the entries under the `## Unreleased` heading at the top of the file, then rename that heading to `## vX.Y.Z (D Month YYYY)` and open a fresh, empty `## Unreleased` section above it.
 - Use one `-` bullet per change, written from the user's perspective (what changed and why it matters), with a link to the PR or issue, e.g. `([#2665](https://github.com/FluxML/Flux.jl/pull/2665))`.
 - Flag breaking changes explicitly with a bold **breaking change** note.
 - Record only notable, user-facing changes. Skip CI tweaks, dependency bumps, formatting, and internal refactors.
@@ -116,4 +116,4 @@ Tests mirror the source structure. [test/test_module.jl](test/test_module.jl) pr
 - **GitHub Actions** (`.github/workflows/ci.yml`): CPU tests on Julia 1.10 (minimum), latest stable, and nightly; platforms: Ubuntu x64, Windows x64, macOS aarch64. These run with `FLUX_TEST_REACTANT=false`; the Reactant tests (`ext_reactant`) run in a separate job on Ubuntu x64, Julia latest stable, the only job that installs Reactant.
 - **Buildkite** (`.buildkite/pipeline.yml`): GPU tests on JuliaGPU infrastructure — CUDA (Julia 1), Reactant on CUDA (Julia 1, a separate job running only `ext_reactant`), Metal (macOS aarch64), AMDGPU (ROCm). These run with `FLUX_TEST_CPU=false` and the relevant GPU flag set to `true`.
 
-**PR checklist** (from open PRs convention): tests added, entry in `NEWS.md`, documentation updated if applicable.
+**PR checklist** (from open PRs convention): tests added, documentation updated if applicable. No `NEWS.md` entry (see [Changelog](#changelog-newsmd)); put the user-facing summary in the PR description instead, so it can be copied into `NEWS.md` at release time.
