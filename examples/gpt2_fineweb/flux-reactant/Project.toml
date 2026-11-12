@@ -15,7 +15,6 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [sources]
 Flux = {path = "../../.."}
-NNlib = {url = "https://github.com/FluxML/NNlib.jl", rev = "master"}
 
 [compat]
 ArgParse = "1"
@@ -25,7 +24,7 @@ HuggingFaceTokenizers = "0.1.1"
 JLD2 = "0.6"
 MLDataDevices = "1.18"
 MLUtils = "0.4.15"
-NNlib = "0.9.55"
+NNlib = "0.9.59"
 PythonCall = "0.9"
 Reactant = "0.2.307"
 julia = "1.12"

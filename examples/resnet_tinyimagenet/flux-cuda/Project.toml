@@ -13,7 +13,6 @@ cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [sources]
 Flux = {path = "../../.."}
-NNlib = {url = "https://github.com/FluxML/NNlib.jl", rev = "master"}
 
 [compat]
 ArgParse = "1"
@@ -22,6 +21,6 @@ Flux = "0.16.15"
 HuggingFaceDatasets = "0.4.4"
 MLDataDevices = "1.18"
 MLUtils = "0.4.15"
-NNlib = "0.9.55"
+NNlib = "0.9.59"
 cuDNN = "6.5.2"
 julia = "1.12"

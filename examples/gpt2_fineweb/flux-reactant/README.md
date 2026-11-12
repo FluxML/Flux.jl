@@ -44,7 +44,7 @@ each), `--precision` (see below), `--resume`, `--seed`, `--data-dir`, `--log-dir
 ## Results
 
 The [shared comparison](../README.md#performance) records current GPT-2 124M timings and memory
-measurements on the RTX 5090. NNlib master fixes the LayerNorm activation promotion that slowed
+measurements on the RTX 5090. NNlib 0.9.56 fixes the LayerNorm activation promotion that slowed
 down bfloat16 training with Flux 0.16.14 and NNlib 0.9.55.
 
 The TinyStories run below used Julia 1.13.2, Flux 0.16.15, NNlib master
@@ -70,8 +70,8 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
 - **Precision.** With `--precision bf16` (the default) the model is converted with `Flux.bf16`:
   weights and activations are bfloat16, LayerNorm parameters stay in `Float32`, the optimizer
   keeps and updates `Float32` master weights (`MixedPrecision(Float32, rule)`), and the loss is
-  computed in `Float32`. NNlib master keeps LayerNorm's output in bfloat16 too, fixing the
-  activation promotion with NNlib 0.9.55. `tf32` keeps everything in `Float32` with XLA's default
+  computed in `Float32`. Since NNlib 0.9.56, LayerNorm's output stays in bfloat16 too, fixing
+  the activation promotion with NNlib 0.9.55. `tf32` keeps everything in `Float32` with XLA's default
   matmul precision on NVIDIA GPUs (TF32-like), and `f32` is exact
   (`Reactant.with_config(; dot_general_precision = PrecisionConfig.HIGHEST)` around the training
   loop, as the setting is read when a step is compiled).

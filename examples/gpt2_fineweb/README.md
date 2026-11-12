@@ -159,8 +159,8 @@ attention/compilation combination in the table. Set `TORCHINDUCTOR_CACHE_DIR` an
   queries, keys and values with three projections (Flux's `Attention`) instead of one. The compile
   time grows quadratically with the number of arrays
   ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)), and there were 196
-  parameter arrays instead of 148, each with its optimizer state. NNlib master keeps the activations in bfloat16 with
-  `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55.
+  parameter arrays instead of 148, each with its optimizer state. Since NNlib 0.9.56, the activations stay in
+  bfloat16 with `Float32` LayerNorm parameters, fixing the promotion in NNlib 0.9.55.
 - **Lux + ReactantNitro** compiles the same program through Nitro, which owns the loop,
   accumulating the gradients of the 32 micro-batches and updating the parameters with the
   optimizer. Its model calls `scaled_dot_product_attention` with `is_causal = true` too, and
