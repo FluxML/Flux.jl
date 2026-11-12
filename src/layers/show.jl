@@ -69,10 +69,29 @@ end
 
 # Printing into an IOBuffer, then copying to `io`, means that all the printing code is compiled for
 # just one type of IO, which can then be precompiled. It keeps the properties of `io`, e.g. :color.
+# What's printed is copied to `io` after each child of the outermost container (see `_big_show_child`),
+# and when some layer's `show` throws, so that the output still arrives a piece at a time.
 Base.@nospecializeinfer function _buffered(f, io::IO, x)
   buf = IOBuffer()
-  f(IOContext(buf, io), x)
-  write(io, take!(buf))
+  try
+    f(IOContext(IOContext(buf, io), :_flux_show_sink => io), x)
+  finally
+    write(io, take!(buf))
+  end
+  return nothing
+end
+
+Base.@nospecializeinfer function _flush_buffered(io::IO)
+  sink = get(io, :_flux_show_sink, nothing)
+  if sink isa IO && io isa IOContext && io.io isa IOBuffer
+    write(sink, take!(io.io))
+  end
+  return nothing
+end
+
+Base.@nospecializeinfer function _big_show_child(io::IO, c, indent::Int, name=nothing)
+  _big_show(io, c, indent+2, name)
+  indent == 0 && _flush_buffered(io)
   return nothing
 end
 
@@ -87,28 +106,29 @@ Base.@nospecializeinfer function _big_show(io::IO, obj, indent::Int=0, name=noth
   else
     pre, post = _show_pre_post(obj)
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", pre)
+    indent == 0 && _flush_buffered(io)
     if obj isa Chain{<:NamedTuple} || obj isa NamedTuple
       # then we insert names -- can this be done more generically?
       layers = obj isa NamedTuple ? obj : obj.layers
       for k in keys(layers)::Tuple
-        _big_show(io, getfield(layers, k), indent+2, k)
+        _big_show_child(io, getfield(layers, k), indent, k)
       end
     elseif obj isa Parallel{<:Any, <:NamedTuple} || obj isa PairwiseFusion{<:Any, <:NamedTuple}
-      _big_show(io, obj.connection, indent+2)
+      _big_show_child(io, obj.connection, indent)
       for k in keys(obj.layers)::Tuple
-        _big_show(io, getfield(obj.layers, k), indent+2, k)
+        _big_show_child(io, getfield(obj.layers, k), indent, k)
       end
     elseif children isa NamedTuple
       for k in keys(children)::Tuple
-        _big_show(io, getfield(children, k), indent+2, k)
+        _big_show_child(io, getfield(children, k), indent, k)
       end
     elseif children isa _ShowFields
       for i in eachindex(children.vals)
-        _big_show(io, children.vals[i], indent+2, children.names[i])
+        _big_show_child(io, children.vals[i], indent, children.names[i])
       end
     else
       for c in kids
-        _big_show(io, c, indent+2)
+        _big_show_child(io, c, indent)
       end
     end
     if indent == 0  # i.e. this is the outermost container
@@ -168,9 +188,12 @@ Base.@nospecializeinfer function _flat_children(x)
 end
 
 # The children of a node, as returned by `trainable` or `Functors.children`, in a Vector{Any}:
+# Nothing mutates the result, so it may be `ch` itself.
 Base.@nospecializeinfer function _childvec(ch)
   if ch isa _ShowFields
     return ch.vals
+  elseif ch isa Vector{Any}
+    return ch
   elseif ch isa Union{Tuple, NamedTuple}
     out = Vector{Any}(undef, nfields(ch))
     for i in eachindex(out)
@@ -239,28 +262,40 @@ end
 # The same arrays as `Optimisers.trainables(x)`, without compiling an `fmap` for each type of `x`:
 # numeric arrays reached through `trainable`, with tied weights appearing once.
 Base.@nospecializeinfer function _show_trainables(x)
-  ps = AbstractArray[]
+  ps = Any[]
   _show_trainables!(ps, Base.IdSet{Any}(), x)
   return ps
 end
 
-Base.@nospecializeinfer function _show_trainables!(ps::Vector{AbstractArray}, seen::Base.IdSet{Any}, x)
-  if x isa AbstractArray{<:Number} && Optimisers.isnumeric(x)::Bool
-    if Functors.anymutable(x)  # like the cache of fmap, which ignores entirely immutable leaves
+Base.@nospecializeinfer function _show_trainables!(ps::Vector{Any}, seen::Base.IdSet{Any}, x)
+  m = _show_methods(typeof(x))
+  if _show_isnumeric(x, m)
+    if _anymutable(x)  # like the cache of fmap, which ignores entirely immutable leaves
       x in seen && return
       push!(seen, x)
     end
     push!(ps, x)
-  elseif !_show_isleaf(x)
+  elseif !_show_isleaf(x, m)
     if ismutable(x)  # a layer appearing twice is walked once
       x in seen && return
       push!(seen, x)
     end
-    for c in _childvec(_show_trainable_walk(x))
+    for c in _childvec(_show_trainable_walk(x, m))
       _show_trainables!(ps, seen, c)
     end
   end
   return
+end
+
+# Like `Functors.anymutable`, which decides what the cache of `fmap` remembers:
+Base.@nospecializeinfer function _anymutable(x)::Bool
+  ismutable(x) && return true
+  T = typeof(x)
+  for i in 1:nfields(x)
+    fieldtype(T, i) == T && continue
+    isdefined(x, i) && _anymutable(getfield(x, i)) && return true
+  end
+  return false
 end
 
 # Number and total length of all numeric arrays reached through `Functors.children`,
@@ -275,15 +310,17 @@ Base.@nospecializeinfer function _show_arrays!(acc::Vector{Int}, x)
   if x isa AbstractArray{<:Number}
     acc[1] += 1
     acc[2] += length(x)::Int
-  elseif !_show_isleaf(x)
-    for c in _childvec(_show_functor_children(x))
+  else
+    m = _show_methods(typeof(x))
+    _show_isleaf(x, m) && return
+    for c in _childvec(_show_functor_children(x, m))
       _show_arrays!(acc, c)
     end
   end
   return
 end
 
-Base.@nospecializeinfer function _sum_length(ps::Vector{AbstractArray})
+Base.@nospecializeinfer function _sum_length(ps::Vector{Any})
   n = 0
   for p in ps
     n += length(p)::Int
@@ -291,14 +328,16 @@ Base.@nospecializeinfer function _sum_length(ps::Vector{AbstractArray})
   return n
 end
 
-# These give the same results as `Functors.children`, `Functors.isleaf` and `Optimisers.trainable`.
-# But calling those compiles `Functors.functor(::Type{T}, x)` for every new `T`, so instead,
-# when `which` says these default methods apply, we read the fields directly:
+# These give the same results as `Functors.children`, `Functors.isleaf`, `Optimisers.trainable`
+# and `Optimisers.isnumeric`. But calling those compiles `Functors.functor(::Type{T}, x)` etc. for
+# every new `T`, so instead, when `which` says that the default methods apply, we read the fields
+# directly. The tests in test/layers/show.jl check that this agrees with Functors & Optimisers.
 
 const _CHILDREN_DEFAULT = which(Functors.children, Tuple{Any})
 const _FUNCTOR1_DEFAULT = which(Functors.functor, Tuple{Any})  # children(x) = functor(x)[1]
 const _ISLEAF_DEFAULT = which(Functors.isleaf, Tuple{Any})
 const _TRAINABLE_DEFAULT = which(Optimisers.trainable, Tuple{Any})
+const _ISNUMERIC_DEFAULT = which(Optimisers.isnumeric, Tuple{Any})  # isnumeric(x) = false
 const _FUNCTOR_DEFAULT = which(Functors.functor, Tuple{Any, Any})
 const _FUNCTOR_ITSELF = (  # methods for which children(x) == x
   which(Functors.functor, Tuple{Type{Tuple{Int}}, Tuple{Int}}),
@@ -320,12 +359,20 @@ Base.@nospecializeinfer function _which(f, tt::Type)
   end
 end
 
+# How to find the children of `x::T`:
+@enum _ChildrenKind::Int8 begin
+  _CALL_CHILDREN  # call `Functors.children(x)`
+  _READ_FIELDS    # the default `functor` applies, so read the fields of `x`
+  _ITSELF         # the children are `x` itself, e.g. a Tuple
+end
+
 # For each type, which of these default methods apply. Calling `which` is slow enough to matter
 # for large models, so this is cached, and forgotten whenever the world age changes.
 struct _ShowMethods
-  children::Int8   # 0: call `Functors.children`, 1: read the fields, 2: the children are `x` itself
+  children::_ChildrenKind
   isleaf::Bool     # `Functors.isleaf` is the default, which calls `children`
   trainable::Bool  # `Optimisers.trainable` is the default, which calls `children`
+  isnumeric::Bool  # `Optimisers.isnumeric` is the default for non-arrays, which is `false`
 end
 
 const _SHOW_METHODS = IdDict{Any, _ShowMethods}()
@@ -341,24 +388,27 @@ Base.@nospecializeinfer function _show_methods(T::Type)
       _SHOW_METHODS_WORLD[] = world
     end
     haskey(_SHOW_METHODS, T) && return _SHOW_METHODS[T]
-    children = Int8(0)
+    children = _CALL_CHILDREN
     if _which(Functors.children, Tuple{T}) === _CHILDREN_DEFAULT &&
         _which(Functors.functor, Tuple{T}) === _FUNCTOR1_DEFAULT
       m = _which(Functors.functor, Tuple{Type{T}, T})
-      children = m === _FUNCTOR_DEFAULT ? Int8(1) : m in _FUNCTOR_ITSELF ? Int8(2) : Int8(0)
+      children = m === _FUNCTOR_DEFAULT ? _READ_FIELDS : m in _FUNCTOR_ITSELF ? _ITSELF : _CALL_CHILDREN
     end
     isleaf = _which(Functors.isleaf, Tuple{T}) === _ISLEAF_DEFAULT
     trainable = _which(Optimisers.trainable, Tuple{T}) === _TRAINABLE_DEFAULT
-    return _SHOW_METHODS[T] = _ShowMethods(children, isleaf, trainable)
+    isnumeric = _which(Optimisers.isnumeric, Tuple{T}) === _ISNUMERIC_DEFAULT
+    return _SHOW_METHODS[T] = _ShowMethods(children, isleaf, trainable, isnumeric)
   finally
     unlock(_SHOW_METHODS_LOCK)
   end
 end
 
-Base.@nospecializeinfer function _show_functor_children(x)
-  T = typeof(x)
-  kind = _show_methods(T).children
-  if kind == 1
+# Each of these takes `m = _show_methods(typeof(x))`, to look that up once per node:
+
+Base.@nospecializeinfer _show_functor_children(x) = _show_functor_children(x, _show_methods(typeof(x)))
+Base.@nospecializeinfer function _show_functor_children(x, m::_ShowMethods)
+  if m.children == _READ_FIELDS
+    T = typeof(x)
     n = fieldcount(T)
     n == 0 && return ()  # this is Functors.NoChildren()
     names = Vector{Symbol}(undef, n)
@@ -368,36 +418,53 @@ Base.@nospecializeinfer function _show_functor_children(x)
       vals[i] = getfield(x, i)
     end
     return _ShowFields(names, vals)
-  elseif kind == 2
+  elseif m.children == _ITSELF
     return x
   else
     return Functors.children(x)
   end
 end
 
-Base.@nospecializeinfer function _show_isleaf(x)::Bool
-  if _show_methods(typeof(x)).isleaf
-    return _show_functor_children(x) === ()
-  else
+Base.@nospecializeinfer _show_isleaf(x) = _show_isleaf(x, _show_methods(typeof(x)))
+Base.@nospecializeinfer function _show_isleaf(x, m::_ShowMethods)::Bool
+  if !m.isleaf
     return Functors.isleaf(x)
-  end
-end
-
-Base.@nospecializeinfer function _show_trainable(x)
-  if _show_methods(typeof(x)).trainable
-    return _show_functor_children(x)
+  elseif m.children == _READ_FIELDS
+    return fieldcount(typeof(x)) == 0
+  elseif m.children == _ITSELF
+    return x === ()
   else
-    return Optimisers.trainable(x)
+    return Functors.children(x) === ()
   end
 end
 
-# What `Optimisers.trainables` walks into, which differs from `trainable(x)` only for
-# the old-style `trainable(x) = (x.a,)`, selecting children by `==`:
-Base.@nospecializeinfer function _show_trainable_walk(x)
-  _show_methods(typeof(x)).trainable && return _show_functor_children(x)
+Base.@nospecializeinfer _show_trainable(x) = _show_trainable(x, _show_methods(typeof(x)))
+Base.@nospecializeinfer function _show_trainable(x, m::_ShowMethods)
+  return m.trainable ? _show_functor_children(x, m) : Optimisers.trainable(x)
+end
+
+# What `Optimisers.trainables` walks into, which differs from `trainable(x)` only for the
+# old-style `trainable(x) = (x.a,)`, from which it keeps the children that are `in` this tuple:
+Base.@nospecializeinfer function _show_trainable_walk(x, m::_ShowMethods)
+  m.trainable && return _show_functor_children(x, m)
   tr = Optimisers.trainable(x)
   tr isa Tuple || return tr
-  return Optimisers._trainable(Functors.children(x), tr)
+  ch = Functors.children(x)
+  ch isa NamedTuple || return tr
+  out = Vector{Any}(undef, nfields(ch))
+  for i in eachindex(out)
+    c = getfield(ch, i)
+    out[i] = c in tr ? c : nothing
+  end
+  return out
+end
+
+Base.@nospecializeinfer function _show_isnumeric(x, m::_ShowMethods)::Bool
+  if x isa AbstractArray{<:Number}
+    return Optimisers.isnumeric(x)
+  else
+    return !m.isnumeric && Optimisers.isnumeric(x)
+  end
 end
 
 # utility functions
@@ -405,11 +472,15 @@ end
 underscorise(n::Integer) =
   join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
 
-Base.@nospecializeinfer function _nan_show(io::IO, ps::Vector{AbstractArray})
+Base.@nospecializeinfer function _nan_show(io::IO, ps::Vector{Any})
   isempty(ps) && return
   allzero, somenan, someinf = true, false, false
   for p in ps
     m = _maxabs(p)
+    if m === nothing  # not an array
+      allzero = false
+      continue
+    end
     allzero &= iszero(m)::Bool
     somenan |= isnan(m)::Bool
     someinf |= isinf(m)::Bool
@@ -428,13 +499,18 @@ end
 # This is compiled for each type of array, but not for each model. It is NaN if any element is,
 # so that one reduction (on the GPU, one kernel) tells us whether all are zero, some NaN, or some Inf.
 # Dense arrays are reshaped to vectors, so that matrices etc. don't need another kernel.
-_maxabs(x::DenseArray) = _maxabs_(vec(x))
-_maxabs(x::AbstractArray) = _maxabs_(x)
-function _maxabs_(x::AbstractArray)
+_maxabs(x::DenseArray{<:Number}) = _maxabs_(vec(x))
+_maxabs(x::AbstractArray{<:Number}) = _maxabs_(x)
+_maxabs(x::AbstractArray) = _maxabs_(Iterators.filter(y -> y isa Number, x))  # e.g. with missing
+_maxabs(x) = nothing  # something else for which `Optimisers.isnumeric` is true
+function _maxabs_(x)
   T = eltype(x)
   init = isconcretetype(T) ? zero(real(T)) : false  # e.g. Vector{Real}
-  mapreduce(abs, max, x; init)
+  mapreduce(_absmax, max, x; init)
 end
+# Unlike `abs(z)`, this is NaN whenever `isnan(z)`, and doesn't overflow:
+_absmax(x) = abs(x)
+_absmax(z::Complex) = max(abs(real(z)), abs(imag(z)))
 
 #=
 

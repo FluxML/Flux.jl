@@ -165,6 +165,8 @@ end
   @test occursin("(some NaN)", shows(Chain(Dense(2=>2), Dense(fill(NaN32, 2, 2)), Dense(2=>2))))
   @test occursin("(some Inf)", shows(Dense(Real[1 Inf])))  # abstract eltype
   @test occursin("(all zero)", shows(Dense(Real[0 0], false)))
+  @test occursin("(some NaN)", shows(Dense(ComplexF32[1 complex(Inf32, NaN32)])))  # abs(z) is Inf
+  @test !occursin("Inf", shows(Dense(ComplexF16[6e4+6e4im 1])))  # abs(z) overflows
 end
 
 # A 1-arg `functor` method, as Flux's recurrent layers have, also replaces the fields:
@@ -207,6 +209,37 @@ late_leaf_after = repr("text/plain", Chain(LateLeaf(rand32(4)), Dense(2=>2)))
   @test !occursin("Total", late_leaf_after)  # only Dense has arrays now
 end
 
+# `isnumeric` can be true for arrays which aren't `AbstractArray{<:Number}`:
+struct MaybeVec <: AbstractVector{Union{Missing, Float32}}
+  data::Vector{Union{Missing, Float32}}
+end
+Base.size(x::MaybeVec) = size(x.data)
+Base.getindex(x::MaybeVec, i::Int) = x.data[i]
+Optimisers.isnumeric(::MaybeVec) = true
+struct HasMaybe; v; w; end
+Flux.@layer HasMaybe
+
+# `trainable` may return a Vector:
+struct VecTrain; a; b; c; end
+Flux.@layer VecTrain
+Optimisers.trainable(x::VecTrain) = [x.a, x.b]
+
+# A layer whose `show` throws:
+struct ShowThrows; w; end
+Base.show(io::IO, ::ShowThrows) = error("cannot show this")
+
+@testset "isnumeric, Vector trainable, show throws" begin
+  str = repr("text/plain", HasMaybe(MaybeVec([1, missing, 2]), rand32(2)))
+  @test occursin(r"MaybeVec,\s+# 3 parameters", str)
+
+  str = repr("text/plain", VecTrain(rand32(2), rand32(3), rand32(4)))
+  @test occursin("# 5 parameters, plus 4 non-trainable", str)
+
+  io = IOBuffer()
+  @test_throws ErrorException show(io, MIME"text/plain"(), Chain(Dense(2=>3), ShowThrows(rand32(2))))
+  @test occursin("Dense(2 => 3),", String(take!(io)))  # what was printed before the error
+end
+
 # The shortcuts in show.jl must agree with Functors and Optimisers, for every node of these:
 @testset "agrees with Functors and Optimisers" begin
   d = Dense(3=>3)
@@ -221,6 +254,7 @@ end
     RNN(2=>3), LSTM(2=>3), GRU(2=>3), Chain(d, d, Dense(d.weight', false)),
     OnlyA(rand32(2), rand32(3)), TrainA(rand32(2), rand32(3)), LeafLayer(rand32(4)),
     OneArg(rand32(2), rand32(3)), LateFunctor(rand32(2), rand32(3)),
+    HasMaybe(MaybeVec([1, missing, 2]), rand32(2)),
     (Dense(2=>2), (a = Dense(2=>2), b = [Dense(2=>2)])),
   ]
   fields(c) = c isa Flux._ShowFields ? (c.names, c.vals) :
