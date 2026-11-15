@@ -446,9 +446,10 @@ Inf
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y); dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
-  return entropy + cross_entropy
+  # Aggregate the per-element KL terms together. Applying `agg` separately to the
+  # entropy and cross-entropy is incorrect for nonlinear aggregators and causes
+  # multiple scalar reductions (and GPU readbacks).
+  agg(sum(xlogx.(y) .- xlogy.(y, ŷ .+ eps); dims = dims))
 end
 
 """
@@ -572,8 +573,15 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  # TODO add agg
-  1 - (2 * sum(y .* ŷ) + s) / (sum(y .^ 2) + sum(ŷ .^ 2) + s)
+  # Keep the sufficient statistics on the device until the final scalar result.
+  # The last dimension labels the three terms; reducing all input dimensions
+  # therefore avoids three separate scalar reductions on a GPU.
+  terms = cat(2 .* y .* ŷ, y .^ 2, ŷ .^ 2; dims = ndims(ŷ) + 1)
+  stats = vec(dropdims(sum(terms; dims = Tuple(1:ndims(ŷ))); dims = Tuple(1:ndims(ŷ))))
+  # Keep indexing as array slices: scalar indexing a CUDA array would itself
+  # trigger a device-to-host copy.
+  denom = view(stats, 2:2) .+ view(stats, 3:3) .+ s
+  only(1 .- (view(stats, 1:1) .+ s) ./ denom)
 end
 
 """
@@ -592,9 +600,16 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  num = sum(y .* ŷ) + 1
-  den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
-  1 - num / den
+  # Reduce intersection, false positives, and false negatives together, leaving
+  # only a short device-resident vector for the scalar beta arithmetic.
+  terms = cat(y .* ŷ, (1 .- y) .* ŷ, y .* (1 .- ŷ); dims = ndims(ŷ) + 1)
+  stats = vec(dropdims(sum(terms; dims = Tuple(1:ndims(ŷ))); dims = Tuple(1:ndims(ŷ))))
+  intersection = view(stats, 1:1)
+  fp = view(stats, 2:2)
+  fn = view(stats, 3:3)
+  num = intersection .+ 1
+  den = intersection .+ (1 - β) .* fp .+ β .* fn .+ 1
+  only(1 .- num ./ den)
 end
 
 """
