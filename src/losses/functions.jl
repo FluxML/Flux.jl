@@ -446,10 +446,12 @@ Inf
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   _check_sizes(ŷ, y)
-  # Aggregate the per-element KL terms together. Applying `agg` separately to the
-  # entropy and cross-entropy is incorrect for nonlinear aggregators and causes
-  # multiple scalar reductions (and GPU readbacks).
-  agg(sum(xlogx.(y) .- xlogy.(y, ŷ .+ eps); dims = dims))
+  # Reduce entropy and cross-entropy by `dims` while keeping their results as
+  # arrays, then apply `agg` once. Aggregating separately is incorrect for
+  # nonlinear aggregators and causes multiple scalar reductions (and GPU readbacks).
+  entropy = sum(xlogx.(y); dims = dims)
+  cross_entropy = sum(xlogy.(y, ŷ .+ eps); dims = dims)
+  agg(entropy .- cross_entropy)
 end
 
 """
@@ -573,16 +575,20 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  # Keep the sufficient statistics on the device until the final scalar result.
-  # The last dimension labels the three terms; reducing all input dimensions
-  # therefore avoids three separate scalar reductions on a GPU.
-  terms = cat(2 .* y .* ŷ, y .^ 2, ŷ .^ 2; dims = ndims(ŷ) + 1)
-  stats = vec(dropdims(sum(terms; dims = Tuple(1:ndims(ŷ))); dims = Tuple(1:ndims(ŷ))))
-  # Keep indexing as array slices: scalar indexing a CUDA array would itself
-  # trigger a device-to-host copy.
-  denom = view(stats, 2:2) .+ view(stats, 3:3) .+ s
-  only(1 .- (view(stats, 1:1) .+ s) ./ denom)
+  # Keep the sufficient statistics as device arrays until the final scalar
+  # result. These dimension reductions avoid both scalar readbacks and a
+  # concatenation temporary as large as the inputs.
+  dims = Tuple(1:ndims(ŷ))
+  intersection = _sum_dims(y .* ŷ, dims)
+  y_sq = _sum_dims(y .^ 2, dims)
+  ŷ_sq = _sum_dims(ŷ .^ 2, dims)
+  _scalar_result(1 .- (2 .* intersection .+ s) ./ (y_sq .+ ŷ_sq .+ s))
 end
+
+_sum_dims(x, ::Tuple{}) = sum(x)
+_sum_dims(x, dims::Tuple) = sum(x; dims)
+_scalar_result(x::Number) = x
+_scalar_result(x::AbstractArray) = only(x)
 
 """
     tversky_loss(ŷ, y; beta = 0.7)
@@ -600,16 +606,15 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  # Reduce intersection, false positives, and false negatives together, leaving
-  # only a short device-resident vector for the scalar beta arithmetic.
-  terms = cat(y .* ŷ, (1 .- y) .* ŷ, y .* (1 .- ŷ); dims = ndims(ŷ) + 1)
-  stats = vec(dropdims(sum(terms; dims = Tuple(1:ndims(ŷ))); dims = Tuple(1:ndims(ŷ))))
-  intersection = view(stats, 1:1)
-  fp = view(stats, 2:2)
-  fn = view(stats, 3:3)
+  # Keep the sufficient statistics as device arrays until the final scalar
+  # result, without materializing concatenated copies of the inputs.
+  dims = Tuple(1:ndims(ŷ))
+  intersection = _sum_dims(y .* ŷ, dims)
+  fp = _sum_dims((1 .- y) .* ŷ, dims)
+  fn = _sum_dims(y .* (1 .- ŷ), dims)
   num = intersection .+ 1
-  den = intersection .+ (1 - β) .* fp .+ β .* fn .+ 1
-  only(1 .- num ./ den)
+  den = intersection .+ fn .+ β .* (fp .- fn) .+ 1
+  _scalar_result(1 .- num ./ den)
 end
 
 """
