@@ -200,7 +200,16 @@ y = [1 2 3]
 @testset "kldivergence" begin
   @test Flux.kldivergence([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ Flux.kldivergence([0.1,0.9], [0.1,0.9])
   @test Flux.kldivergence(ŷ, y) ≈ -1.7661057888493457
-  @test Flux.kldivergence(y, y) ≈ 0
+  @test isapprox(Flux.kldivergence(y, y), 0; atol=eps(Float64))
+
+  # Apply nonlinear aggregation once to the per-class KL terms, not separately
+  # to entropy and cross-entropy.
+  p, q = [0.2 0.7; 0.8 0.3], [0.6 0.4; 0.4 0.6]
+  agg(v) = sum(abs2, v)
+  expected = agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1))
+  @test Flux.kldivergence(p, q; dims=1, agg) ≈ expected
+  @test gradient(p -> Flux.kldivergence(p, q; dims=1, agg), p)[1] ≈
+        gradient(p -> agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1)), p)[1]
 end
 
 y = [1 2 3 4]
@@ -230,12 +239,26 @@ y = [1.0 0.5 0.3 2.4]
 @testset "dice_coeff_loss" begin
   @test Flux.dice_coeff_loss(ŷ, y) ≈ 0.2799999999999999
   @test Flux.dice_coeff_loss(y, y) ≈ 0.0
+  @test Flux.dice_coeff_loss(reshape(ŷ, 2, 2), reshape(y, 2, 2)) ≈ 0.2799999999999999
+  @test Flux.dice_coeff_loss(0.5, 1.0) ≈ 1 - (2 * 0.5 + 1) / (1 + 0.5^2 + 1)
+  @test gradient(a -> Flux.dice_coeff_loss(a, 1.0), 0.5)[1] ≈
+        gradient(a -> 1 - (2a + 1) / (a^2 + 2), 0.5)[1]
+  reference(a, b) = 1 - (2 * sum(b .* a) + 1) / (sum(b .^ 2) + sum(a .^ 2) + 1)
+  @test gradient(a -> Flux.dice_coeff_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
 end
 
 @testset "tversky_loss" begin
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  @test Flux.tversky_loss(0.5, 1.0) ≈ 1 - (0.5 + 1) / (0.5 + 0.3 * 0.5 + 1)
+  @test gradient(a -> Flux.tversky_loss(a, 1.0), 0.5)[1] ≈
+        gradient(a -> 1 - (a + 1) / (a + 0.3 * (1 - a) + 1), 0.5)[1]
+  reference(a, b; beta=0.7) = 1 - (sum(b .* a) + 1) /
+      (sum(b .* a + beta * (1 .- b) .* a + (1 - beta) * b .* (1 .- a)) + 1)
+  @test gradient(a -> Flux.tversky_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
+  @test gradient(beta -> Flux.tversky_loss(ŷ, y; beta), 0.8)[1] ≈
+        gradient(beta -> reference(ŷ, y; beta), 0.8)[1]
   # the old Greek keyword `β` is not accepted, rather than silently ignored
   @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
 end

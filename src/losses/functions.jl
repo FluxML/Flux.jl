@@ -446,9 +446,12 @@ Inf
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y); dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
-  return entropy + cross_entropy
+  # Reduce entropy and cross-entropy by `dims` while keeping their results as
+  # arrays, then apply `agg` once. Aggregating separately is incorrect for
+  # nonlinear aggregators and causes multiple scalar reductions (and GPU readbacks).
+  entropy = sum(xlogx.(y); dims = dims)
+  cross_entropy = sum(xlogy.(y, ŷ .+ eps); dims = dims)
+  agg(entropy .- cross_entropy)
 end
 
 """
@@ -572,8 +575,15 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  # TODO add agg
-  1 - (2 * sum(y .* ŷ) + s) / (sum(y .^ 2) + sum(ŷ .^ 2) + s)
+  # Combine the sufficient statistics so they can be reduced in one device
+  # operation, then extract the scalar result with a final reduction.
+  dims = ntuple(identity, Val(ndims(ŷ)))
+  terms = cat(2 .* y .* ŷ, y .^ 2, ŷ .^ 2; dims = ndims(ŷ) + 1)
+  stats = vec(dropdims(sum(terms; dims); dims))
+  intersection = view(stats, 1:1)
+  y_sq = view(stats, 2:2)
+  ŷ_sq = view(stats, 3:3)
+  sum(1 .- (intersection .+ s) ./ (y_sq .+ ŷ_sq .+ s))
 end
 
 """
@@ -592,9 +602,17 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  num = sum(y .* ŷ) + 1
-  den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
-  1 - num / den
+  # Reduce the three sufficient statistics together, leaving only three
+  # device-resident values for the scalar beta arithmetic.
+  dims = ntuple(identity, Val(ndims(ŷ)))
+  terms = cat(y .* ŷ, (1 .- y) .* ŷ, y .* (1 .- ŷ); dims = ndims(ŷ) + 1)
+  stats = vec(dropdims(sum(terms; dims); dims))
+  intersection = view(stats, 1:1)
+  fp = view(stats, 2:2)
+  fn = view(stats, 3:3)
+  num = intersection .+ 1
+  den = intersection .+ fn .+ β .* (fp .- fn) .+ 1
+  sum(1 .- num ./ den)
 end
 
 """
