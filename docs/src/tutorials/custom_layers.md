@@ -31,7 +31,7 @@ model = CustomModel(chain)
 model(rand(Float32, 10))
 ```
 
-For an intro to Flux and automatic differentiation, see this [tutorial](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html).
+For an intro to Flux and automatic differentiation, see this [tutorial](https://github.com/FluxML/Flux.jl/blob/master/docs/old_tutorials/2024-04-10-blitz.md).
 
 ## Customising Parameter Collection for a Model
 
