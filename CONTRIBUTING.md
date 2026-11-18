@@ -42,8 +42,8 @@ Before you start contributing to Flux, you need the following tools:
 If you need to learn about Julia and Flux, then you can check out the following resources:
 
 * [JuliaAcademy](https://juliaacademy.com/) introductory courses to Julia and Flux
-* Flux’s official [Getting Started](https://fluxml.ai/getting_started.html) tutorial
-* [Deep Learning with Flux - A 60 Minute Blitz](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html): a quick intro to Flux loosely based on PyTorch’s tutorial
+* Flux’s official [Getting Started](https://fluxml.ai/Flux.jl/stable/guide/models/quickstart/) tutorial
+* [Deep Learning with Flux - A 60 Minute Blitz](https://github.com/FluxML/Flux.jl/blob/master/docs/old_tutorials/2024-04-10-blitz.md): a quick intro to Flux loosely based on PyTorch’s tutorial
 * [Flux Model Zoo](https://github.com/FluxML/model-zoo) showcases various demonstrations of models that you can reuse with your own data
 * [Flux’s official documentation](https://fluxml.ai/Flux.jl/stable/)
 
@@ -97,7 +97,7 @@ If you are already using Flux, then you can share the models that you have creat
 
 ### Write tutorials
 
-Tutorials are an important part of making Deep Learning and Flux accessible to everyone. The [Flux Tutorials](https://fluxml.ai/tutorials.html) section already has some great tutorials but we welcome new tutorials, especially if they are beginner-focused. Keep in mind that beginners tend to write the best tutorials! 
+Tutorials are an important part of making Deep Learning and Flux accessible to everyone. The [Flux Tutorials](https://fluxml.ai/tutorials/) section already has some great tutorials but we welcome new tutorials, especially if they are beginner-focused. Keep in mind that beginners tend to write the best tutorials! 
 
 We suggest the following starting points as ideas for writing tutorials: 
 
