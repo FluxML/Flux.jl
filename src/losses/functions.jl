@@ -409,11 +409,14 @@ function logitbinarycrossentropy(ŷ, y; agg = mean)
 end
 
 """
-    kldivergence(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
+    kldivergence(ŷ, y; dims = 1, agg = mean, eps = eps(eltype(ŷ)))
 
 Return the
 [Kullback-Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
 between the given probability distributions.
+
+The `dims` keyword specifies the dimension reduced to compute each KL value.
+The aggregator `agg` is applied once to the array of per-`dims` KL values.
 
 The KL divergence is a measure of how much one probability distribution is different
 from the other. It is always non-negative, and zero only when both the distributions are equal.
@@ -446,12 +449,20 @@ Inf
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   _check_sizes(ŷ, y)
-  # Reduce entropy and cross-entropy by `dims` while keeping their results as
-  # arrays, then apply `agg` once. Aggregating separately is incorrect for
-  # nonlinear aggregators and causes multiple scalar reductions (and GPU readbacks).
+  # Reduce entropy and cross-entropy by `dims`, then aggregate their per-dims
+  # KL values once. Use crossentropy to retain its one-hot label fast path.
   entropy = sum(xlogx.(y); dims = dims)
-  cross_entropy = sum(xlogy.(y, ŷ .+ eps); dims = dims)
-  agg(entropy .- cross_entropy)
+  cross_entropy = crossentropy(ŷ, y; dims, agg = identity, eps)
+  agg(entropy .+ cross_entropy)
+end
+
+function _expand_scalar_inputs(ŷ, y)
+  if ndims(ŷ) == 0 && ndims(y) > 0
+    ŷ = ŷ .+ zero.(y)
+  elseif ndims(y) == 0 && ndims(ŷ) > 0
+    y = y .+ zero.(ŷ)
+  end
+  ŷ, y
 end
 
 """
@@ -575,14 +586,14 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  # Combine the sufficient statistics so they can be reduced in one device
-  # operation, then extract the scalar result with a final reduction.
+  ŷ, y = _expand_scalar_inputs(ŷ, y)
+  if ndims(ŷ) == 0
+    return 1 - (2 * y * ŷ + s) / (y^2 + ŷ^2 + s)
+  end
   dims = ntuple(identity, Val(ndims(ŷ)))
-  terms = cat(2 .* y .* ŷ, y .^ 2, ŷ .^ 2; dims = ndims(ŷ) + 1)
-  stats = vec(dropdims(sum(terms; dims); dims))
-  intersection = view(stats, 1:1)
-  y_sq = view(stats, 2:2)
-  ŷ_sq = view(stats, 3:3)
+  intersection = sum(2 .* y .* ŷ; dims)
+  y_sq = sum(y .^ 2; dims)
+  ŷ_sq = sum(ŷ .^ 2; dims)
   sum(1 .- (intersection .+ s) ./ (y_sq .+ ŷ_sq .+ s))
 end
 
@@ -602,14 +613,17 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  # Reduce the three sufficient statistics together, leaving only three
-  # device-resident values for the scalar beta arithmetic.
+  ŷ, y = _expand_scalar_inputs(ŷ, y)
+  if ndims(ŷ) == 0
+    tp = y * ŷ
+    fp = (1 - y) * ŷ
+    fn = y * (1 - ŷ)
+    return 1 - (tp + 1) / (tp + β * fp + (1 - β) * fn + 1)
+  end
   dims = ntuple(identity, Val(ndims(ŷ)))
-  terms = cat(y .* ŷ, (1 .- y) .* ŷ, y .* (1 .- ŷ); dims = ndims(ŷ) + 1)
-  stats = vec(dropdims(sum(terms; dims); dims))
-  intersection = view(stats, 1:1)
-  fp = view(stats, 2:2)
-  fn = view(stats, 3:3)
+  intersection = sum(y .* ŷ; dims)
+  fp = sum((1 .- y) .* ŷ; dims)
+  fn = sum(y .* (1 .- ŷ); dims)
   num = intersection .+ 1
   den = intersection .+ fn .+ β .* (fp .- fn) .+ 1
   sum(1 .- num ./ den)
