@@ -210,6 +210,19 @@ y = [1 2 3]
   @test Flux.kldivergence(p, q; dims=1, agg) ≈ expected
   expected_dims2 = agg(sum(xlogx.(q); dims=2) .- sum(xlogy.(q, p .+ eps(Float64)); dims=2))
   @test Flux.kldivergence(p, q; dims=2, agg) ≈ expected_dims2
+
+  p32, q32 = Float32.(p), Float32.(q)
+  expected32 = agg(sum(xlogx.(q32); dims=2) .- sum(xlogy.(q32, p32 .+ eps(Float32)); dims=2))
+  @test Flux.kldivergence(p32, q32; dims=2, agg) ≈ expected32
+  @test gradient(p -> Flux.kldivergence(p, q32; dims=2, agg), p32)[1] ≈
+        gradient(p -> agg(sum(xlogx.(q32); dims=2) .- sum(xlogy.(q32, p .+ eps(Float32)); dims=2)), p32)[1]
+
+  hot = onehotbatch([1, 2], 1:2)
+  p_hot = Float32[0.8 0.2; 0.2 0.8]
+  @test Flux.kldivergence(p_hot, hot) ≈ Flux.crossentropy(p_hot, hot)
+  @test gradient(p -> Flux.kldivergence(p, hot), p_hot)[1] ≈
+        gradient(p -> Flux.crossentropy(p, hot), p_hot)[1]
+
   @test gradient(p -> Flux.kldivergence(p, q; dims=1, agg), p)[1] ≈
         gradient(p -> agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1)), p)[1]
 end
@@ -255,6 +268,8 @@ y = [1.0 0.5 0.3 2.4]
   end
   hot_labels = onehotbatch([1, 2], 1:2)
   hot_pred = Float32[0.8 0.2; 0.3 0.7]
+  @test Flux.dice_coeff_loss(hot_pred, hot_labels) ≈
+        1 - (2sum(hot_labels .* hot_pred) + 1) / (sum(hot_labels .^ 2) + sum(hot_pred .^ 2) + 1)
   @test gradient(a -> Flux.dice_coeff_loss(a, hot_labels), hot_pred)[1] ≈
         gradient(a -> 1 - (2sum(hot_labels .* a) + 1) / (sum(hot_labels .^ 2) + sum(a .^ 2) + 1), hot_pred)[1]
   @test Flux.dice_coeff_loss(reshape(0.5, 1, 1), 1.0) ≈ Flux.dice_coeff_loss(reshape(0.5, 1, 1), ones(1, 1))
@@ -265,6 +280,15 @@ end
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  pred_beta = [0.9, 0.2]
+  labels_beta = [1, 0]
+  tp = sum(labels_beta .* pred_beta)
+  fp = sum((1 .- labels_beta) .* pred_beta)
+  fn = sum(labels_beta .* (1 .- pred_beta))
+  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.8) ≈ 1 - (tp + 1) / (tp + 0.8 * fp + 0.2 * fn + 1)
+  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.2) ≈ 1 - (tp + 1) / (tp + 0.2 * fp + 0.8 * fn + 1)
+  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.8) >
+        Flux.tversky_loss(pred_beta, labels_beta; beta=0.2)
   @test Flux.tversky_loss(0.5, 1.0) ≈ 1 - (0.5 + 1) / (0.5 + 0.3 * 0.5 + 1)
   @test gradient(a -> Flux.tversky_loss(a, 1.0), 0.5)[1] ≈
         gradient(a -> 1 - (a + 1) / (a + 0.3 * (1 - a) + 1), 0.5)[1]
