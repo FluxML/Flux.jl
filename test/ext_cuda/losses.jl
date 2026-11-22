@@ -66,4 +66,33 @@ end
   test_gradients((x, y) -> loss(x, y; dims = 2), x3, y3, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end
 
+@testset "GPU: KL one-hot and dim reductions" begin
+  p = Float32[0.8 0.2; 0.2 0.8]
+  hot = onehotbatch([1, 2], 1:2)
+  @test kldivergence(gpu(p), gpu(hot)) ≈ kldivergence(p, hot)
+  @test cpu(gradient(x -> kldivergence(x, gpu(hot)), gpu(p))[1]) ≈
+        gradient(x -> kldivergence(x, hot), p)[1]
+
+  q = Float32[0.6 0.4; 0.4 0.6]
+  agg(v) = sum(abs2, v)
+  @test kldivergence(gpu(p), gpu(q); dims=2, agg) ≈ kldivergence(p, q; dims=2, agg)
+end
+
+@testset "GPU: Dice and Tversky target edge cases" begin
+  pred = Float32[0.8 0.2; 0.3 0.7]
+  targets = (Bool[1 0; 0 1], BitArray(Bool[1 0; 0 1]), onehotbatch([1, 2], 1:2))
+  for target in targets
+    target_gpu = gpu(target)
+    @test dice_coeff_loss(gpu(pred), target_gpu) ≈ dice_coeff_loss(pred, target)
+    @test cpu(gradient(x -> dice_coeff_loss(x, target_gpu), gpu(pred))[1]) ≈
+          gradient(x -> dice_coeff_loss(x, target), pred)[1]
+  end
+
+  labels = Bool[1 0; 0 1]
+  @test dice_coeff_loss(0.5f0, gpu(labels)) ≈ dice_coeff_loss(0.5f0, labels)
+  @test dice_coeff_loss(gpu(pred), 1.0f0) ≈ dice_coeff_loss(pred, 1.0f0)
+  @test tversky_loss(0.5f0, gpu(labels)) ≈ tversky_loss(0.5f0, labels)
+  @test tversky_loss(gpu(pred), 1.0f0) ≈ tversky_loss(pred, 1.0f0)
+end
+
 end #testset
