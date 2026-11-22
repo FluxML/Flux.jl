@@ -601,11 +601,11 @@ end
     tversky_loss(ŷ, y; beta = 0.7)
 
 Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
-Used with imbalanced data to give more weight to false negatives.
-Larger `β == beta` weigh recall more than precision (by placing more emphasis on false negatives).
+Used with imbalanced data to control the relative weights of false positives and false negatives.
+Larger `β == beta` places more weight on false positives, emphasizing precision.
 Calculated as:
 
-    1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
+    1 - sum(y .* ŷ + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
 
 """
 function tversky_loss(ŷ, y; beta::Real = 0.7)
