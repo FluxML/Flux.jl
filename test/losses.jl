@@ -208,6 +208,8 @@ y = [1 2 3]
   agg(v) = sum(abs2, v)
   expected = agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1))
   @test Flux.kldivergence(p, q; dims=1, agg) ≈ expected
+  expected_dims2 = agg(sum(xlogx.(q); dims=2) .- sum(xlogy.(q, p .+ eps(Float64)); dims=2))
+  @test Flux.kldivergence(p, q; dims=2, agg) ≈ expected_dims2
   @test gradient(p -> Flux.kldivergence(p, q; dims=1, agg), p)[1] ≈
         gradient(p -> agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1)), p)[1]
 end
@@ -245,6 +247,18 @@ y = [1.0 0.5 0.3 2.4]
         gradient(a -> 1 - (2a + 1) / (a^2 + 2), 0.5)[1]
   reference(a, b) = 1 - (2 * sum(b .* a) + 1) / (sum(b .^ 2) + sum(a .^ 2) + 1)
   @test gradient(a -> Flux.dice_coeff_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
+  for labels in (Bool[1 0; 0 1], BitArray(Bool[1 0; 0 1]))
+    pred = Float32[0.8 0.2; 0.3 0.7]
+    old_loss(a) = 1 - (2sum(labels .* a) + 1) / (sum(labels .^ 2) + sum(a .^ 2) + 1)
+    @test Flux.dice_coeff_loss(pred, labels) ≈ old_loss(pred)
+    @test gradient(a -> Flux.dice_coeff_loss(a, labels), pred)[1] ≈ gradient(old_loss, pred)[1]
+  end
+  hot_labels = onehotbatch([1, 2], 1:2)
+  hot_pred = Float32[0.8 0.2; 0.3 0.7]
+  @test gradient(a -> Flux.dice_coeff_loss(a, hot_labels), hot_pred)[1] ≈
+        gradient(a -> 1 - (2sum(hot_labels .* a) + 1) / (sum(hot_labels .^ 2) + sum(a .^ 2) + 1), hot_pred)[1]
+  @test Flux.dice_coeff_loss(reshape(0.5, 1, 1), 1.0) ≈ Flux.dice_coeff_loss(reshape(0.5, 1, 1), ones(1, 1))
+  @test Flux.dice_coeff_loss(0.5, ones(2, 2)) ≈ Flux.dice_coeff_loss(fill(0.5, 2, 2), ones(2, 2))
 end
 
 @testset "tversky_loss" begin
@@ -259,6 +273,8 @@ end
   @test gradient(a -> Flux.tversky_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
   @test gradient(beta -> Flux.tversky_loss(ŷ, y; beta), 0.8)[1] ≈
         gradient(beta -> reference(ŷ, y; beta), 0.8)[1]
+  @test Flux.tversky_loss(reshape(0.5, 1, 1), 1.0) ≈ Flux.tversky_loss(reshape(0.5, 1, 1), ones(1, 1))
+  @test Flux.tversky_loss(0.5, ones(2, 2)) ≈ Flux.tversky_loss(fill(0.5, 2, 2), ones(2, 2))
   # the old Greek keyword `β` is not accepted, rather than silently ignored
   @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
 end
