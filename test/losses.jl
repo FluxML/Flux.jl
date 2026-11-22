@@ -272,7 +272,7 @@ y = [1.0 0.5 0.3 2.4]
         1 - (2sum(hot_labels .* hot_pred) + 1) / (sum(hot_labels .^ 2) + sum(hot_pred .^ 2) + 1)
   @test gradient(a -> Flux.dice_coeff_loss(a, hot_labels), hot_pred)[1] ≈
         gradient(a -> 1 - (2sum(hot_labels .* a) + 1) / (sum(hot_labels .^ 2) + sum(a .^ 2) + 1), hot_pred)[1]
-  @test Flux.dice_coeff_loss(reshape(0.5, 1, 1), 1.0) ≈ Flux.dice_coeff_loss(reshape(0.5, 1, 1), ones(1, 1))
+  @test Flux.dice_coeff_loss(reshape([0.5], 1, 1), 1.0) ≈ Flux.dice_coeff_loss(reshape([0.5], 1, 1), ones(1, 1))
   @test Flux.dice_coeff_loss(0.5, ones(2, 2)) ≈ Flux.dice_coeff_loss(fill(0.5, 2, 2), ones(2, 2))
 end
 
@@ -297,7 +297,7 @@ end
   @test gradient(a -> Flux.tversky_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
   @test gradient(beta -> Flux.tversky_loss(ŷ, y; beta), 0.8)[1] ≈
         gradient(beta -> reference(ŷ, y; beta), 0.8)[1]
-  @test Flux.tversky_loss(reshape(0.5, 1, 1), 1.0) ≈ Flux.tversky_loss(reshape(0.5, 1, 1), ones(1, 1))
+  @test Flux.tversky_loss(reshape([0.5], 1, 1), 1.0) ≈ Flux.tversky_loss(reshape([0.5], 1, 1), ones(1, 1))
   @test Flux.tversky_loss(0.5, ones(2, 2)) ≈ Flux.tversky_loss(fill(0.5, 2, 2), ones(2, 2))
   # the old Greek keyword `β` is not accepted, rather than silently ignored
   @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
