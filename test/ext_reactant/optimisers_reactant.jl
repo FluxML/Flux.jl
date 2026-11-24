@@ -27,7 +27,7 @@ end
             x, y = (X, Y) |> prec |> dev
             # Not Adam, which diverges here eagerly too: its default ϵ = 1e-8 underflows in Float16,
             # and β₂ = 0.999 rounds to 1 in BFloat16.
-            opt = Flux.setup(Descent(0.1f0), model)
+            opt = @test_logs (:warn, r"MixedPrecision") Flux.setup(Descent(0.1f0), model)
             l0 = Flux.trainstep!(loss, model, (x, y), opt)
             @test Reactant.to_number(l0) isa Float32  # losses upcast low-precision inputs
             @test l0 ≈ l32 rtol=2e-2
