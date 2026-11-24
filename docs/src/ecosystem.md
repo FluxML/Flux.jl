@@ -9,12 +9,12 @@ See also academic work [citing Flux](https://scholar.google.com/scholar?cites=97
 
 ## Flux models
 
+- [Metalhead.jl](@ref man-pretrained-models) provides pretrained vision, language and image generation models for Flux.
 - Flux's [model-zoo](https://github.com/FluxML/model-zoo) contains examples from many domains.
 
 ### Computer vision
 
 - [ObjectDetector.jl](https://github.com/r3tex/ObjectDetector.jl) provides ready-to-go image detection via YOLO.
-- [Metalhead.jl](https://github.com/FluxML/Metalhead.jl) includes many state-of-the-art computer vision models which can easily be used for transfer learning.
 - [UNet.jl](https://github.com/DhairyaLGandhi/UNet.jl) is a generic UNet implementation.
 
 ### Natural language processing

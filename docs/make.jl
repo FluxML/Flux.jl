@@ -37,11 +37,12 @@ makedocs(
             "Training" => "guide/training/training.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
-            "Compiling with Reactant" => "guide/reactant.md",
             "Saving & Loading" => "guide/saving.md",
             "Performance Tips" => "guide/performance.md",
             "Profiling" => "guide/profiling.md",
         ],
+        "Compiling with Reactant" => "guide/reactant.md",
+        "Models and Examples" => "tutorials/model_zoo.md",
         "Ecosystem" => "ecosystem.md",
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
@@ -68,7 +69,6 @@ makedocs(
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
             "Custom Layers" => "tutorials/custom_layers.md",
-            "Model Zoo" => "tutorials/model_zoo.md",
             #=
             # "Multi-layer Perceptron" => "tutorials/mlp.md",
             # "Julia & Flux: 60 Minute Blitz" => "tutorials/blitz.md",

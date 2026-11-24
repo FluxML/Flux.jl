@@ -1,131 +1,93 @@
 # [A Neural Network in One Minute](@id man-quickstart)
 
-If you have used neural networks before, then this simple example might be helpful for seeing how the major parts of Flux work together. Try pasting the code into the REPL prompt.
+Train a small neural network to predict which points in a unit square have exactly one coordinate greater than 0.5. This is the XOR classification problem.
 
-If you haven't, then you might prefer the [Fitting a Straight Line](overview.md) page.
+For a step-by-step introduction to models and training, start with [Fitting a Straight Line](overview.md).
+
+## Train on CPU
+
+Install Flux with `] add Flux` at the Julia prompt, then run this example.
 
 ```julia
-# Install everything, including CUDA, and load packages:
-using Pkg; Pkg.add(["Flux", "CUDA", "cuDNN", "ProgressMeter"])
-using Flux, Statistics, ProgressMeter
-using CUDA  # optional
-device = gpu_device()  # function to move data and model to the GPU
+using Flux, Random
 
-# Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
-noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
-truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element Vector{Bool}
+Random.seed!(42)
+x_train = rand(Float32, 2, 1024)
+x_test = rand(Float32, 2, 256)
+xor_labels(x) = [xor(a > 0.5f0, b > 0.5f0) for (a, b) in eachcol(x)]
+classes = [true, false]
+y_train = Matrix{Float32}(Flux.onehotbatch(xor_labels(x_train), classes))
+y_test = xor_labels(x_test)
 
-# Define our model, a multi-layer perceptron with one hidden layer of size 3:
-model = Chain(
-    Dense(2 => 3, tanh),      # activation function inside layer
-    BatchNorm(3),
-    Dense(3 => 2)) |> device  # move model to GPU, if one is available
+device = cpu_device()
+model = Chain(Dense(2 => 8, tanh), Dense(8 => 2)) |> device
+scores_before = cpu(model)(x_test)  # for the plot below
 
-# The model encapsulates parameters, randomly initialised. Its initial output is:
-out1 = model(noisy |> device)    # 2×1000 Matrix{Float32}, or CuArray{Float32}
-probs1 = softmax(out1) |> cpu    # normalise to get probabilities (and move off GPU)
+loader = Flux.DataLoader((x_train, y_train); batchsize=64, shuffle=true) |> device
+loss(m, x, y) = Flux.logitcrossentropy(m(x), y)
+opt_state = Flux.setup(Adam(0.01f0), model)
 
-# To train the model, we use batches of 64 samples, and one-hot encoding:
-target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
-loader = Flux.DataLoader((noisy, target), batchsize=64, shuffle=true);
-
-opt_state = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
-
-# Training loop, using the whole data set 1000 times:
-losses = []
-@showprogress for epoch in 1:1_000
-    for xy_cpu in loader
-        # Unpack batch of data, and move to GPU:
-        x, y = xy_cpu |> device
-        loss, grads = Flux.withgradient(model) do m
-            # Evaluate model and loss inside gradient context:
-            y_hat = m(x)
-            Flux.logitcrossentropy(y_hat, y)
-        end
-        Flux.update!(opt_state, model, grads[1])
-        push!(losses, loss)  # logging, outside gradient context
-    end
+for _ in 1:100
+    Flux.train!(loss, model, loader, opt_state)
 end
 
-opt_state # parameters, momenta and output have all changed
-
-out2 = model(noisy |> device)         # first row is prob. of true, second row p(false)
-probs2 = softmax(out2) |> cpu         # normalise to get probabilities
-mean((probs2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
+scores_after = cpu(model)(x_test)
+predictions = Flux.onecold(scores_after, classes)
+accuracy = sum(predictions .== y_test) / length(y_test)
 ```
 
-![](../../assets/quickstart/oneminute.png)
+`Flux.train!` runs one epoch. It computes a gradient and updates the model for each batch, using the optimiser state created by `Flux.setup`. The last three lines evaluate the trained model on a separate test set.
+
+## Train on a GPU or with Reactant
+
+Replace `device = cpu_device()` in the example with one of the blocks below and run it again. The example moves the model before `Flux.setup`, transfers one batch at a time, and uses `cpu(model)` to evaluate on the CPU.
+
+### Native GPU backends
+
+For an NVIDIA GPU, install the packages with `] add CUDA cuDNN` and select the device.
 
 ```julia
-using Plots  # to draw the above figure
-
-p_true = scatter(noisy[1,:], noisy[2,:], zcolor=truth, title="True classification", legend=false)
-p_raw =  scatter(noisy[1,:], noisy[2,:], zcolor=probs1[1,:], title="Untrained network", label="", clims=(0,1))
-p_done = scatter(noisy[1,:], noisy[2,:], zcolor=probs2[1,:], title="Trained network", legend=false)
-
-plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
+using CUDA, cuDNN
+device = gpu_device(force=true)
 ```
 
-```@raw html
-<img align="right" width="300px" src="../../../assets/quickstart/loss.png">
-```
+On AMD GPUs, install and load `AMDGPU`. On Apple Silicon, install and load `Metal`. Use the same `gpu_device` call after loading the package for your hardware. See the [GPU guide](../gpu.md) for setup details.
 
-Here's the loss during training:
+### Compiled training with Reactant
+
+Install Reactant with `] add Reactant` and select a Reactant device.
 
 ```julia
-plot(losses; xaxis=(:log10, "iteration"),
-    yaxis="loss", label="per batch")
-n = length(loader)
-plot!(n:n:length(losses), mean.(Iterators.partition(losses, n)),
-    label="epoch mean", dpi=200)
+using Reactant
+device = reactant_device()
 ```
 
-This XOR ("exclusive or") problem is a variant of the famous one which drove Minsky and Papert to invent deep neural networks in 1969. For small values of "deep" -- this has one hidden layer, while earlier perceptrons had none. (What they call a hidden layer, Flux calls the output of the first layer, `model[1](noisy)`.)
-
-Since then things have developed a little. 
+`Flux.train!` compiles the first training step and reuses it for the fixed-size batches in this example. Reactant can run the compiled step on CPU or a supported accelerator. See the [Reactant guide](../reactant.md) for device configuration and compiled inference.
 
 ## Features to Note
 
-Some things to notice in this example are:
+* The batch dimension comes last. The `2×1024` training matrix holds 1024 observations, one per column.
+* The model is callable as `model(x)`. Each [`Dense`](@ref Flux.Dense) layer stores its own parameters. The final layer produces two scores per observation, one for each class. [`logitcrossentropy`](@ref Flux.Losses.logitcrossentropy) takes these scores and the one-hot targets.
+* Use [`trainstep!`](@ref Flux.Train.trainstep!) to update the model one batch at a time and read the loss. The [training guide](@ref man-training) shows how to log metrics, write a custom loop, and schedule the learning rate.
 
-* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. Flux defaults to `Float32`, but most of Julia to `Float64`.
+To start from pretrained weights, see [Metalhead.jl](@ref man-pretrained-models).
 
-* The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
+## Plot the predictions
 
-* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Optimisers.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.logitcrossentropy`](@ref Flux.Losses.logitcrossentropy) is an ordinary function that combines the [`softmax`](@ref Flux.softmax) and [`crossentropy`](@ref Flux.crossentropy) functions.
+The panels show the XOR labels and the predicted probability of `true` before and after training.
 
-* The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
+![XOR labels, untrained predictions and trained predictions](../../assets/quickstart/oneminute.png)
 
-Instead of calling [`gradient`](@ref Flux.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!). If we didn't want anything extra (like logging the loss), we could replace the training loop with the following:
-
-```julia
-for epoch in 1:1_000
-    Flux.train!(model, loader |> device, opt_state) do m, x, y
-        y_hat = m(x)
-        Flux.logitcrossentropy(y_hat, y)
-    end
-end
-```
-
-If you want to keep control of the loop — for logging, early stopping, or a custom schedule — but would rather not spell out `gradient` and `update!` yourself, [`trainstep!`](@ref Flux.Train.trainstep!) is the per-step primitive that `train!` is built on. It evaluates the loss, computes the gradient, and updates `model` and `opt_state` in place, returning the loss. The batch is passed as a tuple and spliced into the loss after the model (so it is called as `loss(m, x, y)`):
+To plot your own results, install Plots with `] add Plots`. The first row of `softmax(scores; dims=1)` gives the probability of `true`, the first class in `classes`.
 
 ```julia
-losses = []
-@showprogress for epoch in 1:1_000
-    for xy_cpu in loader
-        x, y = xy_cpu |> device
-        loss = Flux.trainstep!(model, (x, y), opt_state) do m, x, y
-            y_hat = m(x)
-            Flux.logitcrossentropy(y_hat, y)
-        end
-        push!(losses, loss)
-    end
-end
+using Plots
+
+prob_before = softmax(scores_before; dims=1)[1, :]
+prob_after = softmax(scores_after; dims=1)[1, :]
+x1, x2 = x_test[1, :], x_test[2, :]
+p_true = scatter(x1, x2; marker_z=y_test, title="True classification", legend=false)
+p_raw = scatter(x1, x2; marker_z=prob_before, title="Untrained network", clims=(0, 1), legend=false)
+p_done = scatter(x1, x2; marker_z=prob_after, title="Trained network", clims=(0, 1), legend=false)
+plot(p_true, p_raw, p_done; layout=(1, 3), size=(1000, 330))
 ```
-
-This is exactly the original training loop above, with the `withgradient`/`update!` pair collapsed into a single call. Use [`trainstep_withgradient!`](@ref Flux.Train.trainstep_withgradient!) if you also need the gradient. On a [Reactant](../reactant.md) device, `trainstep!` (and `train!`) additionally compile and cache the whole step into one executable.
-
-* Notice that the full dataset `noisy` lives on the CPU, and is moved to the GPU one batch at a time, by `xy_cpu |> device`. This is generally what you want for large datasets. Calling `loader |> device` similarly modifies the `DataLoader` to move one batch at a time.
-
-* In our simple example, we conveniently created the model has a [`Chain`](@ref Flux.Chain) of layers.
-For more complex models, you can define a custom struct `MyModel` containing layers and arrays and implement the call operator `(::MyModel)(x) = ...` to define the forward pass. This is all that is needed for Flux to work. Marking the struct with [`Flux.@layer`](@ref) will add some more functionality, like pretty printing and the ability to mark some internal fields as trainable or not (also see [`trainable`](@ref Optimisers.trainable)).

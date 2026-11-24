@@ -20,10 +20,11 @@
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
+- **Compiled training and inference** with [Reactant](https://fluxml.ai/Flux.jl/stable/guide/reactant/). On a Reactant device, `Flux.train!` compiles and caches the forward pass, gradient calculation and optimiser update as one XLA program.
+- **Pretrained models** for vision, language and image generation with [Metalhead.jl](https://fluxml.ai/Metalhead.jl/stable/).
 - **Layers and losses** for MLPs, convolutional, recurrent and attention models, with normalisation, pooling, embeddings and more.
 - **Your choice of AD engine**: [Zygote](https://github.com/FluxML/Zygote.jl) by default, or [Enzyme](https://github.com/EnzymeAD/Enzyme.jl) and [Mooncake](https://github.com/chalk-lab/Mooncake.jl), see [gradients](https://fluxml.ai/Flux.jl/stable/reference/training/gradients/).
 - **GPU support** for NVIDIA, AMD and Apple hardware, see the [GPU guide](https://fluxml.ai/Flux.jl/stable/guide/gpu/).
-- **Compilation with [Reactant](https://fluxml.ai/Flux.jl/stable/guide/reactant/)**: the whole training step fused into one XLA program, on CPU, GPU or TPU.
 - **Distributed training** with MPI and NCCL, see the [GPU guide](https://fluxml.ai/Flux.jl/stable/guide/gpu/#Distributed-data-parallel-training).
 
 Works best with [Julia 1.10](https://julialang.org/downloads/) or later. Install Flux from the Julia REPL with `using Pkg; Pkg.add("Flux")`, then try this very short example:
@@ -48,13 +49,7 @@ end
 accuracy = sum(Flux.onecold(model(noisy), [true, false]) .== truth) / length(truth)
 ```
 
-To train on a GPU, load the package for your hardware and move the model and the data loader to the device:
-```julia
-using CUDA                  # or AMDGPU, Metal
-device = gpu_device()       # the CPU, if no GPU is available
-model = model |> device     # before calling Flux.setup
-loader = loader |> device   # moves one batch at a time
-```
+For a walkthrough of XOR classification, including how to run it on a GPU or with Reactant, see the [Quick Start](https://fluxml.ai/Flux.jl/stable/guide/models/quickstart/).
 
 Flux models are plain Julia. In fact, almost any parameterised function is a valid model, such as the closure over `w, b, v` below. The same function can also be implemented with built-in layers as shown.
 ```julia
@@ -77,6 +72,8 @@ plot(x -> 2x-x^3, -2, 2, label="truth")
 scatter!(model, -2:0.1f0:2, label="learned")
 ```
 
-The [quickstart page](https://fluxml.ai/Flux.jl/stable/guide/models/quickstart/) has a longer version of the first example, with plots. See the [documentation](https://fluxml.ai/Flux.jl/) for details, the [model zoo](https://github.com/FluxML/model-zoo/) for examples, or the [examples](examples/) folder for larger end-to-end scripts: [GPT-2 pretraining](examples/gpt2_fineweb) and [ResNet on TinyImageNet](examples/resnet_tinyimagenet). Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
+The [model zoo](https://github.com/FluxML/model-zoo/) has more examples. For end-to-end training scripts that run with Reactant, see [ResNet on TinyImageNet](examples/resnet_tinyimagenet) and [GPT-2 pretraining](examples/gpt2_fineweb).
+
+Ask questions on the [Julia Discourse](https://discourse.julialang.org/) or [Slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
 If you use Flux in your research, please [cite](CITATION.bib) our work.
