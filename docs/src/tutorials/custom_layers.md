@@ -169,10 +169,6 @@ model(xs)
 # returns a single float vector with one value
 ```
 
-!!! note
-    This `Join` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
-
-
 #### Using `Parallel`
 
 Flux already provides [`Parallel`](@ref) that can offer the same functionality. In this case, `Join` is going to just be syntactic sugar for `Parallel`.
@@ -241,6 +237,3 @@ function loss(x, ys, model)
   return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
 end
 ```
-
-!!! note
-    This `Split` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.

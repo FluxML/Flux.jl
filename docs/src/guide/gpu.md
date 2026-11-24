@@ -154,30 +154,16 @@ CUDA also provides [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/me
 
 ## Saving GPU-Trained Models
 
-After the training process is done, we must always transfer the trained model back to the CPU memory before serializing or saving to disk. This can be done with `cpu`:
+Move the model to the CPU and save its state with JLD2. This lets you load the state in a session with a different device.
+
 ```julia
-model = cpu(model) # or model = model |> cpu
+using JLD2
+
+model_state = Flux.state(cpu(model))
+jldsave("trained_model.jld2"; model_state)
 ```
-and then
-```julia
-using BSON
-# ...
-BSON.@save "./path/to/trained_model.bson" model
 
-# in this approach the cpu-transferred model (referenced by the variable `model`)
-# only exists inside the `let` statement
-let model = cpu(model)
-   # ...
-   BSON.@save "./path/to/trained_model.bson" model
-end
-
-# is equivalent to the above, but uses `key=value` storing directive from BSON.jl
-BSON.@save "./path/to/trained_model.bson" model = cpu(model)
-```
-The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
-
-In controlled scenarios in which the data fed to the loaded models is guaranteed to be in the GPU there's no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no guarantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.
-
+See [Saving and Loading Models](saving.md) for how to restore the state.
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux
 

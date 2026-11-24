@@ -1,5 +1,5 @@
 using Documenter
-using Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
+using Flux, NNlib, Functors, MLUtils, Optimisers,
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
       DataFrames, JLD2, MLDataDevices, MLCore, Mooncake
 using MLCore: numobs, getobs, getobs!
@@ -64,8 +64,6 @@ makedocs(
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
-        # All the website tutorials can move here, perhaps much of the model zoo too?
-        # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
             "Custom Layers" => "tutorials/custom_layers.md",

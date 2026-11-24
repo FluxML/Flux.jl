@@ -72,7 +72,7 @@ plot(x -> 2x-x^3, -2, 2, label="truth")
 scatter!(model, -2:0.1f0:2, label="learned")
 ```
 
-The [model zoo](https://github.com/FluxML/model-zoo/) has more examples. For end-to-end training scripts that run with Reactant, see [ResNet on TinyImageNet](examples/resnet_tinyimagenet) and [GPT-2 pretraining](examples/gpt2_fineweb).
+For end-to-end training scripts that run with Reactant, see [ResNet on TinyImageNet](examples/resnet_tinyimagenet) and [GPT-2 pretraining](examples/gpt2_fineweb).
 
 Ask questions on the [Julia Discourse](https://discourse.julialang.org/) or [Slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
