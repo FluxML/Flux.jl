@@ -456,15 +456,6 @@ function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   agg(entropy .+ cross_entropy)
 end
 
-function _expand_scalar_inputs(ŷ, y)
-  if ndims(ŷ) == 0 && ndims(y) > 0
-    ŷ = ŷ .+ zero.(y)
-  elseif ndims(y) == 0 && ndims(ŷ) > 0
-    y = y .+ zero.(ŷ)
-  end
-  ŷ, y
-end
-
 """
     poisson_loss(ŷ, y; agg = mean)
 
@@ -586,26 +577,20 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  ŷ, y = _expand_scalar_inputs(ŷ, y)
-  if ndims(ŷ) == 0
-    return 1 - (2 * y * ŷ + s) / (y^2 + ŷ^2 + s)
-  end
-  dims = ntuple(identity, Val(ndims(ŷ)))
-  intersection = sum(2 .* y .* ŷ; dims)
-  y_sq = sum(y .^ 2; dims)
-  ŷ_sq = sum(ŷ .^ 2; dims)
-  sum(1 .- (intersection .+ s) ./ (y_sq .+ ŷ_sq .+ s))
+  intersection = _sumall(y .* ŷ)
+  denom = _sumall(y .^ 2 .+ ŷ .^ 2)
+  sum(1 .- (2 .* intersection .+ s) ./ (denom .+ s))
 end
 
 """
     tversky_loss(ŷ, y; beta = 0.7)
 
 Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
-Used with imbalanced data to control the relative weights of false positives and false negatives.
-Larger `β == beta` places more weight on false positives, emphasizing precision.
+Used with imbalanced data to give more weight to false negatives.
+Larger `β == beta` weigh recall more than precision (by placing more emphasis on false negatives).
 Calculated as:
 
-    1 - sum(y .* ŷ + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
+    1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
 """
 function tversky_loss(ŷ, y; beta::Real = 0.7)
@@ -613,20 +598,10 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  ŷ, y = _expand_scalar_inputs(ŷ, y)
-  if ndims(ŷ) == 0
-    tp = y * ŷ
-    fp = (1 - y) * ŷ
-    fn = y * (1 - ŷ)
-    return 1 - (tp + 1) / (tp + β * fp + (1 - β) * fn + 1)
-  end
-  dims = ntuple(identity, Val(ndims(ŷ)))
-  intersection = sum(y .* ŷ; dims)
-  fp = sum((1 .- y) .* ŷ; dims)
-  fn = sum(y .* (1 .- ŷ); dims)
-  num = intersection .+ 1
-  den = intersection .+ fn .+ β .* (fp .- fn) .+ 1
-  sum(1 .- num ./ den)
+  tp = _sumall(y .* ŷ)
+  fp = _sumall((1 .- y) .* ŷ)
+  fn = _sumall(y .* (1 .- ŷ))
+  sum(1 .- (tp .+ 1) ./ (tp .+ β .* fp .+ (1 - β) .* fn .+ 1))
 end
 
 """

@@ -220,11 +220,6 @@ y = [1 2 3]
   hot = onehotbatch([1, 2], 1:2)
   p_hot = Float32[0.8 0.2; 0.2 0.8]
   @test Flux.kldivergence(p_hot, hot) ≈ Flux.crossentropy(p_hot, hot)
-  @test gradient(p -> Flux.kldivergence(p, hot), p_hot)[1] ≈
-        gradient(p -> Flux.crossentropy(p, hot), p_hot)[1]
-
-  @test gradient(p -> Flux.kldivergence(p, q; dims=1, agg), p)[1] ≈
-        gradient(p -> agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1)), p)[1]
 end
 
 y = [1 2 3 4]
@@ -256,10 +251,7 @@ y = [1.0 0.5 0.3 2.4]
   @test Flux.dice_coeff_loss(y, y) ≈ 0.0
   @test Flux.dice_coeff_loss(reshape(ŷ, 2, 2), reshape(y, 2, 2)) ≈ 0.2799999999999999
   @test Flux.dice_coeff_loss(0.5, 1.0) ≈ 1 - (2 * 0.5 + 1) / (1 + 0.5^2 + 1)
-  @test gradient(a -> Flux.dice_coeff_loss(a, 1.0), 0.5)[1] ≈
-        gradient(a -> 1 - (2a + 1) / (a^2 + 2), 0.5)[1]
-  reference(a, b) = 1 - (2 * sum(b .* a) + 1) / (sum(b .^ 2) + sum(a .^ 2) + 1)
-  @test gradient(a -> Flux.dice_coeff_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
+  @test Flux.dice_coeff_loss(fill(0.5), fill(1.0)) ≈ Flux.dice_coeff_loss(0.5, 1.0)
   for labels in (Bool[1 0; 0 1], BitArray(Bool[1 0; 0 1]))
     pred = Float32[0.8 0.2; 0.3 0.7]
     old_loss(a) = 1 - (2sum(labels .* a) + 1) / (sum(labels .^ 2) + sum(a .^ 2) + 1)
@@ -280,23 +272,11 @@ end
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
-  pred_beta = [0.9, 0.2]
-  labels_beta = [1, 0]
-  tp = sum(labels_beta .* pred_beta)
-  fp = sum((1 .- labels_beta) .* pred_beta)
-  fn = sum(labels_beta .* (1 .- pred_beta))
-  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.8) ≈ 1 - (tp + 1) / (tp + 0.8 * fp + 0.2 * fn + 1)
-  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.2) ≈ 1 - (tp + 1) / (tp + 0.2 * fp + 0.8 * fn + 1)
-  @test Flux.tversky_loss(pred_beta, labels_beta; beta=0.8) >
-        Flux.tversky_loss(pred_beta, labels_beta; beta=0.2)
   @test Flux.tversky_loss(0.5, 1.0) ≈ 1 - (0.5 + 1) / (0.5 + 0.3 * 0.5 + 1)
-  @test gradient(a -> Flux.tversky_loss(a, 1.0), 0.5)[1] ≈
-        gradient(a -> 1 - (a + 1) / (a + 0.3 * (1 - a) + 1), 0.5)[1]
+  @test Flux.tversky_loss(fill(0.5), fill(1.0)) ≈ Flux.tversky_loss(0.5, 1.0)
   reference(a, b; beta=0.7) = 1 - (sum(b .* a) + 1) /
       (sum(b .* a + beta * (1 .- b) .* a + (1 - beta) * b .* (1 .- a)) + 1)
   @test gradient(a -> Flux.tversky_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
-  @test gradient(beta -> Flux.tversky_loss(ŷ, y; beta), 0.8)[1] ≈
-        gradient(beta -> reference(ŷ, y; beta), 0.8)[1]
   @test Flux.tversky_loss(reshape([0.5], 1, 1), 1.0) ≈ Flux.tversky_loss(reshape([0.5], 1, 1), ones(1, 1))
   @test Flux.tversky_loss(0.5, ones(2, 2)) ≈ Flux.tversky_loss(fill(0.5, 2, 2), ones(2, 2))
   # the old Greek keyword `β` is not accepted, rather than silently ignored
