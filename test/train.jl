@@ -372,3 +372,40 @@ end
   @test Flux.setup(Flux.ClipGrad(1), Dense(2 => 3)).weight.rule isa Optimisers.ClipGrad
   @test Flux.setup(Flux.ClipNorm(1), Dense(2 => 3)).weight.rule isa Optimisers.ClipNorm
 end
+
+@testset "Flux.setup(f, model)" begin
+  model = Chain(Dense(2 => 3, tanh), Dense(3 => 1))
+  seen = Dict()
+  opt = Flux.setup(model) do kp, x
+    seen[kp] = size(x)
+    kp[end] == :weight ? Momentum(0.1) : Descent(0.2)
+  end
+  @test seen == Dict(Flux.KeyPath(:layers, i, s) => size(getfield(model.layers[i], s))
+                     for i in 1:2, s in (:weight, :bias))
+  @test opt.layers[1].weight.rule isa Momentum
+  @test opt.layers[2].bias.rule isa Descent
+
+  m = Dense(2 => 1; init = ones)
+  opt = Flux.setup(m) do kp, x
+    ndims(x) == 1 ? Descent(0.2) : Descent(0.1)
+  end
+  Flux.update!(opt, m, (weight = ones(1, 2), bias = ones(1), σ = nothing))
+  @test m.weight ≈ [0.9 0.9]
+  @test m.bias ≈ [-0.2]
+
+  @test Flux.setup((kp, x) -> Adam(), Flux.EnzymeCore.Duplicated(m, deepcopy(m))).weight.rule isa Adam
+  @test_throws "must be fully mutable" Flux.setup((kp, x) -> Adam(), (w = 1.0:3.0,))
+end
+
+@testset "Flux.setup warns on 16-bit parameters without MixedPrecision" begin
+  for lowprec in (f16, bf16)
+    m = lowprec(Dense(2 => 1))
+    @test_logs (:warn, r"KeyPath\(:weight,\).*Matrix\{.*\}.*`Adam`.*MixedPrecision") Flux.setup(Adam(), m)
+    @test_logs (:warn, r"KeyPath\(:bias,\).*Vector\{.*\}.*`Descent`") Flux.setup(m) do kp, x
+      kp == Flux.KeyPath(:weight) ? MixedPrecision(Adam()) : Descent()
+    end
+    @test_logs Flux.setup(MixedPrecision(Adam()), m)
+    @test_logs Flux.setup((kp, x) -> MixedPrecision(Adam()), m)
+    @test_logs Flux.setup(Adam(), f32(m))
+  end
+end

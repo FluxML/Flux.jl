@@ -4,7 +4,6 @@
 using Printf, Random, Statistics
 using ArgParse
 using Flux
-using Flux: Functors
 using JLD2
 
 include("model.jl")
@@ -35,14 +34,6 @@ end
 # `tf32`: Float32, with matrix multiplications on TF32 tensor cores. `f32`: exact Float32.
 # The backend sets the precision of the matrix multiplications for `tf32` and `f32`.
 const PRECISIONS = ("bf16", "tf32", "f32")
-
-# Weight decay applies to matrices only, not to biases and LayerNorm parameters.
-function no_decay!(opt_state, model)
-    for (kp, p) in Flux.trainables(model; path=true)
-        ndims(p) == 1 && Flux.adjust!(Functors.getkeypath(opt_state, kp); lambda=0.0)
-    end
-    return opt_state
-end
 
 # FLOPs of a training step per token: 6 per parameter used in a matmul (forward + backward) plus
 # the attention scores. The position embedding is a lookup and costs nothing.
@@ -80,10 +71,12 @@ function train(dev; log_dir, compile=(f, args) -> f, preset="tinystories",
     hellaswag = p.hellaswag_every > 0 ? hellaswag_data(tok) : nothing
 
     model = GPT(cfg)
-    rule = OptimiserChain(AccumGrad(accum), ClipNorm(1.0),
-                          AdamW(; eta=p.lr, beta=(0.9, 0.95), lambda=p.weight_decay))
-    if precision == "bf16"
-        rule = MixedPrecision(Float32, rule)
+    # Weight decay applies to matrices only, not to biases and LayerNorm parameters.
+    function make_rule(x)
+        rule = OptimiserChain(AccumGrad(accum), ClipNorm(1.0),
+                              AdamW(; eta=p.lr, beta=(0.9, 0.95),
+                                      lambda=ndims(x) == 1 ? 0.0 : p.weight_decay))
+        return precision == "bf16" ? MixedPrecision(Float32, rule) : rule
     end
     step0, pos = 0, 1
     if resume !== nothing
@@ -94,7 +87,7 @@ function train(dev; log_dir, compile=(f, args) -> f, preset="tinystories",
     flops = flops_per_token(model, cfg)
     precision == "bf16" && (model = Flux.bf16(model))
     model = model |> dev
-    opt_state = no_decay!(Flux.setup(rule, model), model)
+    opt_state = Flux.setup((kp, x) -> make_rule(x), model)
     resume !== nothing && Flux.loadmodel!(opt_state, ckpt["opt_state"])
 
     mkpath(log_dir)

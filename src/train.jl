@@ -1,7 +1,8 @@
 module Train
 
 using LinearAlgebra
-using Optimisers: Optimisers
+using Optimisers: Optimisers, MixedPrecision, trainables
+using BFloat16s: BFloat16
 using Functors: fmap, fmapstructure, children
 using ..Flux: Flux
 using GPUArrays: GPUArrays
@@ -223,6 +224,7 @@ end
 
 """
     opt_state = setup(rule, model)
+    opt_state = setup(f, model)
 
 This is a version of `Optimisers.setup`, and is the first step before using [`train!`](@ref Flux.train!).
 It differs from `Optimisers.setup` in that it:
@@ -230,6 +232,13 @@ It differs from `Optimisers.setup` in that it:
   while Optimisers.jl is designed to return an updated model)
 * has methods which accept Flux's old optimisers, and convert them.
   (The old `Flux.Optimise.Adam` and new `Optimisers.Adam` are distinct types.)
+* warns, once, if a trainable array has eltype `Float16` or `BFloat16` and its rule is not a
+  [`MixedPrecision`](@ref Optimisers.MixedPrecision): small updates are then rounded away.
+  Use `setup(MixedPrecision(rule), model)`, which keeps a `Float32` copy of the parameters.
+
+With a function `f` in place of the `rule`, each trainable array `x` gets the rule `f(kp, x)`,
+where `kp` is the [`KeyPath`](@ref Functors.KeyPath) of `x` in the model, as in `trainables(model; path = true)`.
+This allows different arrays to get different rules or hyperparameters.
 
 # Example
 ```jldoctest
@@ -250,24 +259,62 @@ julia> model.bias  # was zero, mutated by Flux.train!
 
 julia> opt_state  # mutated by Flux.train!
 (weight = Leaf(Momentum(eta=0.1, rho=0.9), [-2.018 3.027]), bias = Leaf(Momentum(eta=0.1, rho=0.9), [-10.09]), σ = ())
+
+julia> st = Flux.setup(model) do kp, x  # no weight decay on the bias
+         AdamW(lambda = ndims(x) == 1 ? 0 : 0.1)
+       end;
+
+julia> st.weight.rule.lambda, st.bias.rule.lambda
+(0.1, 0.0)
 ```
 """
 function setup(rule::Optimisers.AbstractRule, model)
     state = Optimisers.setup(rule, model)
-    # This check only needs foreach; using fmap caused https://github.com/FluxML/Flux.jl/issues/2144
-    fmapstructure(model, exclude = Optimisers.isnumeric) do x
-        Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
-                                         If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
+    _check_mutable(model)
+    if !(rule isa MixedPrecision)
+        for (kp, x) in trainables(model; path = true)
+            _is_16bit(x) && (_warn_16bit(kp, x, rule); break)
+        end
     end
     return state
 end
 
+function setup(f::Function, model)
+    first_16bit = Ref{Any}(nothing)  # the first 16-bit array whose rule is not a `MixedPrecision`
+    state = Optimisers.setup(model) do kp, x
+        rule = f(kp, x)
+        if first_16bit[] === nothing && _is_16bit(x) && !(rule isa MixedPrecision)
+            first_16bit[] = (kp, x, rule)
+        end
+        return rule
+    end
+    _check_mutable(model)
+    first_16bit[] === nothing || _warn_16bit(first_16bit[]...)
+    return state
+end
+
+# This check only needs foreach; using fmap caused https://github.com/FluxML/Flux.jl/issues/2144
+function _check_mutable(model)
+    fmapstructure(model, exclude = Optimisers.isnumeric) do x
+        Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
+                                         If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
+    end
+end
+
+_is_16bit(x) = eltype(x) <: Union{Float16, BFloat16}
+
+_warn_16bit(kp, x, rule) = @warn """`Flux.setup`: the parameter at $kp is a $(typeof(x)), and its rule is `$(nameof(typeof(rule)))`, not a `MixedPrecision`.
+    Updates below about 0.2% (BFloat16) or 0.02% (Float16) of a parameter's value are rounded away, so training may stall.
+    Use `Flux.setup(MixedPrecision(rule), model)` to keep Float32 master copies of the parameters.""" maxlog=1
+
 """
     opt_state = setup(rule, model::Duplicated) = setup(rule, model.val)
+    opt_state = setup(f, model::Duplicated) = setup(f, model.val)
 
 Special method for use with Enzyme.jl, ignores the stored gradient.
 """
 setup(rule::Optimisers.AbstractRule, model::Duplicated) = setup(rule, model.val)
+setup(f::Function, model::Duplicated) = setup(f, model.val)
 
 """
     train!(loss, [adtype,] model, data, opt_state; gc_interval = :auto)

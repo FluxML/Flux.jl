@@ -126,6 +126,17 @@ end
 Many commonly-used optimisation rules, such as [`Adam`](@ref Optimisers.Adam), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
 
+Different parameters can get different rules or hyperparameters, by giving `setup` a function
+in place of the rule. It is called as `f(kp, x)` for every trainable array `x`, where `kp` is
+the [`KeyPath`](@ref Functors.KeyPath) of `x` in the model, and returns the rule for that array.
+For instance, to decay the weight matrices but not the biases:
+
+```julia
+opt_state = Flux.setup(model) do kp, x
+  AdamW(lambda = ndims(x) == 1 ? 0 : 0.1)
+end
+```
+
 !!! compat "Implicit-style optimiser state"
     This `setup` makes another tree-like structure. Old versions of Flux did not do this,
     and instead stored a dictionary-like structure within the optimiser `Adam(0.001)`.
