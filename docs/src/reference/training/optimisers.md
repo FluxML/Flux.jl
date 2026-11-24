@@ -33,6 +33,15 @@ Optimisers.AdaBelief
 Optimisers.Lion
 ```
 
+## Mixed Precision
+
+To train a model with `BFloat16` or `Float16` parameters, wrap the rule in `MixedPrecision`,
+which keeps a `Float32` copy of each parameter. See [Mixed Precision Training](@ref man-mixed-precision).
+
+```@docs
+Optimisers.MixedPrecision
+```
+
 ## Composing Optimisers
 
 Flux (through Optimisers.jl) defines a special kind of optimiser called `OptimiserChain` which takes in arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
