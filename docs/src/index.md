@@ -21,6 +21,8 @@ There are some **tutorials** about building particular models. The **[model zoo]
 
 The **reference** section includes, beside Flux's own functions, those of some companion packages: [Zygote.jl](https://github.com/FluxML/Zygote.jl) (automatic differentiation), [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) (training) and others.
 
+The **migration** section provides useful information for porting a model from other frameworks into Flux (currently only **[PyTorch](pytorch-migration.md)**, and it is not yet comprehensive.)
+
 ### Community
 
 Everyone is welcome to join our community on the [Julia discourse forum](https://discourse.julialang.org/), or the [slack chat](https://discourse.julialang.org/t/announcing-a-julia-slack/4866) (channel #machine-learning). If you have questions or issues we'll try to help you out.
