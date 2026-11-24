@@ -61,6 +61,10 @@ _check_sizes(ŷ, y) = nothing  # pass-through, for constant label e.g. y = 1
 
 ChainRulesCore.@non_differentiable _check_sizes(ŷ::Any, y::Any)
 
+# A sum over all dimensions that stays on the device, so that a loss reads back once at the end.
+_sumall(x::AbstractArray) = sum(x; dims = ntuple(identity, Val(ndims(x))))
+_sumall(x) = x
+
 # Whether `y` holds class labels for `ŷ` along `dims` rather than having the size of `ŷ`: an
 # integer array with dimension `dims` dropped, or a one-hot array along `dims == 1`.
 _islabels(ŷ, y, dims) = false

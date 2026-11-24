@@ -409,11 +409,14 @@ function logitbinarycrossentropy(ŷ, y; agg = mean)
 end
 
 """
-    kldivergence(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
+    kldivergence(ŷ, y; dims = 1, agg = mean, eps = eps(eltype(ŷ)))
 
 Return the
 [Kullback-Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
 between the given probability distributions.
+
+The `dims` keyword specifies the dimension reduced to compute each KL value.
+The aggregator `agg` is applied once to the array of per-`dims` KL values.
 
 The KL divergence is a measure of how much one probability distribution is different
 from the other. It is always non-negative, and zero only when both the distributions are equal.
@@ -446,9 +449,11 @@ Inf
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   ŷ, y = _upcast(ŷ), _upcast(y)
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y); dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
-  return entropy + cross_entropy
+  # Reduce entropy and cross-entropy by `dims`, then aggregate their per-dims
+  # KL values once. Use crossentropy to retain its one-hot label fast path.
+  entropy = sum(xlogx.(y); dims = dims)
+  cross_entropy = crossentropy(ŷ, y; dims, agg = identity, eps)
+  agg(entropy .+ cross_entropy)
 end
 
 """
@@ -572,8 +577,9 @@ function dice_coeff_loss(ŷ, y; smooth = 1)
   ŷ, y = _upcast(ŷ), _upcast(y)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  # TODO add agg
-  1 - (2 * sum(y .* ŷ) + s) / (sum(y .^ 2) + sum(ŷ .^ 2) + s)
+  intersection = _sumall(y .* ŷ)
+  denom = _sumall(y .^ 2 .+ ŷ .^ 2)
+  sum(1 .- (2 .* intersection .+ s) ./ (denom .+ s))
 end
 
 """
@@ -592,9 +598,10 @@ function tversky_loss(ŷ, y; beta::Real = 0.7)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
   #TODO add agg
-  num = sum(y .* ŷ) + 1
-  den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
-  1 - num / den
+  tp = _sumall(y .* ŷ)
+  fp = _sumall((1 .- y) .* ŷ)
+  fn = _sumall(y .* (1 .- ŷ))
+  sum(1 .- (tp .+ 1) ./ (tp .+ β .* fp .+ (1 - β) .* fn .+ 1))
 end
 
 """

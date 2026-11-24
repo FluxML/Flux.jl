@@ -200,7 +200,26 @@ y = [1 2 3]
 @testset "kldivergence" begin
   @test Flux.kldivergence([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ Flux.kldivergence([0.1,0.9], [0.1,0.9])
   @test Flux.kldivergence(ŷ, y) ≈ -1.7661057888493457
-  @test Flux.kldivergence(y, y) ≈ 0
+  @test isapprox(Flux.kldivergence(y, y), 0; atol=eps(Float64))
+
+  # Apply nonlinear aggregation once to the per-class KL terms, not separately
+  # to entropy and cross-entropy.
+  p, q = [0.2 0.7; 0.8 0.3], [0.6 0.4; 0.4 0.6]
+  agg(v) = sum(abs2, v)
+  expected = agg(sum(xlogx.(q); dims=1) .- sum(xlogy.(q, p .+ eps(Float64)); dims=1))
+  @test Flux.kldivergence(p, q; dims=1, agg) ≈ expected
+  expected_dims2 = agg(sum(xlogx.(q); dims=2) .- sum(xlogy.(q, p .+ eps(Float64)); dims=2))
+  @test Flux.kldivergence(p, q; dims=2, agg) ≈ expected_dims2
+
+  p32, q32 = Float32.(p), Float32.(q)
+  expected32 = agg(sum(xlogx.(q32); dims=2) .- sum(xlogy.(q32, p32 .+ eps(Float32)); dims=2))
+  @test Flux.kldivergence(p32, q32; dims=2, agg) ≈ expected32
+  @test gradient(p -> Flux.kldivergence(p, q32; dims=2, agg), p32)[1] ≈
+        gradient(p -> agg(sum(xlogx.(q32); dims=2) .- sum(xlogy.(q32, p .+ eps(Float32)); dims=2)), p32)[1]
+
+  hot = onehotbatch([1, 2], 1:2)
+  p_hot = Float32[0.8 0.2; 0.2 0.8]
+  @test Flux.kldivergence(p_hot, hot) ≈ Flux.crossentropy(p_hot, hot)
 end
 
 y = [1 2 3 4]
@@ -230,12 +249,36 @@ y = [1.0 0.5 0.3 2.4]
 @testset "dice_coeff_loss" begin
   @test Flux.dice_coeff_loss(ŷ, y) ≈ 0.2799999999999999
   @test Flux.dice_coeff_loss(y, y) ≈ 0.0
+  @test Flux.dice_coeff_loss(reshape(ŷ, 2, 2), reshape(y, 2, 2)) ≈ 0.2799999999999999
+  @test Flux.dice_coeff_loss(0.5, 1.0) ≈ 1 - (2 * 0.5 + 1) / (1 + 0.5^2 + 1)
+  @test Flux.dice_coeff_loss(fill(0.5), fill(1.0)) ≈ Flux.dice_coeff_loss(0.5, 1.0)
+  for labels in (Bool[1 0; 0 1], BitArray(Bool[1 0; 0 1]))
+    pred = Float32[0.8 0.2; 0.3 0.7]
+    old_loss(a) = 1 - (2sum(labels .* a) + 1) / (sum(labels .^ 2) + sum(a .^ 2) + 1)
+    @test Flux.dice_coeff_loss(pred, labels) ≈ old_loss(pred)
+    @test gradient(a -> Flux.dice_coeff_loss(a, labels), pred)[1] ≈ gradient(old_loss, pred)[1]
+  end
+  hot_labels = onehotbatch([1, 2], 1:2)
+  hot_pred = Float32[0.8 0.2; 0.3 0.7]
+  @test Flux.dice_coeff_loss(hot_pred, hot_labels) ≈
+        1 - (2sum(hot_labels .* hot_pred) + 1) / (sum(hot_labels .^ 2) + sum(hot_pred .^ 2) + 1)
+  @test gradient(a -> Flux.dice_coeff_loss(a, hot_labels), hot_pred)[1] ≈
+        gradient(a -> 1 - (2sum(hot_labels .* a) + 1) / (sum(hot_labels .^ 2) + sum(a .^ 2) + 1), hot_pred)[1]
+  @test Flux.dice_coeff_loss(reshape([0.5], 1, 1), 1.0) ≈ Flux.dice_coeff_loss(reshape([0.5], 1, 1), ones(1, 1))
+  @test Flux.dice_coeff_loss(0.5, ones(2, 2)) ≈ Flux.dice_coeff_loss(fill(0.5, 2, 2), ones(2, 2))
 end
 
 @testset "tversky_loss" begin
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
   @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  @test Flux.tversky_loss(0.5, 1.0) ≈ 1 - (0.5 + 1) / (0.5 + 0.3 * 0.5 + 1)
+  @test Flux.tversky_loss(fill(0.5), fill(1.0)) ≈ Flux.tversky_loss(0.5, 1.0)
+  reference(a, b; beta=0.7) = 1 - (sum(b .* a) + 1) /
+      (sum(b .* a + beta * (1 .- b) .* a + (1 - beta) * b .* (1 .- a)) + 1)
+  @test gradient(a -> Flux.tversky_loss(a, y), ŷ)[1] ≈ gradient(a -> reference(a, y), ŷ)[1]
+  @test Flux.tversky_loss(reshape([0.5], 1, 1), 1.0) ≈ Flux.tversky_loss(reshape([0.5], 1, 1), ones(1, 1))
+  @test Flux.tversky_loss(0.5, ones(2, 2)) ≈ Flux.tversky_loss(fill(0.5, 2, 2), ones(2, 2))
   # the old Greek keyword `β` is not accepted, rather than silently ignored
   @test_throws MethodError Flux.tversky_loss(ŷ, y; β=0.8)
 end
