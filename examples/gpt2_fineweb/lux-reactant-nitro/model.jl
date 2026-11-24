@@ -3,7 +3,7 @@
 # ../flux-reactant/model.jl.
 
 using Lux, Random
-using NNlib: dot_product_attention, gelu_tanh, logsumexp
+using NNlib: scaled_dot_product_attention, gelu_tanh, logsumexp
 using BFloat16s: BFloat16
 using MLUtils: sample_logits
 
@@ -22,11 +22,10 @@ end
 function (m::CausalAttention)(x, ps, st)
     qkv, st_qkv = m.qkv(x, ps.qkv, st.qkv)
     n = size(qkv, 1) ÷ 3
-    T = size(x, 2)
-    mask = reshape(1:T, :, 1) .<= reshape(1:T, 1, :)   # mask[j, i]: position i attends to j <= i
-    y, _ = dot_product_attention(qkv[1:n, :, :], qkv[n+1:2n, :, :], qkv[2n+1:3n, :, :];
-                                 nheads=m.nheads, mask)
-    y, st_proj = m.proj(y, ps.proj, st.proj)
+    heads(a) = reshape(a, n ÷ m.nheads, m.nheads, size(a, 2), size(a, 3))   # (head_dim, nheads, T, B)
+    y = scaled_dot_product_attention(heads(qkv[1:n, :, :]), heads(qkv[n+1:2n, :, :]),
+                                     heads(qkv[2n+1:3n, :, :]); is_causal=true)
+    y, st_proj = m.proj(reshape(y, n, size(y, 3), size(y, 4)), ps.proj, st.proj)
     return y, (; qkv=st_qkv, proj=st_proj)
 end
 
