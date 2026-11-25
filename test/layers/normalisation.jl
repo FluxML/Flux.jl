@@ -487,6 +487,14 @@ end
   @test_throws Exception GroupNorm(5, 5; active=:something_else)
 end
 
+@testset "normalisation accepts mixed keyword types" begin
+  @testset for (norm, args) in ((BatchNorm, (4,)), (InstanceNorm, (4,)), (GroupNorm, (4, 2)))
+    @test norm(args...; eps=1e-3).ϵ == 1e-3
+    @test norm(args...; momentum=0.01).momentum == 0.01
+    @test norm(args...; momentum=1).momentum == 1
+  end
+end
+
 @testset "norm layers with too few dimensions" begin
   # channels are along ndims(x)-1, so a vector has none, and the error should say so
   for (m, d, x) in ((BatchNorm(3), 2, rand(Float32, 3)),
