@@ -292,6 +292,7 @@ function BatchNorm(chs::Int, λ=identity;
   μ = track_stats ? zeros32(chs) : nothing
   σ² = track_stats ? ones32(chs) : nothing
 
+  eps, momentum = promote(eps, momentum)
   return BatchNorm(λ, β, γ,
             μ, σ², eps, momentum,
             affine, track_stats,
@@ -398,6 +399,7 @@ function InstanceNorm(chs::Int, λ=identity;
   μ = track_stats ? zeros32(chs) : nothing
   σ² = track_stats ? ones32(chs) : nothing
 
+  eps, momentum = promote(eps, momentum)
   return InstanceNorm(λ, β, γ,
             μ, σ², eps, momentum,
             affine, track_stats,
@@ -496,6 +498,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
   σ² = nothing
   track_stats = false
 
+  eps, momentum = promote(eps, momentum)
   return GroupNorm(G, λ,
             β, γ,
             μ, σ²,
