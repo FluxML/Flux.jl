@@ -7,6 +7,40 @@ using ADTypes: AutoEnzyme
 import Reactant
 using Reactant: Enzyme
 
+# `scan` is specialised only while Reactant is tracing. The core implementation remains the
+# ordinary Julia loop used by every other backend.
+_copy_scan_state(state::AbstractArray) = copy(state)
+_copy_scan_state(state::Tuple) = map(_copy_scan_state, state)
+_copy_scan_state(state::NamedTuple) = map(_copy_scan_state, state)
+_copy_scan_state(state) = state
+
+function Flux.scan(cell, x::Reactant.AnyTracedRArray, state)
+    # Dense and other layers can pass a lazy reshape/view of a traced array. Materialize it once so
+    # dynamic time indexing in the loop carries a shape-stable Reactant array.
+    x = Reactant.materialize_traced_array(x)
+    sequence_length = size(x, 2)
+
+    # Keep the same empty-sequence behavior as the core implementation (`first(xs)` throws).
+    sequence_length == 0 && throw(BoundsError(x))
+    x₁ = x[(Colon(), 1, ntuple(_ -> Colon(), Val(ndims(x) - 2))...)...]
+    output₁, state = cell(x₁, _copy_scan_state(state))
+
+    # `stack(outputs, dims=2)` inserts the time axis between features and batch dimensions.
+    output_dims = (size(output₁, 1), sequence_length, size(output₁)[2:end]...)
+    outputs = similar(output₁, eltype(output₁), output_dims)
+    output₁_indices = (Colon(), 1, ntuple(_ -> Colon(), Val(ndims(output₁) - 1))...)
+    outputs[output₁_indices...] = output₁
+
+    Reactant.@trace for t in 2:sequence_length
+        xₜ = x[(Colon(), t, ntuple(_ -> Colon(), Val(ndims(x) - 2))...)...]
+        outputₜ, state = cell(xₜ, state)
+        outputₜ_indices = (Colon(), t, ntuple(_ -> Colon(), Val(ndims(outputₜ) - 1))...)
+        outputs[outputₜ_indices...] = outputₜ
+    end
+
+    return outputs, state
+end
+
 # The scalar loss out of a loss value: the whole thing for a scalar loss, or `first` when the loss
 # returns auxiliary outputs (a Tuple/NamedTuple `(loss, aux...)`). Checked at trace time, since
 # Enzyme would otherwise silently differentiate the sum of an array-valued loss.
