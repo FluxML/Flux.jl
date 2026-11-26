@@ -103,6 +103,12 @@ function (rnn::Recurrence{true})(x::AbstractArray, state)
   scan(rnn.cell, x, state)
 end
 
+function Functors.functor(rnn::Recurrence{S}) where {S}
+  params = (cell = rnn.cell,)
+  reconstruct = p -> Recurrence{S, typeof(p.cell)}(p.cell)
+  return params, reconstruct
+end
+
 # Vanilla RNN
 @doc raw"""
     RNNCell(in => out, σ = tanh; init_kernel = glorot_uniform, 
