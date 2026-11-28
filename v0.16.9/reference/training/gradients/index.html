@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gradients · Flux</title><meta name="title" content="Gradients · Flux"/><meta property="og:title" content="Gradients · Flux"/><meta property="twitter:title" content="Gradients · Flux"/><meta name="description" content="Documentation for Flux."/><meta property="og:description" content="Documentation for Flux."/><meta property="twitter:description" content="Documentation for Flux."/><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.png" alt="Flux logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../../guide/models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../../guide/models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../../../guide/models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../../guide/training/training/">Training</a></li><li><a class="tocitem" href="../../../guide/models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../../guide/gpu/">GPU Support</a></li><li><a class="tocitem" href="../../../guide/saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../../guide/performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../reference/">Training API</a></li><li><a class="tocitem" href="../optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../callbacks/">Callback Helpers</a></li><li class="is-active"><a class="tocitem" href>Gradients</a><ul class="internal"><li><a class="tocitem" href="#Generic-Gradient-Interface"><span>Generic Gradient Interface</span></a></li><li><a class="tocitem" href="#autodiff-zygote"><span>Automatic Differentiation using Zygote.jl</span></a></li><li><a class="tocitem" href="#ChainRules-for-Zygote"><span>ChainRules for Zygote</span></a></li><li><a class="tocitem" href="#autodiff-enzyme"><span>Automatic Differentiation using Enzyme.jl</span></a></li><li><a class="tocitem" href="#Second-order-AD"><span>Second-order AD</span></a></li></ul></li><li><a class="tocitem" href="../../data/mldatadevices/">Transfer Data to GPU – MLDataDevices.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../../../tutorials/custom_layers/">Custom Layers</a></li><li><a class="tocitem" href="../../../tutorials/model_zoo/">Model Zoo</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Gradients</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gradients</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/FluxML/Flux.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/reference/training/gradients.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Automatic-Differentiation-in-Flux"><a class="docs-heading-anchor" href="#Automatic-Differentiation-in-Flux">Automatic Differentiation in Flux</a><a id="Automatic-Differentiation-in-Flux-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-Differentiation-in-Flux" title="Permalink"></a></h1><p>Flux&#39;s <code>gradient</code> function uses <a href="https://github.com/FluxML/Zygote.jl">Zygote</a> by default, and also uses this function within <a href="../reference/#Flux.Train.train!"><code>train!</code></a> to differentiate the model. Zygote has its own <a href="https://fluxml.ai/Zygote.jl/dev/">documentation</a>, in particular listing some <a href="https://fluxml.ai/Zygote.jl/dev/limitations/">important limitations</a>.</p><p>Flux also has support for Enzyme.jl, documented <a href="#autodiff-enzyme">below</a> and for Mooncake.jl.</p><h2 id="Generic-Gradient-Interface"><a class="docs-heading-anchor" href="#Generic-Gradient-Interface">Generic Gradient Interface</a><a id="Generic-Gradient-Interface-1"></a><a class="docs-heading-anchor-permalink" href="#Generic-Gradient-Interface" title="Permalink"></a></h2><article><details class="docstring"><summary id="Flux.gradient-Tuple{Any, AbstractADType, Vararg{Any}}"><a class="docstring-binding" href="#Flux.gradient-Tuple{Any, AbstractADType, Vararg{Any}}"><code>Flux.gradient</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">gradient(f, [adtype,] args...)</code></pre><p>Returns a tuple containing <code>∂f/∂x</code> for each argument <code>x</code>, the derivative (for scalar <code>x</code>) or the gradient. If no gradient is defined, <code>∂f/∂x</code> will be <code>nothing</code>.</p><p><code>f(args...)</code> must be a real number, see <a href="#Zygote.jacobian-Tuple{Any, Vararg{Any}}"><code>Zygote.jacobian</code></a> for array output.</p><p>The optional argument <code>adtype</code> allows specifying the automatic differentiation backend. </p><p>We provide specific support and testing for the following backends:  <code>AutoZygote</code>, <code>AutoEnzyme</code>, <code>AutoMooncake</code>, and <code>AutoFiniteDifferences</code>.</p><p>The package corresponding to any chosen backend (except Zygote) must be loaded in advance.</p><p>If no <code>adtype</code> is given, then Zygote.jl is used by default, unless at least one argument  is of type <code>Duplicated</code> from Enzyme.jl, in which case Enzyme.jl is used.</p><p>See also <a href="#Flux.withgradient-Tuple{Any, AbstractADType, Vararg{Any}}"><code>withgradient</code></a> to keep the value <code>f(args...)</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; Flux.gradient(*, 2.0, 3.0, 5.0)
+(15.0, 10.0, 6.0)
+
+julia&gt; Flux.gradient(x -&gt; sum(abs2,x), [7.0, 11.0, 13.0])
+([14.0, 22.0, 26.0],)
+
+julia&gt; Flux.gradient([7, 11], 0, 1) do x, y, d
+         p = size(x, d)
+         sum(x.^p .+ y)
+       end
+([14.0, 22.0], 2.0, nothing)</code></pre><p>Specifying other AD backends:</p><pre><code class="language-julia-repl hljs">julia&gt; using Mooncake
+
+julia&gt; f(x) = sum(2 .* x)
+f (generic function with 1 method)
+
+julia&gt; Flux.gradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
+([2.0, 2.0, 2.0],)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ce4b8a081aec37d5f8144044a5a7940f47210551/src/gradient.jl#L3-L50">source</a></section></details></article><article><details class="docstring"><summary id="Flux.withgradient-Tuple{Any, AbstractADType, Vararg{Any}}"><a class="docstring-binding" href="#Flux.withgradient-Tuple{Any, AbstractADType, Vararg{Any}}"><code>Flux.withgradient</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">withgradient(f, [adtype,] args...)</code></pre><p>Returns both the value of the function and the <a href="#Flux.gradient-Tuple{Any, AbstractADType, Vararg{Any}}"><code>gradient</code></a>, as a named tuple.</p><p>The optional argument <code>adtype</code> allows specifying the automatic differentiation backend among the supported ones: <code>AutoZygote</code>, <code>AutoEnzyme</code>, <code>AutoMooncake</code>, and <code>AutoFiniteDifferences</code>. The package corresponding to the chosen backend must be loaded in advance.</p><p>If no <code>adtype</code> is given, then Zygote.jl is used by default, unless at least one argument  is of type <code>Duplicated</code> from Enzyme.jl, in which case Enzyme.jl is used.</p><p>Se also <a href="#Flux.gradient-Tuple{Any, AbstractADType, Vararg{Any}}"><code>gradient</code></a> to get just the gradient.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; y, ∇ = withgradient(/, 1, 2)
+(val = 0.5, grad = (0.5, -0.25))
+
+julia&gt; ∇ == gradient(/, 1, 2)
+true</code></pre><p><code>withgradient</code> allows you to capture auxillary outputs, in addition to the scalar used by <code>gradient</code>. To do this, <code>f</code> must return a Tuple or NamedTuple. Then it calculates <code>grad = gradient(first∘f, args...) but returns the whole</code>val = f(args...)`:</p><pre><code class="language-julia-repl hljs">julia&gt; withgradient([1,2,4]) do x
+          z = 1 ./ x
+          sum(z), z  # here z is an auxillary output
+       end
+(val = (1.75, [1.0, 0.5, 0.25]), grad = ([-1.0, -0.25, -0.0625],))
+
+julia&gt; withgradient(3.0, 4.0) do x, y
+          (div = x/y, mul = x*y)
+       end
+(val = (div = 0.75, mul = 12.0), grad = (0.25, -0.1875))</code></pre><p>Different AD backends can be specified:</p><pre><code class="language-julia-repl hljs">julia&gt; using Mooncake
+
+julia&gt; f(x) = sum(2 .* x)
+f (generic function with 1 method)
+
+julia&gt; Flux.withgradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
+(val = 12.0, grad = ([2.0, 2.0, 2.0],))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ce4b8a081aec37d5f8144044a5a7940f47210551/src/gradient.jl#L141-L193">source</a></section></details></article><h2 id="autodiff-zygote"><a class="docs-heading-anchor" href="#autodiff-zygote">Automatic Differentiation using Zygote.jl</a><a id="autodiff-zygote-1"></a><a class="docs-heading-anchor-permalink" href="#autodiff-zygote" title="Permalink"></a></h2><p>The default AD backend in Flux is Zygote. Besides  gradient calculation, Zygote also supports higher-order derivatives, Jacobians, Hessians, and pullbacks.</p><article><details class="docstring"><summary id="Zygote.jacobian-Tuple{Any, Vararg{Any}}"><a class="docstring-binding" href="#Zygote.jacobian-Tuple{Any, Vararg{Any}}"><code>Zygote.jacobian</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">jacobian(f, args...) -&gt; Tuple</code></pre><p>For each array <code>a ∈ args</code> this returns a matrix with <code>Ja[k,i] = ∂y[k]/∂a[i]</code> where <code>y = f(args...)</code> is usually a vector. Arrays of higher dimension are treated like <code>vec(a)</code>, or <code>vec(y)</code> for output.</p><p>For scalar <code>x::Number ∈ args</code>, the result is a vector <code>Jx[k] = ∂y[k]/∂x</code>, while for scalar <code>y</code> all results have just one row.</p><p>With any other argument type, no result is produced, even if <a href="@ref"><code>gradient</code></a> would work.</p><p>This reverse-mode Jacobian needs to evaluate the pullback once for each element of <code>y</code>. Doing so is usually only efficient when <code>length(y)</code> is small compared to <code>length(a)</code>, otherwise forward mode is likely to be better.</p><p>See also <a href="#Zygote.withjacobian-Tuple{Any, Vararg{Any}}"><code>withjacobian</code></a>, <a href="#Zygote.hessian"><code>hessian</code></a>, <a href="#Zygote.hessian_reverse"><code>hessian_reverse</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; jacobian(a -&gt; 100*a[1:3].^2, 1:7)[1]  # first index (rows) is output
+3×7 Matrix{Int64}:
+ 200    0    0  0  0  0  0
+   0  400    0  0  0  0  0
+   0    0  600  0  0  0  0
+
+julia&gt; jacobian((a,x) -&gt; a.^2 .* x, [1,2,3], 1)  # scalar argument has vector jacobian
+([2 0 0; 0 4 0; 0 0 6], [1, 4, 9])
+
+julia&gt; jacobian((a,d) -&gt; prod(a, dims=d), [1 2; 3 4; 5 6], 2)
+([2 0 … 0 0; 0 4 … 3 0; 0 0 … 0 5], [0, 0, 0])</code></pre><div class="admonition is-warning" id="Warning-7c6e494f88c8f0de"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-7c6e494f88c8f0de" title="Permalink"></a></header><div class="admonition-body"><p>For arguments of any type except <code>Number</code> &amp; <code>AbstractArray</code>, the result is <code>nothing</code>.</p></div></div><pre><code class="language-julia hljs">julia&gt; jacobian((a,s) -&gt; a.^length(s), [1,2,3], &quot;str&quot;)
+([3 0 0; 0 12 0; 0 0 27], nothing)
+
+julia&gt; jacobian((a,t) -&gt; sum(a .* t[1]) + t[2], [1,2,3], (4,5))
+([4 4 4], nothing)
+
+julia&gt; gradient((a,t) -&gt; sum(a .* t[1]) + t[2], [1,2,3], (4,5))  # gradient undersands the tuple
+([4 4 4], (6, 1))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/lib/grad.jl#L120-L167">source</a></section></details></article><article><details class="docstring"><summary id="Zygote.withjacobian-Tuple{Any, Vararg{Any}}"><a class="docstring-binding" href="#Zygote.withjacobian-Tuple{Any, Vararg{Any}}"><code>Zygote.withjacobian</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">withjacobian(f, args...)</code></pre><p>Returns both the value <code>f(args...)</code> and the <a href="#Zygote.jacobian-Tuple{Any, Vararg{Any}}"><code>jacobian</code></a> as a named tuple.</p><pre><code class="language-julia-repl hljs">julia&gt; withjacobian(cumsum, [1,2,3])
+(val = [1, 3, 6], grad = ([1 0 0; 1 1 0; 1 1 1],))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/lib/grad.jl#L170-L179">source</a></section></details></article><article><details class="docstring"><summary id="Zygote.hessian"><a class="docstring-binding" href="#Zygote.hessian"><code>Zygote.hessian</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">hessian(f, x)</code></pre><p>Construct the Hessian <code>∂²f/∂x²</code>, where <code>x</code> is a real number or an array, and <code>f(x)</code> is a real number. When <code>x</code> is an array, the result is a matrix <code>H[i,j] = ∂²f/∂x[i]∂x[j]</code>, using linear indexing <code>x[i]</code> even if the argument is higher-dimensional.</p><p>This uses forward over reverse, ForwardDiff over Zygote, calling <code>hessian_dual(f, x)</code>. See <a href="#Zygote.hessian_reverse"><code>hessian_reverse</code></a> for an all-Zygote alternative.</p><p>See also <a href="#Zygote.diaghessian"><code>diaghessian</code></a> to compute only the diagonal part.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; hessian(x -&gt; x[1]*x[2], randn(2))
+2×2 Matrix{Float64}:
+ 0.0  1.0
+ 1.0  0.0
+
+julia&gt; hessian(x -&gt; sum(x.^3), [1 2; 3 4])  # uses linear indexing of x
+4×4 Matrix{Int64}:
+ 6   0   0   0
+ 0  18   0   0
+ 0   0  12   0
+ 0   0   0  24
+
+julia&gt; hessian(sin, pi/2)
+-1.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/lib/grad.jl#L70-L101">source</a></section></details></article><article><details class="docstring"><summary id="Zygote.hessian_reverse"><a class="docstring-binding" href="#Zygote.hessian_reverse"><code>Zygote.hessian_reverse</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">hessian_reverse(f, x)</code></pre><p>This should be equivalent to <a href="#Zygote.hessian"><code>hessian(f, x)</code></a>, but implemented using reverse over reverse mode, all Zygote. (This is usually much slower, and more likely to find errors.)</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/lib/grad.jl#L108-L114">source</a></section></details></article><article><details class="docstring"><summary id="Zygote.diaghessian"><a class="docstring-binding" href="#Zygote.diaghessian"><code>Zygote.diaghessian</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">diaghessian(f, args...) -&gt; Tuple</code></pre><p>Diagonal part of the Hessian. Returns a tuple containing, for each argument <code>x</code>, <code>h</code> of the same shape with <code>h[i] = Hᵢᵢ = ∂²y/∂x[i]∂x[i]</code>.  The original evaluation <code>y = f(args...)</code> must give a real number <code>y</code>.</p><p>For one vector argument <code>x</code>, this is equivalent to <code>(diag(hessian(f,x)),)</code>. Like <a href="#Zygote.hessian"><code>hessian</code></a> it uses ForwardDiff over Zygote. </p><div class="admonition is-warning" id="Warning-7c6e494f88c8f0de"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-7c6e494f88c8f0de" title="Permalink"></a></header><div class="admonition-body"><p>For arguments of any type except <code>Number</code> &amp; <code>AbstractArray</code>, the result is <code>nothing</code>.</p></div></div><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; diaghessian(x -&gt; sum(x.^3), [1 2; 3 4])[1]
+2×2 Matrix{Int64}:
+  6  12
+ 18  24
+
+julia&gt; Diagonal(vec(ans)) == hessian(x -&gt; sum(x.^3), [1 2; 3 4])  # full Hessian is diagonal
+true
+
+julia&gt; diaghessian((x,y) -&gt; sum(x .* y .* y&#39;), [1 22; 333 4], [0.5, 0.666])  # two array arguments
+([0.0 0.0; 0.0 0.0], [2.0, 8.0])
+
+julia&gt; diaghessian(atan, 1, 2)  # two scalar arguments
+(-0.16, 0.16)
+
+julia&gt; hessian(xy -&gt; atan(xy[1], xy[2]), [1, 2])  # full Hessian is not diagonal
+2×2 Matrix{Float64}:
+ -0.16  -0.12
+ -0.12   0.16</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/lib/grad.jl#L261-L295">source</a></section></details></article><article><details class="docstring"><summary id="ZygoteRules.pullback"><a class="docstring-binding" href="#ZygoteRules.pullback"><code>ZygoteRules.pullback</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">pullback(f, args...)
+pullback(f, ::Params)</code></pre><p>Returns the value of the function <code>f</code> and a back-propagator function, which can be called to obtain a tuple containing <code>∂f/∂x</code> for each argument <code>x</code>, the derivative (for scalar <code>x</code>) or gradient.</p><pre><code class="language-julia hljs">y, back = pullback(f, args...)
+∇ = back(seed)</code></pre><p><code>back</code> must be called with a start value <code>seed</code> matching the output of <code>f(args...)</code>. If <code>f(args...)</code> returns a number, <code>seed</code> should be a number. If <code>f(args...)</code> returns an array, <code>seed</code> should be an equally-sized array.</p><p>See also <a href="@ref"><code>withgradient</code></a> to obtain the value and gradients in one call, and <a href="@ref"><code>gradient</code></a> for obtaining just the gradients.</p><pre><code class="language-julia-repl hljs">julia&gt; y, back = pullback(*, 2.0, 3.0, 5.0);
+
+julia&gt; y
+30.0
+
+julia&gt; back(1.0)
+(15.0, 10.0, 6.0)
+
+julia&gt; back(2.0)
+(30.0, 20.0, 12.0)
+
+julia&gt; y, back = pullback(x -&gt; [x, x], 1.0);
+
+julia&gt; y
+2-element Vector{Float64}:
+ 1.0
+ 1.0
+
+julia&gt; back([1.0, 1.0])
+(2.0,)
+
+julia&gt; back([2.0, nothing])
+(2.0,)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Zygote.jl/blob/v0.7.10/src/compiler/interface.jl#L48-L93">source</a></section></details></article><h2 id="ChainRules-for-Zygote"><a class="docs-heading-anchor" href="#ChainRules-for-Zygote">ChainRules for Zygote</a><a id="ChainRules-for-Zygote-1"></a><a class="docs-heading-anchor-permalink" href="#ChainRules-for-Zygote" title="Permalink"></a></h2><p>Zygote uses <a href="https://github.com/JuliaDiff/ChainRules.jl">ChainRules.jl</a> to define how to differentiate functions.</p><p>Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation.  This can be done using the following methods:</p><article><details class="docstring"><summary id="ChainRulesCore.ignore_derivatives"><a class="docstring-binding" href="#ChainRulesCore.ignore_derivatives"><code>ChainRulesCore.ignore_derivatives</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">ignore_derivatives(f::Function)</code></pre><p>Tells the AD system to ignore the gradients of the wrapped closure. The primal computation (forward pass) is executed normally.</p><pre><code class="language-julia hljs">ignore_derivatives() do
+    value = rand()
+    push!(collection, value)
+end</code></pre><p>Using this incorrectly could lead to incorrect gradients. For example, the following function will have zero gradients with respect to its argument:</p><pre><code class="language-julia hljs">function wrong_grads(x)
+    y = ones(3)
+    ignore_derivatives() do
+        push!(y, x)
+    end
+    return sum(y)
+end</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/ignore_derivatives.jl#L1-L25">source</a></section><section><div><pre><code class="language-julia hljs">ignore_derivatives(x)</code></pre><p>Tells the AD system to ignore the gradients of the argument. Can be used to avoid unnecessary computation of gradients.</p><pre><code class="language-julia hljs">ignore_derivatives(x) * w</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/ignore_derivatives.jl#L28-L37">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.@non_differentiable"><a class="docstring-binding" href="#ChainRulesCore.@non_differentiable"><code>ChainRulesCore.@non_differentiable</code></a> — <span class="docstring-category">Macro</span></summary><section><div><pre><code class="language-julia hljs">@non_differentiable(signature_expression)</code></pre><p>A helper to make it easier to declare that a method is not differentiable. This is a short-hand for defining an <a href="#ChainRulesCore.frule"><code>frule</code></a> and <a href="#ChainRulesCore.rrule"><code>rrule</code></a> that return <a href="#ChainRulesCore.NoTangent"><code>NoTangent()</code></a> for all partials (even for the function <code>s̄elf</code>-partial itself)</p><p>Keyword arguments should not be included.</p><pre><code class="language-julia-repl hljs">julia&gt; @non_differentiable Base.:(==)(a, b)
+
+julia&gt; _, pullback = rrule(==, 2.0, 3.0);
+
+julia&gt; pullback(1.0)
+(NoTangent(), NoTangent(), NoTangent())</code></pre><p>You can place type-constraints in the signature:</p><pre><code class="language-julia-repl hljs">julia&gt; @non_differentiable Base.length(xs::Union{Number, Array})
+
+julia&gt; frule((ZeroTangent(), 1), length, [2.0, 3.0])
+(2, NoTangent())</code></pre><div class="admonition is-warning" id="Warning-855e47cb16d4b0b2"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-855e47cb16d4b0b2" title="Permalink"></a></header><div class="admonition-body"><p>This helper macro covers only the simple common cases. It does not support <code>where</code>-clauses. For these you can declare the <code>rrule</code> and <code>frule</code> directly</p></div></div></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/rule_definition_tools.jl#L345-L377">source</a></section></details></article><p>To manually supply the gradient for one function, you should define a method of <code>rrule</code>. ChainRules has <a href="https://juliadiff.org/ChainRulesCore.jl/stable/">detailed documentation</a> on how this works.</p><article><details class="docstring"><summary id="ChainRulesCore.rrule"><a class="docstring-binding" href="#ChainRulesCore.rrule"><code>ChainRulesCore.rrule</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">rrule([::RuleConfig,] f, x...)</code></pre><p>Expressing <code>x</code> as the tuple <code>(x₁, x₂, ...)</code> and the output tuple of <code>f(x...)</code> as <code>Ω</code>, return the tuple:</p><pre><code class="language-julia hljs">(Ω, (Ω̄₁, Ω̄₂, ...) -&gt; (s̄elf, x̄₁, x̄₂, ...))</code></pre><p>Where the second return value is the the propagation rule or pullback. It takes in cotangents corresponding to the outputs (<code>x̄₁, x̄₂, ...</code>), and <code>s̄elf</code>, the internal values of the function itself (for closures)</p><p>If no method matching <code>rrule(f, xs...)</code> has been defined, then return <code>nothing</code>.</p><p>Examples:</p><p>unary input, unary output scalar function:</p><pre><code class="language-julia-repl hljs">julia&gt; x = rand();
+
+julia&gt; sinx, sin_pullback = rrule(sin, x);
+
+julia&gt; sinx == sin(x)
+true
+
+julia&gt; sin_pullback(1) == (NoTangent(), cos(x))
+true</code></pre><p>binary input, unary output scalar function:</p><pre><code class="language-julia-repl hljs">julia&gt; x, y = rand(2);
+
+julia&gt; hypotxy, hypot_pullback = rrule(hypot, x, y);
+
+julia&gt; hypotxy == hypot(x, y)
+true
+
+julia&gt; hypot_pullback(1) == (NoTangent(), (x / hypot(x, y)), (y / hypot(x, y)))
+true</code></pre><p>The optional <a href="#ChainRulesCore.RuleConfig"><code>RuleConfig</code></a> option allows specifying rrules only for AD systems that support given features. If not needed, then it can be omitted and the <code>rrule</code> without it will be hit as a fallback. This is the case for most rules.</p><p>See also: <a href="#ChainRulesCore.frule"><code>frule</code></a>, <a href="#ChainRulesCore.@scalar_rule"><code>@scalar_rule</code></a>, <a href="#ChainRulesCore.RuleConfig"><code>RuleConfig</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/rules.jl#L83-L134">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.frule"><a class="docstring-binding" href="#ChainRulesCore.frule"><code>ChainRulesCore.frule</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">frule([::RuleConfig,] (Δf, Δx...), f, x...)</code></pre><p>Expressing the output of <code>f(x...)</code> as <code>Ω</code>, return the tuple:</p><pre><code class="language-julia hljs">(Ω, ΔΩ)</code></pre><p>The second return value is the tangent w.r.t. the output.</p><p>If no method matching <code>frule((Δf, Δx...), f, x...)</code> has been defined, then return <code>nothing</code>.</p><p>Examples:</p><p>unary input, unary output scalar function:</p><pre><code class="language-julia-repl hljs">julia&gt; dself = NoTangent();
+
+julia&gt; x = rand()
+0.8236475079774124
+
+julia&gt; sinx, Δsinx = frule((dself, 1), sin, x)
+(0.7336293678134624, 0.6795498147167869)
+
+julia&gt; sinx == sin(x)
+true
+
+julia&gt; Δsinx == cos(x)
+true</code></pre><p>Unary input, binary output scalar function:</p><pre><code class="language-julia-repl hljs">julia&gt; sincosx, Δsincosx = frule((dself, 1), sincos, x);
+
+julia&gt; sincosx == sincos(x)
+true
+
+julia&gt; Δsincosx[1] == cos(x)
+true
+
+julia&gt; Δsincosx[2] == -sin(x)
+true</code></pre><p>Note that techically speaking julia does not have multiple output functions, just functions that return a single output that is iterable, like a <code>Tuple</code>. So this is actually a <a href="#ChainRulesCore.Tangent"><code>Tangent</code></a>:</p><pre><code class="language-julia-repl hljs">julia&gt; Δsincosx
+Tangent{Tuple{Float64, Float64}}(0.6795498147167869, -0.7336293678134624)</code></pre><p>The optional <a href="#ChainRulesCore.RuleConfig"><code>RuleConfig</code></a> option allows specifying frules only for AD systems that support given features. If not needed, then it can be omitted and the <code>frule</code> without it will be hit as a fallback. This is the case for most rules.</p><p>See also: <a href="#ChainRulesCore.rrule"><code>rrule</code></a>, <a href="#ChainRulesCore.@scalar_rule"><code>@scalar_rule</code></a>, <a href="#ChainRulesCore.RuleConfig"><code>RuleConfig</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/rules.jl#L1-L62">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.@scalar_rule"><a class="docstring-binding" href="#ChainRulesCore.@scalar_rule"><code>ChainRulesCore.@scalar_rule</code></a> — <span class="docstring-category">Macro</span></summary><section><div><pre><code class="language-julia hljs">@scalar_rule(f(x₁, x₂, ...),
+             @setup(statement₁, statement₂, ...),
+             (∂f₁_∂x₁, ∂f₁_∂x₂, ...),
+             (∂f₂_∂x₁, ∂f₂_∂x₂, ...),
+             ...)</code></pre><p>A convenience macro that generates simple scalar forward or reverse rules using the provided partial derivatives. Specifically, generates the corresponding methods for <code>frule</code> and <code>rrule</code>:</p><pre><code class="language-julia hljs">function ChainRulesCore.frule((NoTangent(), Δx₁, Δx₂, ...), ::typeof(f), x₁::Number, x₂::Number, ...)
+    Ω = f(x₁, x₂, ...)
+    $(statement₁, statement₂, ...)
+    return Ω, (
+            (∂f₁_∂x₁ * Δx₁ + ∂f₁_∂x₂ * Δx₂ + ...),
+            (∂f₂_∂x₁ * Δx₁ + ∂f₂_∂x₂ * Δx₂ + ...),
+            ...
+        )
+end
+
+function ChainRulesCore.rrule(::typeof(f), x₁::Number, x₂::Number, ...)
+    Ω = f(x₁, x₂, ...)
+    $(statement₁, statement₂, ...)
+    return Ω, ((ΔΩ₁, ΔΩ₂, ...)) -&gt; (
+            NoTangent(),
+            ∂f₁_∂x₁ * ΔΩ₁ + ∂f₂_∂x₁ * ΔΩ₂ + ...),
+            ∂f₁_∂x₂ * ΔΩ₁ + ∂f₂_∂x₂ * ΔΩ₂ + ...),
+            ...
+        )
+end</code></pre><p>If no type constraints in <code>f(x₁, x₂, ...)</code> within the call to <code>@scalar_rule</code> are provided, each parameter in the resulting <code>frule</code>/<code>rrule</code> definition is given a type constraint of <code>Number</code>. Constraints may also be explicitly be provided to override the <code>Number</code> constraint, e.g. <code>f(x₁::Complex, x₂)</code>, which will constrain <code>x₁</code> to <code>Complex</code> and <code>x₂</code> to <code>Number</code>.</p><p>At present this does not support defining for closures/functors. Thus in reverse-mode, the first returned partial, representing the derivative with respect to the function itself, is always <code>NoTangent()</code>. And in forward-mode, the first input to the returned propagator is always ignored.</p><p>The result of <code>f(x₁, x₂, ...)</code> is automatically bound to <code>Ω</code>. This allows the primal result to be conveniently referenced (as <code>Ω</code>) within the derivative/setup expressions.</p><p>This macro assumes complex functions are holomorphic. In general, for non-holomorphic functions, the <code>frule</code> and <code>rrule</code> must be defined manually.</p><p>If the derivative is one, (e.g. for identity functions) <code>true</code> can be used as the most general multiplicative identity.</p><p>The <code>@setup</code> argument can be elided if no setup code is need. In other words:</p><pre><code class="language-julia hljs">@scalar_rule(f(x₁, x₂, ...),
+             (∂f₁_∂x₁, ∂f₁_∂x₂, ...),
+             (∂f₂_∂x₁, ∂f₂_∂x₂, ...),
+             ...)</code></pre><p>is equivalent to:</p><pre><code class="language-julia hljs">@scalar_rule(f(x₁, x₂, ...),
+             @setup(nothing),
+             (∂f₁_∂x₁, ∂f₁_∂x₂, ...),
+             (∂f₂_∂x₁, ∂f₂_∂x₂, ...),
+             ...)</code></pre><p>For examples, see ChainRules&#39; <code>rulesets</code> directory.</p><p>See also: <a href="#ChainRulesCore.frule"><code>frule</code></a>, <a href="#ChainRulesCore.rrule"><code>rrule</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/rule_definition_tools.jl#L11-L90">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.NoTangent"><a class="docstring-binding" href="#ChainRulesCore.NoTangent"><code>ChainRulesCore.NoTangent</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">NoTangent() &lt;: AbstractZero</code></pre><p>This tangent indicates that the derivative does not exist. It is the tangent type for primal types that are not differentiable, such as integers or booleans (when they are not being used to represent floating-point values). The only valid way to perturb such values is to not change them at all. As a consequence, <code>NoTangent</code> is functionally identical to <code>ZeroTangent()</code>, but it provides additional semantic information.</p><p>Adding <code>NoTangent()</code> to a primal is generally wrong: gradient-based methods cannot be used to optimize over discrete variables. An optimization package making use of this might want to check for such a case.</p><div class="admonition is-info" id="Note-b662520990d57187"><header class="admonition-header">Note<a class="admonition-anchor" href="#Note-b662520990d57187" title="Permalink"></a></header><div class="admonition-body"><p>This does not indicate that the derivative is not implemented, but rather that mathematically it is not defined.</p></div></div><p>This mostly shows up as the derivative with respect to dimension, index, or size arguments.</p><pre><code class="language-julia hljs">function rrule(fill, x, len::Int)
+    y = fill(x, len)
+    fill_pullback(ȳ) = (NoTangent(), @thunk(sum(Ȳ)), NoTangent())
+    return y, fill_pullback
+end</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/tangent_types/abstract_zero.jl#L65-L93">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.ZeroTangent"><a class="docstring-binding" href="#ChainRulesCore.ZeroTangent"><code>ChainRulesCore.ZeroTangent</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">ZeroTangent() &lt;: AbstractZero</code></pre><p>The additive identity for tangents. This is basically the same as <code>0</code>. A derivative of <code>ZeroTangent()</code> does not propagate through the primal function.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/tangent_types/abstract_zero.jl#L51-L57">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.RuleConfig"><a class="docstring-binding" href="#ChainRulesCore.RuleConfig"><code>ChainRulesCore.RuleConfig</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">RuleConfig{T}</code></pre><p>The configuration for what rules to use. <code>T</code>: <strong>traits</strong>. This should be a <code>Union</code> of all special traits needed for rules to be allowed to be defined for your AD. If nothing special this should be set to <code>Union{}</code>.</p><p><strong>AD authors</strong> should define a subtype of <code>RuleConfig</code> to use when calling <code>frule</code>/<code>rrule</code>.</p><p><strong>Rule authors</strong> can dispatch on this config when defining rules. For example:</p><pre><code class="language-julia hljs"># only define rrule for `pop!` on AD systems where mutation is supported.
+rrule(::RuleConfig{&gt;:SupportsMutation}, typeof(pop!), ::Vector) = ...
+
+# this definition of map is for any AD that defines a forwards mode
+rrule(conf::RuleConfig{&gt;:HasForwardsMode}, typeof(map), ::Vector) = ...
+
+# this definition of map is for any AD that only defines a reverse mode.
+# It is not as good as the rrule that can be used if the AD defines a forward-mode as well.
+rrule(conf::RuleConfig{&gt;:Union{NoForwardsMode, HasReverseMode}}, typeof(map), ::Vector) = ...</code></pre><p>For more details see <a href="@ref config">rule configurations and calling back into AD</a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/config.jl#L1-L25">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.Tangent"><a class="docstring-binding" href="#ChainRulesCore.Tangent"><code>ChainRulesCore.Tangent</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">Tangent{P, T} &lt;: StructuralTangent{P} &lt;: AbstractTangent</code></pre><p>This type represents the tangent for a <code>struct</code>/<code>NamedTuple</code>, or <code>Tuple</code>. <code>P</code> is the the corresponding primal type that this is a tangent for.</p><p><code>Tangent{P}</code> should have fields (technically properties), that match to a subset of the fields of the primal type; and each should be a tangent type matching to the primal type of that field. Fields of the P that are not present in the Tangent are treated as <code>Zero</code>.</p><p><code>T</code> is an implementation detail representing the backing data structure. For Tuple it will be a Tuple, and for everything else it will be a <code>NamedTuple</code>. It should not be passed in by user.</p><p>For <code>Tangent</code>s of <code>Tuple</code>s, <code>iterate</code> and <code>getindex</code> are overloaded to behave similarly to for a tuple. For <code>Tangent</code>s of <code>struct</code>s, <code>getproperty</code> is overloaded to allow for accessing values via <code>tangent.fieldname</code>. Any fields not explictly present in the <code>Tangent</code> are treated as being set to <code>ZeroTangent()</code>. To make a <code>Tangent</code> have all the fields of the primal the <a href="#ChainRulesCore.canonicalize"><code>canonicalize</code></a> function is provided.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/tangent_types/structural_tangent.jl#L16-L38">source</a></section></details></article><article><details class="docstring"><summary id="ChainRulesCore.canonicalize"><a class="docstring-binding" href="#ChainRulesCore.canonicalize"><code>ChainRulesCore.canonicalize</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">canonicalize(tangent::Tangent{P}) -&gt; Tangent{P}</code></pre><p>Return the canonical <code>Tangent</code> for the primal type <code>P</code>. The property names of the returned <code>Tangent</code> match the field names of the primal, and all fields of <code>P</code> not present in the input <code>tangent</code> are explictly set to <code>ZeroTangent()</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaDiff/ChainRulesCore.jl/blob/v1.26.0/src/tangent_types/structural_tangent.jl#L427-L433">source</a></section></details></article><p>Gradient customization for other AD packages such as Enzyme and Mooncake has to be done according to their own documentation.</p><h2 id="autodiff-enzyme"><a class="docs-heading-anchor" href="#autodiff-enzyme">Automatic Differentiation using Enzyme.jl</a><a id="autodiff-enzyme-1"></a><a class="docs-heading-anchor-permalink" href="#autodiff-enzyme" title="Permalink"></a></h2><p><a href="https://github.com/EnzymeAD/Enzyme.jl">Enzyme.jl</a> is a new package for automatic differentiation. Like Zygote.jl, calling <code>gradient(f, x)</code> causes it to hooks into the compiler and transform code that is executed while calculating <code>f(x)</code>, in order to produce code for <code>∂f/∂x</code>. But it does so much later in the optimisation process (on LLVM instead of Julia&#39;s untyped IR) which you can <a href="https://proceedings.nips.cc/paper/2020/file/9332c513ef44b682e9347822c2e457ac-Paper.pdf">read about here</a>]. It needs far fewer custom rules than Zygote/ChainRules, and in particular is able to support mutation of arrays.</p><p>Flux now builds in support for this, using Enzyme&#39;s own <code>Duplicated</code> type. Calling <code>Duplicated</code> on any Flux model which was defined using <code>@layer</code> will allocate space for the gradient, and passing that to <code>gradient</code> (or <code>withgradient</code>, or <code>train!</code>) will then use Enzyme instead of Zygote. The gradient functions still return the gradient as usual, which can then be passed to <code>update!</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, Enzyme
+
+julia&gt; model = Chain(Dense(28^2 =&gt; 32, sigmoid), Dense(32 =&gt; 10), softmax);  # from model zoo
+
+julia&gt; dup_model = Enzyme.Duplicated(model)  # this allocates space for the gradient
+Duplicated(
+  Chain(
+    Dense(784 =&gt; 32, σ),                # 25_120 parameters
+    Dense(32 =&gt; 10),                    # 330 parameters
+    NNlib.softmax,
+  ),
+  # norm(∇) ≈ 0.0f0
+)                   # Total: 4 arrays, 25_450 parameters, 199.391 KiB.
+
+julia&gt; x1 = randn32(28*28, 1);  # fake image
+
+julia&gt; y1 = [i==3 for i in 0:9];  # fake label
+
+julia&gt; grads_f = Flux.gradient((m,x,y) -&gt; sum(abs2, m(x) .- y), dup_model, Const(x1), Const(y1))  # uses Enzyme
+((layers = ((weight = Float32[-0.010354728 0.032972857 …
+    -0.0014538406], σ = nothing), nothing),), nothing, nothing)</code></pre><p>The gradient returned here is also stored within <code>dup_model</code>. Both share the same arrays – what is returned is not a copy, just a view of the same memory (wrapped in <code>NamedTuple</code>s instead of <code>struct</code>s). They will all be set to zero when you call <code>gradient</code> again, then replaced with the new values. Alternatively, <code>gradient(f, args...; zero=false)</code> will add the new gradient to what&#39;s already stored.</p><p>Writing <code>Const(x1)</code> is optional, just plain <code>x1</code> is implicitly constant. Any set of <code>Duplicated</code> and <code>Const</code> arguments may appear in any order, so long as there is at least one <code>Duplicated</code>.</p><p>The gradient <code>grads_f[1]</code> can be passed to <code>update!</code> as usual. But for convenience, you may also use what is stored within <code>Duplicated</code>. These are equivalent ways to perform an update step:</p><pre><code class="language-julia-repl hljs">julia&gt; opt_state = Flux.setup(Adam(), model)
+
+julia&gt; ans == Flux.setup(Adam(), dup_model)
+
+julia&gt; Flux.update!(opt_state, model, grads_f[1])  # exactly as for Zygote gradients
+
+julia&gt; Flux.update!(opt_state, dup_model)  # equivlent new path, Enzyme only</code></pre><p>Instead of using these FLux functions, you can also use Enzyme&#39;s own functions directly. <code>Enzyme.gradient</code> works like this:</p><pre><code class="language-julia-repl hljs">julia&gt; grads_e = Enzyme.gradient(Reverse, (m,x,y) -&gt; sum(abs2, m(x) .- y), model, Const(x1), Const(y1))
+(Chain(Dense(784 =&gt; 32, σ), Dense(32 =&gt; 10), softmax), nothing, nothing)
+
+julia&gt; grads_f[1].layers[2].bias ≈ grads_e[1].layers[2].bias
+true</code></pre><p>Note that what <code>Enzyme.gradient</code> returns is an object like <code>deepcopy(model)</code> of the same type, <code>grads_e[1] isa Chain</code>. But its fields contain the same gradient.</p><article><details class="docstring"><summary id="Flux.gradient-Tuple{Any, Vararg{Union{EnzymeCore.Const, EnzymeCore.Duplicated}}}"><a class="docstring-binding" href="#Flux.gradient-Tuple{Any, Vararg{Union{EnzymeCore.Const, EnzymeCore.Duplicated}}}"><code>Flux.gradient</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">gradient(f, args::Union{Any,EnzymeCore.Duplicated}...)</code></pre><p>This should return the same answer as <code>gradient(f, args...)</code>, but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.</p><p>Only available when Enzyme is loaded!</p><p>This method is used when at least one argument is of type <code>Duplicated</code>, All non-duplicated arguments are treated as <code>Const</code>. Note that Enzyme&#39;s <code>Active</code> is not supported.</p><p>Besides returning the gradient, this is also stored within the <code>Duplicated</code> object. Calling <code>Enzyme.Duplicated(model)</code> allocates space for the gradient, which is zero&#39;d befor use when calling <code>gradient</code>. With the keyword <code>zero=false</code>, the new gradient will instead be added to what is already stored.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Flux
+
+julia&gt; model = Chain(Dense([3.0;;]));
+
+julia&gt; Flux.gradient(model, [1]) do m, x  # computed using Zygote
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [6.0;;], bias = [6.0], σ = nothing),),), [18.0])
+
+julia&gt; using Enzyme
+
+julia&gt; dup_model = Duplicated(model);  # allocates space for gradient
+
+julia&gt; Flux.gradient(dup_model, Const([1])) do m, x  # Enzyme, returns the same
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [6.0;;], bias = [6.0], σ = nothing),),), nothing)
+
+julia&gt; dup_model  # same gradient is also stored within Duplicated
+Duplicated(
+  Chain(
+    Dense(1 =&gt; 1),                      # 2 parameters
+  ),
+  # norm(∇) ≈ 8.49
+)
+
+julia&gt; Flux.destructure((weight = [6.0;;], bias = [6.0]))[1] |&gt; norm
+8.48528137423857
+
+julia&gt; Flux.gradient(dup_model, [1]; zero=false) do m, x  # implict Const([1]), and grad accumulation
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [12.0;;], bias = [12.0], σ = nothing),),), nothing)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ce4b8a081aec37d5f8144044a5a7940f47210551/src/gradient.jl#L83-L137">source</a></section></details></article><article><details class="docstring"><summary id="Flux.withgradient-Tuple{Any, Vararg{Union{EnzymeCore.Const, EnzymeCore.Duplicated}}}"><a class="docstring-binding" href="#Flux.withgradient-Tuple{Any, Vararg{Union{EnzymeCore.Const, EnzymeCore.Duplicated}}}"><code>Flux.withgradient</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">withgradient(f, args::Union{Any,EnzymeCore.Duplicated}...)</code></pre><p>This should return the same answer as <code>withgradient(f, model, args...)</code>, but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.</p><p>Only available when Enzyme is loaded!</p><p>This method is used when at least one argument is of type <code>Duplicated</code>, All non-duplicated arguments will be differentiated as well. Mark them as <code>Const</code> to avoid this. Note that Enzyme&#39;s <code>Active</code> is not supported.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, Enzyme
+
+julia&gt; model = Chain(Embedding([1.1 2.2 3.3]), Dense([4.4;;]), only);
+
+julia&gt; model(3)
+14.52
+
+julia&gt; Flux.withgradient(m -&gt; m(3), model)  # this uses Zygote
+(val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+julia&gt; Flux.withgradient(m -&gt; m(3), Duplicated(model))  # this uses Enzyme
+(val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ce4b8a081aec37d5f8144044a5a7940f47210551/src/gradient.jl#L223-L252">source</a></section></details></article><p>Enzyme.jl has <a href="https://enzymead.github.io/Enzyme.jl/stable/">its own extensive documentation</a>.</p><h2 id="Second-order-AD"><a class="docs-heading-anchor" href="#Second-order-AD">Second-order AD</a><a id="Second-order-AD-1"></a><a class="docs-heading-anchor-permalink" href="#Second-order-AD" title="Permalink"></a></h2><p>If you calculate a gradient within the loss function, then training will involve 2nd derivatives. While this is in principle supported by Zygote.jl, there are many bugs, and Enzyme.jl is probably a better choice.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../callbacks/">« Callback Helpers</a><a class="docs-footer-nextpage" href="../../data/mldatadevices/">Transfer Data to GPU – MLDataDevices.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 1 February 2026 22:02">Sunday 1 February 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body><div data-docstringscollapsed="true"></div></html>

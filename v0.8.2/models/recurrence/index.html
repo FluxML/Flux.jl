@@ -1,0 +1,87 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Recurrence · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+</script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script data-main="../../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link href="../../assets/documenter.css" rel="stylesheet" type="text/css"/><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>Flux</h1><select id="version-selector" onchange="window.location.href=this.value" style="visibility: hidden"></select><form action="../../search/" class="search" id="search-form"><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../../">Home</a></li><li><span class="toctext">Building Models</span><ul><li><a class="toctext" href="../basics/">Basics</a></li><li class="current"><a class="toctext" href="">Recurrence</a><ul class="internal"><li><a class="toctext" href="#Recurrent-Cells-1">Recurrent Cells</a></li><li><a class="toctext" href="#Stateful-Models-1">Stateful Models</a></li><li><a class="toctext" href="#Sequences-1">Sequences</a></li><li><a class="toctext" href="#Truncating-Gradients-1">Truncating Gradients</a></li></ul></li><li><a class="toctext" href="../regularisation/">Regularisation</a></li><li><a class="toctext" href="../layers/">Model Reference</a></li></ul></li><li><span class="toctext">Training Models</span><ul><li><a class="toctext" href="../../training/optimisers/">Optimisers</a></li><li><a class="toctext" href="../../training/training/">Training</a></li></ul></li><li><a class="toctext" href="../../data/onehot/">One-Hot Encoding</a></li><li><a class="toctext" href="../../gpu/">GPU Support</a></li><li><a class="toctext" href="../../saving/">Saving &amp; Loading</a></li><li><a class="toctext" href="../../performance/">Performance Tips</a></li><li><span class="toctext">Internals</span><ul><li><a class="toctext" href="../../internals/tracker/">Backpropagation</a></li></ul></li><li><a class="toctext" href="../../community/">Community</a></li></ul></nav><article id="docs"><header><nav><ul><li>Building Models</li><li><a href="">Recurrence</a></li></ul><a class="edit-page" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/recurrence.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Recurrence</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" href="#Recurrent-Models-1" id="Recurrent-Models-1">Recurrent Models</a></h1><h2><a class="nav-anchor" href="#Recurrent-Cells-1" id="Recurrent-Cells-1">Recurrent Cells</a></h2><p>In the simple feedforward case, our model <code>m</code> is a simple function from various inputs <code>xᵢ</code> to predictions <code>yᵢ</code>. (For example, each <code>x</code> might be an MNIST digit and each <code>y</code> a digit label.) Each prediction is completely independent of any others, and using the same <code>x</code> will always produce the same <code>y</code>.</p><pre><code class="language-julia">y₁ = f(x₁)
+y₂ = f(x₂)
+y₃ = f(x₃)
+# ...</code></pre><p>Recurrent networks introduce a <em>hidden state</em> that gets carried over each time we run the model. The model now takes the old <code>h</code> as an input, and produces a new <code>h</code> as output, each time we run it.</p><pre><code class="language-julia">h = # ... initial state ...
+h, y₁ = f(h, x₁)
+h, y₂ = f(h, x₂)
+h, y₃ = f(h, x₃)
+# ...</code></pre><p>Information stored in <code>h</code> is preserved for the next prediction, allowing it to function as a kind of memory. This also means that the prediction made for a given <code>x</code> depends on all the inputs previously fed into the model.</p><p>(This might be important if, for example, each <code>x</code> represents one word of a sentence; the model's interpretation of the word "bank" should change if the previous input was "river" rather than "investment".)</p><p>Flux's RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard <code>Dense</code> layer, and the output is also the hidden state.</p><pre><code class="language-julia">Wxh = randn(5, 10)
+Whh = randn(5, 5)
+b   = randn(5)
+
+function rnn(h, x)
+  h = tanh.(Wxh * x .+ Whh * h .+ b)
+  return h, h
+end
+
+x = rand(10) # dummy data
+h = rand(5)  # initial hidden state
+
+h, y = rnn(h, x)</code></pre><p>If you run the last line a few times, you'll notice the output <code>y</code> changing slightly even though the input <code>x</code> is the same.</p><p>We sometimes refer to functions like <code>rnn</code> above, which explicitly manage state, as recurrent <em>cells</em>. There are various recurrent cells available, which are documented in the <a href="../layers/">layer reference</a>. The hand-written example above can be replaced with:</p><pre><code class="language-julia">using Flux
+
+rnn2 = Flux.RNNCell(10, 5)
+
+x = rand(10) # dummy data
+h = rand(5)  # initial hidden state
+
+h, y = rnn2(h, x)</code></pre><h2><a class="nav-anchor" href="#Stateful-Models-1" id="Stateful-Models-1">Stateful Models</a></h2><p>For the most part, we don't want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the <code>Recur</code> wrapper to do this.</p><pre><code class="language-julia">x = rand(10)
+h = rand(5)
+
+m = Flux.Recur(rnn, h)
+
+y = m(x)</code></pre><p>The <code>Recur</code> wrapper stores the state between runs in the <code>m.state</code> field.</p><p>If you use the <code>RNN(10, 5)</code> constructor – as opposed to <code>RNNCell</code> – you'll see that it's simply a wrapped cell.</p><pre><code class="language-julia">julia&gt; RNN(10, 5)
+Recur(RNNCell(Dense(15, 5)))</code></pre><h2><a class="nav-anchor" href="#Sequences-1" id="Sequences-1">Sequences</a></h2><p>Often we want to work with sequences of inputs, rather than individual <code>x</code>s.</p><pre><code class="language-julia">seq = [rand(10) for i = 1:10]</code></pre><p>With <code>Recur</code>, applying our model to each element of a sequence is trivial:</p><pre><code class="language-julia">m.(seq) # returns a list of 5-element vectors</code></pre><p>This works even when we've chain recurrent layers into a larger model.</p><pre><code class="language-julia">m = Chain(LSTM(10, 15), Dense(15, 5))
+m.(seq)</code></pre><h2><a class="nav-anchor" href="#Truncating-Gradients-1" id="Truncating-Gradients-1">Truncating Gradients</a></h2><p>By default, calculating the gradients in a recurrent layer involves its entire history. For example, if we call the model on 100 inputs, we'll have to calculate the gradient for those 100 calls. If we then calculate another 10 inputs we have to calculate 110 gradients – this accumulates and quickly becomes expensive.</p><p>To avoid this we can <em>truncate</em> the gradient calculation, forgetting the history.</p><pre><code class="language-julia">truncate!(m)</code></pre><p>Calling <code>truncate!</code> wipes the slate clean, so we can call the model with more inputs without building up an expensive gradient computation.</p><p><code>truncate!</code> makes sense when you are working with multiple chunks of a large sequence, but we may also want to work with a set of independent sequences. In this case the hidden state should be completely reset to its original value, throwing away any accumulated information. <code>reset!</code> does this for you.</p><p>In general, when training with recurrent layers in your model, you'll want to call <code>reset!</code> or <code>truncate!</code> for each loss calculation:</p><pre><code class="language-julia">function loss(x,y)
+  l = Flux.mse(m(x), y)
+  Flux.reset!(m)
+  return l
+end</code></pre><footer><hr/><a class="previous" href="../basics/"><span class="direction">Previous</span><span class="title">Basics</span></a><a class="next" href="../regularisation/"><span class="direction">Next</span><span class="title">Regularisation</span></a></footer></article></body></HTML>

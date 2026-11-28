@@ -1,0 +1,260 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Batching · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li><a class="toctext" href="../models/basics.html">
+Model Building Basics
+              </a></li><li><a class="toctext" href="../models/templates.html">
+Model Templates
+              </a></li><li><a class="toctext" href="../models/recurrent.html">
+Recurrence
+              </a></li><li><a class="toctext" href="../models/debugging.html">
+Debugging
+              </a></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li class="current"><a class="toctext" href="batching.html">
+Batching
+              </a><ul class="internal"><li><a class="toctext" href="#Basics-1">
+Basics
+                  </a></li><li><a class="toctext" href="#Sequences-and-Nesting-1">
+Sequences and Nesting
+                  </a></li><li><a class="toctext" href="#Future-Work-1">
+Future Work
+                  </a></li></ul></li><li><a class="toctext" href="backends.html">
+Backends
+              </a></li><li><a class="toctext" href="storage.html">
+Storing Models
+              </a></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Logistic Regression
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Other APIs
+            </li><li><a href="batching.html">
+Batching
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/854a1e18865742c59b6db6c58e16fee6ef9ef8ce/docs/src/apis/batching.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Batching-1" id="Batching-1">
+Batching
+        </a></h1><h2><a class="nav-anchor" href="#Basics-1" id="Basics-1">
+Basics
+        </a></h2><p>
+Existing machine learning frameworks and libraries represent batching, and other properties of data, only implicitly. Your machine learning data is a large 
+<code>N</code>
+-dimensional array, which may have a shape like:
+      </p><pre><code class="language-julia">100 × 50 × 256 × 256</code></pre><p>
+Typically, this might represent that you have (say) a batch of 100 samples, where each sample is a 50-long sequence of 256×256 images. This is great for performance, but array operations often become much more cumbersome as a result. Especially if you manipulate dimensions at runtime as an optimisation, debugging models can become extremely fiddly, with a proliferation of 
+<code>X × Y × Z</code>
+ arrays and no information about where they came from.
+      </p><p>
+Flux introduces a new approach where the batch dimension is represented explicitly as part of the data. For example:
+      </p><pre><code class="language-julia">julia&gt; xs = Batch([[1,2,3], [4,5,6]])
+2-element Batch of Vector{Int64}:
+ [1,2,3]
+ [4,5,6]</code></pre><p>
+Batches are represented the way we 
+        <em>
+think
+        </em>
+ about them; as an list of data points. We can do all the usual array operations with them, including getting the first with 
+<code>xs[1]</code>
+, iterating over them and so on. The trick is that under the hood, the data is batched into a single array:
+      </p><pre><code class="language-julia">julia&gt; rawbatch(xs)
+2×3 Array{Int64,2}:
+ 1  2  3
+ 4  5  6</code></pre><p>
+When we put a 
+<code>Batch</code>
+ object into a model, the model is ultimately working with a single array, which means there's no performance overhead and we get the full benefit of standard batching.
+      </p><p>
+Turning a set of vectors into a matrix is fairly easy anyway, so what's the big deal? Well, it gets more interesting as we start working with more complex data. Say we were working with 4×4 images:
+      </p><pre><code class="language-julia">julia&gt; xs = Batch([[1 2; 3 4], [5 6; 7 8]])
+2-element Flux.Batch of Array{Int64,2}:
+ [1 2; 3 4]
+ [5 6; 7 8]</code></pre><p>
+The raw batch array is much messier, and harder to recognise:
+      </p><pre><code class="language-julia">julia&gt; rawbatch(xs)
+2×2×2 Array{Int64,3}:
+[:, :, 1] =
+ 1  3
+ 5  7
+
+[:, :, 2] =
+ 2  4
+ 6  8</code></pre><p>
+Furthermore, because the batches acts like a list of arrays, we can use simple and familiar operations on it:
+      </p><pre><code class="language-julia">julia&gt; map(flatten, xs)
+2-element Array{Array{Int64,1},1}:
+ [1,3,2,4]
+ [5,7,6,8]</code></pre><p><code>flatten</code>
+ is simple enough over a single data point, but flattening a batched data set is more complex and you end up needing arcane array operations like 
+<code>mapslices</code>
+. A 
+<code>Batch</code>
+ can just handle this for you for free, and more importantly it ensures that your operations are 
+        <em>
+correct
+        </em>
+ – that you haven't mixed up your batch and data dimensions, or used the wrong array op, and so on.
+      </p><h2><a class="nav-anchor" href="#Sequences-and-Nesting-1" id="Sequences-and-Nesting-1">
+Sequences and Nesting
+        </a></h2><p>
+As well as 
+<code>Batch</code>
+, there's a structure called 
+<code>Seq</code>
+ which behaves very similarly. Let's say we have two one-hot encoded DNA sequences:
+      </p><pre><code class="language-julia">julia&gt; x1 = Seq([[0,1,0,0], [1,0,0,0], [0,0,0,1]]) # [A, T, C, G]
+julia&gt; x2 = Seq([[0,0,1,0], [0,0,0,1], [0,0,1,0]])
+
+julia&gt; rawbatch(x1)
+3×4 Array{Int64,2}:
+ 0  1  0  0
+ 1  0  0  0
+ 0  0  0  1</code></pre><p>
+This is identical to 
+<code>Batch</code>
+ so far; but where it gets interesting is that you can actually nest these types:
+      </p><pre><code class="language-julia">julia&gt; xs = Batch([x1, x2])
+2-element Batch of Seq of Vector{Int64}:
+ [[0,1,0,0],[1,0,0,0],[0,0,0,1]]
+ [[0,0,1,0],[0,0,0,1],[0,0,1,0]]</code></pre><p>
+Again, this represents itself intuitively as a list-of-lists-of-lists, but 
+<code>rawbatch</code>
+ shows that the real underlying value is an 
+<code>Array{Int64,3}</code>
+ of shape 
+<code>2×3×4</code>
+.
+      </p><h2><a class="nav-anchor" href="#Future-Work-1" id="Future-Work-1">
+Future Work
+        </a></h2><p>
+The design of batching is still a fairly early work in progress, though it's used in a few places in the system. For example, all Flux models expect to be given 
+<code>Batch</code>
+ objects which are unwrapped into raw arrays for the computation. Models will convert their arguments if necessary, so it's convenient to call a model with a single data point like 
+<code>f([1,2,3])</code>
+.
+      </p><p>
+Right now, the 
+<code>Batch</code>
+ or 
+<code>Seq</code>
+ types always stack along the left-most dimension. In future, this will be customisable, and Flux will provide implementations of common functions that are generic across the batch dimension. This brings the following benefits:
+      </p><ul><li><p>
+Code can be written in a batch-agnostic way or be generic across batching strategies.
+          </p></li><li><p>
+Batching and optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
+          </p></li><li><p>
+This also opens the door for more automatic optimisations, e.g. having the compiler explore the search base of possible batching combinations.
+          </p></li></ul><p>
+Here's a more detailed illustration of how it might look for code to be "generic across batching". Take for example a weight matrix 
+<code>W</code>
+ times a vector 
+<code>x</code>
+, as used in a logistic regression or a simple neural network:
+      </p><pre><code class="language-julia">   W    *   x  =&gt;   y
+(10×28) * (28) =&gt; (10)</code></pre><p>
+If we want to work with a batch of 50 
+<code>x</code>
+s, one option is to stack the data into a matrix of size 
+<code>28 × 50</code>
+.
+      </p><pre><code class="language-julia">   W    *    x    =&gt;    y
+(10×28) * (28×50) =&gt; (10×50)</code></pre><p>
+This works, but we may find that it's slow or doesn't fit well with the rest of the model, which batches on the first dimension. For that reason we may instead want to put the data in a 
+<code>50 × 28</code>
+ matrix and alter the code as follows:
+      </p><pre><code class="language-julia">   x    *    W'   =&gt;    y
+(50×28) * (28×10) =&gt; (50×10)</code></pre><p>
+to make the shapes work out. This code change is not ideal; in more complex cases it can become fiddly and error-prone, and it means that the code is less reusable, tied to a particular implementation strategy.
+      </p><p>
+There's an alternative. We keep the same code, but represent the batched 
+<code>x</code>
+s as either a 
+<code>Batch{Vector,1}</code>
+ or a 
+<code>Batch{Vector,2}</code>
+, depending on how the data is stacked. Then we can simply overload 
+<code>*</code>
+ as follows:
+      </p><pre><code class="language-julia">*(W::Matrix, x::Batch{Vector,1}) = x * W'
+*(W::Matrix, x::Batch{Vector,2}) = W * x</code></pre><p>
+This means that we can always write 
+<code>W*x</code>
+, and the code is reusable in a larger network regardless of the overall batching approach. Moreover, Julia's type system ensures there's no runtime cost to doing this, and we can compile the code appropriately for backends like TensorFlow as well.
+      </p><footer><hr/><a class="previous" href="../models/debugging.html"><span class="direction">
+Previous
+          </span><span class="title">
+Debugging
+          </span></a><a class="next" href="backends.html"><span class="direction">
+Next
+          </span><span class="title">
+Backends
+          </span></a></footer></article></body></HTML>
