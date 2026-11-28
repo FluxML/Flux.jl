@@ -3,7 +3,7 @@
 Most work on neural networks involves the use of GPUs, as they can typically perform the required computation much faster.
 This page describes how Flux co-operates with various other packages, which talk to GPU hardware.
 
-For those in a hurry, see the [quickstart](@ref man-quickstart) page. Or do `using CUDA` and then call `gpu` on both the model and the data. 
+For a first training example, see the [quick start](@ref man-quickstart). For compiled training and inference on supported GPUs, see [Compiling Flux with Reactant](reactant.md).
 
 ## Basic GPU use: from `Array` to `CuArray`
 
@@ -33,7 +33,7 @@ It will create a copy of the Flux model, with all of its parameter arrays moved 
 ```julia
 using Pkg; Pkg.add(["CUDA", "cuDNN"])  # do this once
 
-using Flux, CUDA
+using Flux, CUDA, cuDNN
 CUDA.allowscalar(false)  # recommended
 
 model = Dense(W, true, tanh)  # wrap the same matrix W in a Flux layer
@@ -43,9 +43,7 @@ c_model = cu(model)  # move all the arrays within model to the GPU
 c_model(cx)          # computation on the GPU
 ```
 
-Notice that you need `using CUDA` (every time) but also `] add cuDNN` (once, when installing packages).
-This is a quirk of how these packages are set up.
-(The [`cuDNN.jl`](https://github.com/JuliaGPU/CUDA.jl/tree/master/lib/cudnn) sub-package handles operations such as convolutions, called by Flux via [NNlib.jl](https://github.com/FluxML/NNlib.jl).)
+Load both `CUDA` and `cuDNN` to select an NVIDIA GPU with [`gpu_device`](@ref). Flux uses cuDNN for operations such as convolutions through [NNlib.jl](https://github.com/FluxML/NNlib.jl).
 
 Flux's `gradient`, and training functions like `setup`, `update!`, and `train!`, are all equally happy to accept GPU arrays and GPU models, and then perform all computations on the GPU.
 It is recommended that you move the model to the GPU before calling `setup`.
@@ -123,106 +121,49 @@ model = Chain(...) |> device
 
 ## Automatic GPU choice with `gpu` and `gpu_device`
 
-Flux also provides a more automatic way of choosing which GPU (or none) to use. This is the function `gpu`:
-* By default it does nothing.
-* If the package CUDA is loaded, and `CUDA.functional() === true`, then it behaves like `cu`.
-* If the package AMDGPU is loaded,  and `AMDGPU.functional() === true`, then it behaves like `roc`.
-* If the package Metal is loaded, and `Metal.functional() === true`, then it behaves like `mtl`.
-* If two different GPU packages are loaded, the first one takes priority.
+[`gpu_device`](@ref) selects a functional GPU backend from the packages loaded in the current session. It falls back to the CPU when no GPU is available. Use `gpu_device(force=true)` to require a GPU. Set a preference with [`gpu_backend!`](@ref) if you use multiple GPU backends.
 
-For the most part, this means that a script which says `model |> gpu` and `data |> gpu` will just work.
-It should always run, and if a GPU package is loaded (and finds the correct hardware) then that will be used.
-
-The function `gpu` uses a lower-level function called [`gpu_device`](@ref) from MLDataDevices.jl,
-which checks what to do and then returns some device object. In fact, the entire implementation is just this:
+The `gpu` and `cpu` functions select a device and transfer an object to it.
 
 ```julia
 gpu(x) = gpu_device()(x)
 cpu(x) = cpu_device()(x)
 ```
 
-Automatic backend selection through `gpu` is not type-stable. That doesn't matter if you do it once, or once per large batch -- it costs a few microseconds. But it might matter if you do it within some loop.
-
-To avoid this, you can first obtain a "device object" with `device = gpu_device()`, once, and then use this as the function to transfer data. Something like this:
-```julia
-to_device = gpu_device()
-gpu_model = model |> to_device
-
-for epoch in 1:num_epochs
-    for (x, y) in dataloader
-        x_gpu, y_gpu = (x, y) |> to_device
-        # training code...
-```
-
-Finally, setting a backend prefence with [`gpu_backend!`](@ref) gives type stability to the whole pipeline.
+Choose a device once and reuse it to move your model and training data.
 
 ## Transferring Training Data
 
-In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. Moving the data can be done in two different ways:
+Move the model before calling `Flux.setup` so that the optimiser state lives on the same device. Wrapping a [`DataLoader`](@ref Flux.DataLoader) with the device transfers each batch as it is loaded. Given a `model`, a loss function `loss(model, x, y)` and training arrays `X` and `Y`, one epoch looks like this.
 
-1. Iterating over the batches in a [`DataLoader`](@ref) object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done by hand, it might look like this:
-   ```julia
-   train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true)
-   # ... model definition, optimiser setup
-   for epoch in 1:epochs
-       for (x_cpu, y_cpu) in train_loader
-           x = gpu(x_cpu)
-           y = gpu(y_cpu)
-           grads = gradient(m -> loss(m, x, y), model)
-           Flux.update!(opt_state, model, grads[1])
-       end
-   end
-   ```
-   Rather than write this out every time, you can just call `gpu(::DataLoader)`:
-   ```julia
-   gpu_train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true) |> gpu
-   # ... model definition, optimiser setup
-   for epoch in 1:epochs
-       for (x, y) in gpu_train_loader
-           grads = gradient(m -> loss(m, x, y), model)
-           Flux.update!(opt_state, model, grads[1])
-       end
-   end
-   ```
-   This is equivalent to `DataLoader(MLUtils.mapobs(gpu, (X, Y)); keywords...)`.
-   Something similar can also be done with [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator), `gpu_train_loader = CUDA.CuIterator(train_loader)`. However, this only works with a limited number of data types: `first(train_loader)` should be a tuple (or `NamedTuple`) of arrays.
+```julia
+device = gpu_device(force=true)
+gpu_model = model |> device
+opt_state = Flux.setup(Adam(), gpu_model)
+train_loader = Flux.DataLoader((X, Y); batchsize=64, shuffle=true) |> device
+Flux.train!(loss, gpu_model, train_loader, opt_state)
+```
 
-2. Transferring all training data to the GPU at once before creating the `DataLoader`. This is usually performed for smaller datasets which are sure to fit in the available GPU memory.
-   ```julia
-   gpu_train_loader = Flux.DataLoader((X, Y) |> gpu, batchsize = 32)
-   # ...
-   for epoch in 1:epochs
-       for (x, y) in gpu_train_loader
-           # ...
-   ```
-   Here `(X, Y) |> gpu` applies [`gpu`](@ref) to both arrays, as it recurses into structures.
+If the full dataset fits in GPU memory, you can transfer it once before creating the data loader. Applying the device to the tuple moves both arrays.
+
+```julia
+train_loader = Flux.DataLoader((X, Y) |> device; batchsize=64, shuffle=true)
+```
+
+CUDA also provides [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator) for batches made of tuples or named tuples of arrays.
 
 ## Saving GPU-Trained Models
 
-After the training process is done, we must always transfer the trained model back to the CPU memory before serializing or saving to disk. This can be done with `cpu`:
+Move the model to the CPU and save its state with JLD2. This lets you load the state in a session with a different device.
+
 ```julia
-model = cpu(model) # or model = model |> cpu
+using JLD2
+
+model_state = Flux.state(cpu(model))
+jldsave("trained_model.jld2"; model_state)
 ```
-and then
-```julia
-using BSON
-# ...
-BSON.@save "./path/to/trained_model.bson" model
 
-# in this approach the cpu-transferred model (referenced by the variable `model`)
-# only exists inside the `let` statement
-let model = cpu(model)
-   # ...
-   BSON.@save "./path/to/trained_model.bson" model
-end
-
-# is equivalent to the above, but uses `key=value` storing directive from BSON.jl
-BSON.@save "./path/to/trained_model.bson" model = cpu(model)
-```
-The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
-
-In controlled scenarios in which the data fed to the loaded models is guaranteed to be in the GPU there's no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no guarantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.
-
+See [Saving and Loading Models](saving.md) for how to restore the state.
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux
 
@@ -420,9 +361,9 @@ julia> set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
 ```julia-repl
-julia> using CUDA
+julia> using CUDA, cuDNN
 
-julia> CUDA.functional()
+julia> CUDA.functional() && cuDNN.functional()
 true
 ```
 

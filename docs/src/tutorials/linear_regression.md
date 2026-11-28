@@ -1,15 +1,6 @@
 # [Tutorial: Linear Regression](@id man-linear-regression)
 
-Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
-
-- Provide training and test data
-- Build a model with configurable parameters to make predictions
-- Iteratively train the model by tweaking the parameters to improve predictions
-- Verify your model
-
-Under the hood, Flux uses a technique called automatic differentiation to take gradients that help improve predictions. Flux is also fully written in Julia so you can easily replace any layer of Flux with your own code to improve your understanding or satisfy special requirements.
-
-The following page contains a step-by-step walkthrough of the linear regression algorithm in `Julia` using `Flux`! We will start by creating a simple linear regression model for dummy data and then move on to a real dataset. The first part would involve writing some parts of the model on our own, which will later be replaced by `Flux`.
+Build a linear regression model and training loop by hand, then fit a Flux model with multiple input features. If you have already completed [Fitting a Straight Line](@ref man-overview), you can jump to the [real-data example](@ref "Linear regression model on a real dataset").
 
 ---
 

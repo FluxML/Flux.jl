@@ -1,5 +1,5 @@
 using Documenter
-using Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
+using Flux, NNlib, Functors, MLUtils, Optimisers,
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
       DataFrames, JLD2, MLDataDevices, MLCore, Mooncake
 using MLCore: numobs, getobs, getobs!
@@ -37,11 +37,12 @@ makedocs(
             "Training" => "guide/training/training.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
-            "Compiling with Reactant" => "guide/reactant.md",
             "Saving & Loading" => "guide/saving.md",
             "Performance Tips" => "guide/performance.md",
             "Profiling" => "guide/profiling.md",
         ],
+        "Compiling with Reactant" => "guide/reactant.md",
+        "Models and Examples" => "tutorials/model_zoo.md",
         "Ecosystem" => "ecosystem.md",
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
@@ -63,12 +64,9 @@ makedocs(
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
-        # All the website tutorials can move here, perhaps much of the model zoo too?
-        # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
             "Custom Layers" => "tutorials/custom_layers.md",
-            "Model Zoo" => "tutorials/model_zoo.md",
             #=
             # "Multi-layer Perceptron" => "tutorials/mlp.md",
             # "Julia & Flux: 60 Minute Blitz" => "tutorials/blitz.md",

@@ -1,113 +1,44 @@
 # Compiling Flux with Reactant
 
-[Reactant.jl](https://github.com/EnzymeAD/Reactant.jl) traces your Julia code and compiles it — through [MLIR](https://mlir.llvm.org/) and [XLA](https://openxla.org/xla) — into a single optimised executable that runs on CPU, NVIDIA/AMD GPUs, or TPUs. For Flux this means the whole forward pass (and, for training, the [Enzyme](https://enzyme.mit.edu/) reverse pass and the optimiser update) is fused, kernel-optimised, and reused across calls, which is often substantially faster and more memory-efficient than eager execution.
-
-This guide builds up in three steps:
-
-1. A **manually compiled** example, so you can see exactly what Reactant does.
-2. The [`trainstep!`](@ref Flux.Train.trainstep!) API, which compiles and caches a single training step for you.
-3. [`train!`](@ref Flux.train!), the full training loop, which is built on top of `trainstep!`.
+[Reactant.jl](https://github.com/EnzymeAD/Reactant.jl) compiles Julia code into XLA executables for CPU, supported GPUs and TPUs. On a Reactant device, Flux's [`train!`](@ref Flux.train!) and [`trainstep!`](@ref Flux.Train.trainstep!) compile the forward pass, gradient calculation with Enzyme and optimiser update together.
 
 ## Installation
 
-Reactant is a normal dependency — add it and load it alongside Flux:
+Install Reactant alongside Flux by typing `] add Reactant` at the Julia prompt.
+
+By default, Reactant selects a supported GPU if one is available and otherwise uses the CPU. See the [Reactant GPU configuration docs](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration) to control this.
+
+## [Train with `train!`](@id 3.-The-train!-API)
+
+Move the model to the Reactant device before calling `Flux.setup`. Wrap the data loader with the same device to move each batch as it is loaded.
 
 ```julia
-using Pkg; Pkg.add("Reactant")  # do this once
-
 using Flux, Reactant
+
+dev = reactant_device()
+model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+opt_state = Flux.setup(Adam(1f-2), model)
+
+X, Y = randn(Float32, 4, 128), randn(Float32, 2, 128)
+loader = Flux.DataLoader((X, Y); batchsize=16) |> dev
+loss(m, x, y) = Flux.mse(m(x), y)
+
+for _ in 1:3
+    Flux.train!(loss, model, loader, opt_state)
+end
 ```
 
-Reactant automatically selects a GPU backend if one is available, falling back to the CPU otherwise. See the [Reactant GPU configuration docs](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration) for how to control this.
+The first batch triggers compilation. Later batches of the same shape reuse the executable, including across epochs. A different shape, such as a smaller final batch, triggers another compilation.
+
+`train!` shows a progress bar and throws a `DomainError` for a non-finite loss. The compiled step skips the update for that batch. Flux checks each loss after queuing the following step, so that step can still update the model.
 
 ## Moving data and models to the device
 
-Just like `gpu`/`cpu`, Flux provides a device object that moves a model (or any nested structure of arrays) onto the Reactant device, converting its arrays into Reactant's `ConcreteRArray`s:
+`reactant_device()` returns a device object that converts arrays, including those inside models and tuples, to Reactant arrays. For example, `(x, y) |> dev` moves both arrays. The device preserves element types by default. Use `reactant_device(Float32)` or call [`f32`](@ref Flux.f32) before moving a model to convert floating-point arrays to `Float32`.
 
-```julia
-using Flux, Reactant
+## [Train one batch with `trainstep!`](@id 2.-The-trainstep!-API)
 
-dev = reactant_device()   # a Reactant device object; call once and reuse
-
-model = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
-x = randn(Float32, 4, 16)
-
-model_re = model |> dev   # a copy of the model with Reactant arrays
-x_re     = x     |> dev
-```
-
-As with the GPU adaptors, `dev` recurses into structures, so `(x, y) |> dev` moves both. It keeps the element type, so `Float64` arrays stay `Float64`: call [`f32`](@ref Flux.f32) first, or use `reactant_device(Float32)`, to convert them. Everything you feed to a compiled function must already live on the device.
-
-## 1. A manually compiled example
-
-Reactant does not run your code eagerly. Instead you *compile* a function once for a given set of input shapes and types, and then call the returned executable. The two entry points are:
-
-- `Reactant.@compile f(args...)` — trace and compile `f`, returning a callable executable. Call it later with device-resident arguments of the same shapes.
-- `Reactant.@jit f(args...)` — compile *and* immediately run, a convenient shortcut for one-off calls.
-
-### Compiling the forward pass (inference)
-
-```julia
-using Flux, Reactant
-
-dev = reactant_device()
-model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
-x = randn(Float32, 4, 16) |> dev
-
-# Compile once...
-forward = Reactant.@compile model(x)
-
-# ...then call the compiled executable (fast, no recompilation):
-y = forward(x)              # a Reactant array on the device
-y_host = y |> cpu           # move the result back to the host
-
-# `@jit` compiles and runs in one go — handy for a one-off evaluation:
-y2 = Reactant.@jit model(x)
-```
-
-Note the call is `forward(x)`, **not** `forward(model, x)`: in `@compile model(x)` the model is the *callee*, so Reactant captures it (and its parameter arrays) inside the compiled executable, and you pass only the remaining arguments. Because the model is captured by reference, mutating its parameters in place — as training does — is reflected the next time you call `forward`. (Contrast this with the training-step examples below, where the model sits in an *argument* position, e.g. `@compile my_step!(loss, model, x, y, opt_state)`, and so must be passed at call time.)
-
-A compiled executable is specialised to the **shapes** of its inputs. Calling `forward` with a differently-shaped `x` (e.g. a smaller final batch) requires compiling a separate executable for that shape.
-
-!!! note "trainmode / testmode"
-    Layers such as `Dropout` and `BatchNorm` behave differently during training and inference. Call `testmode!(model)` before compiling an inference function, and `trainmode!(model)` before a training step, exactly as you would without Reactant.
-
-### Compiling a training step manually
-
-To differentiate under Reactant, use Flux's [`withgradient`](@ref Flux.withgradient) with the [`AutoEnzyme`](@ref) backend — Reactant relies on Enzyme for AD. You can compile the value-and-gradient computation, or a whole step that also updates the model in place:
-
-```julia
-using Flux, Reactant, Optimisers
-
-dev = reactant_device()
-model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
-x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
-
-loss(m, x, y) = Flux.mse(m(x), y)
-opt_state = Flux.setup(Adam(1f-2), model)
-
-# A plain Julia function describing one optimisation step. It differentiates the loss
-# with Enzyme, updates the model and optimiser state in place, and returns the loss.
-function my_step!(loss, model, x, y, opt_state)
-    l, grads = Flux.withgradient(m -> loss(m, x, y), AutoEnzyme(), model)
-    Optimisers.update!(opt_state, model, grads[1])
-    return l
-end
-
-trainmode!(model)
-step! = Reactant.@compile my_step!(loss, model, x, y, opt_state)   # compile once
-
-for epoch in 1:100
-    l = step!(loss, model, x, y, opt_state)   # reuse the executable each epoch
-    @info "epoch $epoch" loss=Reactant.to_number(l)
-end
-```
-
-Reactant traces the mutation of `model` and `opt_state` and fuses the whole step. Writing this by hand gives you full control, but it is boilerplate that Flux can handle for you — which is what the next section is about.
-
-## 2. The `trainstep!` API
-
-[`trainstep!`](@ref Flux.Train.trainstep!) performs exactly the step above — differentiate the loss, update `model` and `opt_state` in place, return the loss — and when the model lives on a Reactant device it **compiles and caches the fused step automatically**. You do not write `@compile` yourself, and repeated calls with the same model, optimiser, loss and batch shape reuse the cached executable.
+Use [`trainstep!`](@ref Flux.Train.trainstep!) to write your own training loop. Each call evaluates the loss, computes the gradient and updates the model and optimiser state in place. On a Reactant device, Flux compiles and caches the step automatically.
 
 ```julia
 using Flux, Reactant
@@ -160,31 +91,74 @@ end
 
 This helps most when preparing a batch takes a good fraction of the time of a step, for instance when loading and augmenting images in the training loop itself. To make the preparation itself faster, let the [`DataLoader`](@ref Flux.DataLoader) load batches in parallel: `parallel = true` uses worker threads (start Julia with several threads), and `num_workers = N` uses `N` worker processes (MLUtils 0.4.10 and later), which also speeds up loading that threads can't run in parallel, such as from a Python-backed dataset. The two combine: the workers prepare the batches, while what remains on the main thread, such as moving each batch to the device, overlaps with the device's steps. Between two reads the host can queue up to `log_interval` steps, and the device keeps the batch of each until it runs it. [`train!`](@ref Flux.train!) checks each loss once the next step is queued, so its check doesn't keep the device waiting.
 
-## 3. The `train!` API
+## [Manual compilation](@id 1.-A-manually-compiled-example)
 
-[`train!`](@ref Flux.train!) is a loop over the data built on top of `trainstep!`, so on a Reactant device it inherits the same automatic compile-and-cache. Move the model to the device and call `setup` first, and provide **device-resident** data — `train!` rejects host arrays on the Reactant path.
+Reactant does not run your code eagerly. Instead you *compile* a function once for a given set of input shapes and types, and then call the returned executable. The two entry points are:
+
+- `Reactant.@compile f(args...)` — trace and compile `f`, returning a callable executable. Call it later with device-resident arguments of the same shapes.
+- `Reactant.@jit f(args...)` — compile *and* immediately run, a convenient shortcut for one-off calls.
+
+### Compiling the forward pass (inference)
 
 ```julia
 using Flux, Reactant
 
 dev = reactant_device()
 model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
-opt_state = Flux.setup(Adam(1f-2), model)
+x = randn(Float32, 4, 16) |> dev
 
-loss(m, x, y) = Flux.mse(m(x), y)
+# Compile once...
+forward = Reactant.@compile model(x)
 
-# Move every batch to the device. In a real loop use a DataLoader wrapped with the device,
-# so each batch is moved lazily and the previous one is freed:
-#   train_loader = DataLoader((X, Y); batchsize=32) |> dev
-X, Y = randn(Float32, 4, 128), randn(Float32, 2, 128)
-data = [(X[:, i:i+15], Y[:, i:i+15]) |> dev for i in 1:16:128]
+# ...then call the compiled executable (fast, no recompilation):
+y = forward(x)              # a Reactant array on the device
+y_host = y |> cpu           # move the result back to the host
 
-Flux.train!(loss, model, data, opt_state)
+# `@jit` compiles and runs in one go — handy for a one-off evaluation:
+y2 = Reactant.@jit model(x)
 ```
 
-`train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. As in eager mode, the compiled step skips the update when the loss is non-finite, so the parameters and optimiser state never take a non-finite update. Unlike in eager mode, `train!` checks each loss only once the next step is queued, so it stops one batch later, after the update for that next batch. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
+Note the call is `forward(x)`, **not** `forward(model, x)`: in `@compile model(x)` the model is the *callee*, so Reactant captures it (and its parameter arrays) inside the compiled executable, and you pass only the remaining arguments. Because the model is captured by reference, mutating its parameters in place — as training does — is reflected the next time you call `forward`. (Contrast this with the training-step examples below, where the model sits in an *argument* position, e.g. `@compile my_step!(loss, model, x, y, opt_state)`, and so must be passed at call time.)
 
-### Resuming training from a checkpoint
+A compiled executable is specialised to the **shapes** of its inputs. Calling `forward` with a differently-shaped `x` (e.g. a smaller final batch) requires compiling a separate executable for that shape.
+
+!!! note "trainmode / testmode"
+    Layers such as `Dropout` and `BatchNorm` behave differently during training and inference. Call `testmode!(model)` before compiling an inference function, and `trainmode!(model)` before a training step, exactly as you would without Reactant.
+
+### Compiling a training step manually
+
+To differentiate under Reactant, call Flux's [`withgradient`](@ref Flux.withgradient) with `AutoEnzyme()`. You can compile the value and gradient or include the in-place optimiser update in the same executable. See [automatic differentiation with Enzyme](@ref autodiff-enzyme).
+
+```julia
+using Flux, Reactant, Optimisers
+
+dev = reactant_device()
+model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+
+loss(m, x, y) = Flux.mse(m(x), y)
+opt_state = Flux.setup(Adam(1f-2), model)
+
+# A plain Julia function describing one optimisation step. It differentiates the loss
+# with Enzyme, updates the model and optimiser state in place, and returns the loss.
+function my_step!(loss, model, x, y, opt_state)
+    l, grads = Flux.withgradient(m -> loss(m, x, y), AutoEnzyme(), model)
+    Optimisers.update!(opt_state, model, grads[1])
+    return l
+end
+
+trainmode!(model)
+step! = Reactant.@compile my_step!(loss, model, x, y, opt_state)   # compile once
+
+for epoch in 1:100
+    l = step!(loss, model, x, y, opt_state)   # reuse the executable each epoch
+    @info "epoch $epoch" loss=Reactant.to_number(l)
+end
+```
+
+Reactant traces the updates to `model` and `opt_state`. It compiles them together with the forward pass and the gradient calculation.
+
+## Resuming training from a checkpoint
 
 An optimiser state saved on the host (see [Checkpointing](@ref)) can't be moved to the device with `|> dev`. Instead, set up a new state for the model on the device, then load the saved one into it with [`loadmodel!`](@ref Flux.loadmodel!):
 
@@ -221,4 +195,6 @@ Flux.loadmodel!(opt_state, ckpt["opt_state"])
 
     The setting is read when the step is compiled, i.e. on the first `trainstep!` call for a given model, optimiser, loss and batch shape, so wrap that call (or the whole training loop). A step that is already compiled keeps its precision: calling it inside `with_config` later has no effect, and a step compiled with `HIGHEST` keeps it outside.
 
-See also the [`resnet_tinyimagenet` example](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) for a complete Reactant training script, including dropping the last, smaller training batch of an epoch and compiling a separate evaluation executable per batch shape, and the [`gpt2_fineweb` example](https://github.com/FluxML/Flux.jl/tree/master/examples/gpt2_fineweb), which pretrains GPT-2 with gradient accumulation, bfloat16 matrix multiplications and checkpointing.
+## End-to-end examples
+
+For complete training scripts, see [ResNet on TinyImageNet](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) and [GPT-2 pretraining](https://github.com/FluxML/Flux.jl/tree/master/examples/gpt2_fineweb). The ResNet example uses fixed-size training batches and compiles evaluation separately. The GPT-2 example uses gradient accumulation, mixed precision and checkpointing.

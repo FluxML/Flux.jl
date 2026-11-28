@@ -1,11 +1,6 @@
 # Saving and Loading Models
 
-You may wish to save models so that they can be loaded and run in a later
-session. Flux provides a number of ways to do this. 
-The recommended way, which is the most robust one for long term storage, 
-is to use [`Flux.state`](@ref) in combination with a serialization format like
-[JLD2.jl](https://juliaio.github.io/JLD2.jl/dev/) or
-[BSON.jl](https://github.com/JuliaIO/BSON.jl).
+For long-term storage, save the value returned by [`Flux.state`](@ref) with [JLD2.jl](https://juliaio.github.io/JLD2.jl/dev/). Install JLD2 with `] add JLD2` at the Julia prompt.
 
 Save a model:
 
@@ -106,40 +101,13 @@ model_state = Flux.state(model)
 jldsave("checkpoint_epoch=42.jld2"; model_state, opt_state)
 ```
 
-# Saving Models as Julia Structs
+## [Loading existing BSON files](@id Saving-Models-as-Julia-Structs)
 
-Models are just normal Julia structs, so it's fine to use any Julia storage
-format to save the struct as it is instead of saving the state returned by [`Flux.state`](@ref). 
-[BSON.jl](https://github.com/JuliaIO/BSON.jl) is particularly convenient for this,
-since it can also save anonymous functions, which are sometimes part of a model definition.
+Older `.bson` files can store a whole model as a Julia struct. Install `BSON` with `] add BSON` and load any custom layer definitions used by the saved model. This example reads a model stored under the key `model`.
 
-Save a model:
+```julia
+using Flux, BSON
 
-```jldoctest saving
-julia> using Flux
-
-julia> model = Chain(Dense(10 =>  5, NNlib.relu), Dense(5 =>  2));
-
-julia> using BSON: @save
-
-julia> @save "mymodel.bson" model
+BSON.@load "mymodel.bson" model
 ```
-
-Load it again in a new session:
-
-```jldoctest saving
-julia> using Flux, BSON
-
-julia> BSON.@load "mymodel.bson" model
-
-julia> model
-Chain(
-  Dense(10 => 5, relu),                 # 55 parameters
-  Dense(5 => 2),                        # 12 parameters
-)                   # Total: 4 arrays, 67 parameters, 476 bytes.
-```
-!!! warning
-    Saving models this way could lead to compatibility issues across julia versions
-    and across Flux versions if some of the Flux layers' internals are changed.
-    It is therefore not recommended for long term storage, use [`Flux.state`](@ref) instead.
 
