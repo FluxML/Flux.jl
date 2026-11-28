@@ -40,11 +40,13 @@ See also academic work [citing Flux](https://scholar.google.com/scholar?cites=97
 
 ### Datasets
 
+- [HuggingFaceDatasets.jl](https://github.com/JuliaGenAI/HuggingFaceDatasets.jl) loads datasets from the Hugging Face Hub, using the Python `datasets` package.
 - [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl) provides access to benchmark datasets.
 
 ### [Data processing](@id Plumbing)
 
 - [DataAugmentation.jl](https://github.com/FluxML/DataAugmentation.jl) provides augmentation pipelines for images, keypoints and segmentation masks.
+- [HuggingFaceTokenizers.jl](https://github.com/MurrellGroup/HuggingFaceTokenizers.jl) tokenizes text with pretrained Hugging Face tokenizers, using the Python `tokenizers` package.
 - [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) provides tools for processing, splitting and batching datasets.
 
 ### Parameters
